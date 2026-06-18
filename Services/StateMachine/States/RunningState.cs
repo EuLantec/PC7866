@@ -89,14 +89,14 @@ public class RunningState : ITestState
                 CMD_F, context.TimeoutMs, context.CancellationToken);
 
             var analogicas = context.Parser.ParseAnalogValues(respF);
-            if (analogicas is null || analogicas.Length < 2)
+            if (analogicas is null || analogicas.Length < 4)
             {
                 detalle.Resultado = false;
                 return detalle;
             }
 
-            float vain = analogicas[0];
-            float ve   = analogicas[1];
+            float vain = analogicas[0] - analogicas[1];  // Ch1 - Ch2
+            float ve   = analogicas[2] - analogicas[3];  // Ch3 - Ch4
 
             // 3. Calcular resistencia: R = Vain / (Ve - Vain) * 390
             float resistencia = 0f;

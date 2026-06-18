@@ -9,7 +9,7 @@ public class ResultadoDetalle
     public int   ResultadoId         { get; set; }
 
     /// <summary>Referencia al ParametroEnsayo ejecutado.</summary>
-    public int   ParametroEnsayoId   { get; set; }
+    public int?  ParametroEnsayoId   { get; set; }
 
     /// <summary>Nombre del contacto para trazabilidad.</summary>
     public string NombreContacto     { get; set; } = string.Empty;

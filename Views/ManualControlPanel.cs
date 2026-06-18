@@ -1,5 +1,6 @@
 using PC7866.Configuration;
 using PC7866.Models;
+using PC7866.Services.Database;
 using PC7866.Services.SerialCommunication;
 using PC7866.Utils;
 using System.Globalization;
@@ -15,6 +16,7 @@ public partial class ManualControlPanel : UserControl
     private readonly ISerialPortService _serialPort;
     private readonly CommandParser      _parser;
     private readonly CheckBox[]         _outputChecks = new CheckBox[Pc7866Commands.OutputCount];
+    private ITestRepository?            _repository;
 
     public ManualControlPanel()
     {
@@ -23,6 +25,7 @@ public partial class ManualControlPanel : UserControl
         _parser     = new CommandParser();
         InitializeControls();
         AttachEventHandlers();
+        _ = TryInitRepositoryAsync();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -40,9 +43,68 @@ public partial class ManualControlPanel : UserControl
         SetConnectedState(false);
     }
 
-    private void LoadAvailablePorts()
+    // ─────────────────────────────────────────────────────────────────────────
+    // Base de datos
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task TryInitRepositoryAsync()
     {
-        cmbPort.Items.Clear();
+        try
+        {
+            _repository = new TestRepository(AppSettings.Instance.GetConnectionString());
+            await _repository.TestConnectionAsync();
+        }
+        catch
+        {
+            _repository = null;
+        }
+    }
+
+    private async Task SaveFullTestResultsAsync(List<FullTestRow> rows)
+    {
+        if (_repository is null) return;
+        try
+        {
+            var resultado = new Resultado
+            {
+                ReferenciaId    = null,
+                FechaPrueba     = DateTime.Now,
+                ResultadoGlobal = true,
+                Operario        = string.Empty,
+                Lote            = string.Empty
+            };
+            int resultadoId = await _repository.InsertResultadoAsync(resultado);
+
+            foreach (var row in rows)
+            {
+                float rMedida = double.IsInfinity(row.Resistance) || double.IsNaN(row.Resistance)
+                    ? -1f
+                    : (float)row.Resistance;
+
+                var detalle = new ResultadoDetalle
+                {
+                    ResultadoId       = resultadoId,
+                    ParametroEnsayoId = null,
+                    NombreContacto    = $"S{row.Output:D2}",
+                    NPasoEnsayo       = row.Output,
+                    ResistenciaMedida = rMedida,
+                    ValorRawVain      = row.Ain1Raw,
+                    ValorRawVe        = row.Ain3Raw,
+                    Resultado         = true,
+                    Timestamp         = DateTime.Now
+                };
+                await _repository.InsertDetalleAsync(detalle);
+            }
+            AddLog($"💾 Test guardado en BD (id={resultadoId})", LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            AddLog($"⚠️ No se pudo guardar en BD: {ex.Message}", LogLevel.Warning);
+        }
+    }
+
+    private void LoadAvailablePorts()
+    {        cmbPort.Items.Clear();
         string[] ports = _serialPort.GetAvailablePorts();
         if (ports.Length > 0)
         {
@@ -398,7 +460,7 @@ public partial class ManualControlPanel : UserControl
             AddLog($"▶️  Salida {i + 1:D2} → {outCmd}", LogLevel.Info);
             await _serialPort.SendCommandAsync(outCmd, AppSettings.Instance.DefaultTimeout);
 
-            await Task.Delay(300);
+            await Task.Delay(3);
 
             var row = new Models.FullTestRow { Output = i + 1 };
 
@@ -451,6 +513,7 @@ public partial class ManualControlPanel : UserControl
         lblOutputMask.Text = "Trama:  S000000000000";
 
         AddLog($"✅ Test completo finalizado. {results.Count} salidas medidas.", LogLevel.Info);
+        await SaveFullTestResultsAsync(results);
         btnFullTest.Enabled = true;
 
         // Mostrar informe

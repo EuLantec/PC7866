@@ -80,6 +80,7 @@ namespace PC7866
                 panelContent.Controls.Add(_reportsPanel);
             }
             _reportsPanel.Show();
+            _ = Task.Run(() => _reportsPanel.Invoke(_reportsPanel.RefreshData));
             SetTitle("Informes");
             informesToolStripMenuItem.Checked = true;
         }

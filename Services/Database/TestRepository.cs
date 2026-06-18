@@ -294,13 +294,9 @@ public class TestRepository : ITestRepository
 
     public async Task<bool> TestConnectionAsync()
     {
-        try
-        {
-            using var conn = CreateConnection();
-            await conn.OpenAsync();
-            return true;
-        }
-        catch { return false; }
+        using var conn = CreateConnection();
+        await conn.OpenAsync();
+        return true;
     }
 
     public async Task InitializeDatabaseAsync()
@@ -368,6 +364,10 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync(sqlParametros);
         await conn.ExecuteAsync(sqlResultados);
         await conn.ExecuteAsync(sqlDetalle);
+
+        // Migraciones: hacer nullable referencia_id y parametro_ensayo_id
+        await conn.ExecuteAsync("ALTER TABLE resultados MODIFY COLUMN referencia_id INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE resultados_detalle MODIFY COLUMN parametro_ensayo_id INT NULL;");
     }
 
     public void Dispose() { }
@@ -414,7 +414,7 @@ public class TestRepository : ITestRepository
     private static Resultado MapResultado(dynamic row) => new()
     {
         Id              = (int)row.id,
-        ReferenciaId    = (int)row.referencia_id,
+        ReferenciaId    = row.referencia_id == null ? (int?)null : (int)row.referencia_id,
         FechaPrueba     = (DateTime)row.fecha_prueba,
         ResultadoGlobal = (bool)row.resultado,
         Operario        = (string?)row.operario ?? string.Empty,
@@ -425,7 +425,7 @@ public class TestRepository : ITestRepository
     {
         Id                = (int)row.id,
         ResultadoId       = (int)row.resultado_id,
-        ParametroEnsayoId = (int)row.parametro_ensayo_id,
+        ParametroEnsayoId = row.parametro_ensayo_id == null ? (int?)null : (int)row.parametro_ensayo_id,
         NombreContacto    = (string?)row.nombre_contacto ?? string.Empty,
         NPasoEnsayo       = (int)row.n_paso_ensayo,
         ResistenciaMedida = (float)row.resistencia_medida,

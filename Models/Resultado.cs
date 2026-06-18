@@ -6,7 +6,7 @@ namespace PC7866.Models;
 public class Resultado
 {
     public int      Id           { get; set; }
-    public int      ReferenciaId { get; set; }
+    public int?     ReferenciaId { get; set; }
     public DateTime FechaPrueba  { get; set; } = DateTime.Now;
 
     /// <summary>true = BUENO, false = MALO.</summary>

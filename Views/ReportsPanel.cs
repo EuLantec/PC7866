@@ -42,12 +42,10 @@ public partial class ReportsPanel : UserControl
         try
         {
             _repository = new TestRepository(AppSettings.Instance.GetConnectionString());
-            if (await _repository.TestConnectionAsync())
-            {
-                await _repository.InitializeDatabaseAsync();
-                await LoadReferenciasAsync();
-                await LoadResultadosAsync();
-            }
+            await _repository.TestConnectionAsync();
+            await _repository.InitializeDatabaseAsync();
+            await LoadReferenciasAsync();
+            await LoadResultadosAsync();
         }
         catch { /* Sin BD – grid vacío */ }
     }
@@ -112,7 +110,7 @@ public partial class ReportsPanel : UserControl
         {
             string refNombre = _refsList
                 .FirstOrDefault(x => x.Id == r.ReferenciaId)?.ReferenciaNombre
-                ?? r.ReferenciaId.ToString();
+                ?? (r.ReferenciaId.HasValue ? r.ReferenciaId.ToString()! : "Manual");
             string resStr = r.ResultadoGlobal ? "✅ BUENO" : "❌ MALO";
 
             int idx = gridResultados.Rows.Add(
@@ -192,4 +190,6 @@ public partial class ReportsPanel : UserControl
         _repository?.Dispose();
         base.OnHandleDestroyed(e);
     }
+
+    public void RefreshData() => _ = LoadResultadosAsync();
 }

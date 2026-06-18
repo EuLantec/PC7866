@@ -93,16 +93,10 @@ public partial class AutomaticTestPanel : UserControl
         try
         {
             _repository = new TestRepository(AppSettings.Instance.GetConnectionString());
-            if (await _repository.TestConnectionAsync())
-            {
-                await _repository.InitializeDatabaseAsync();
-                AddLog("🗄️ Base de datos conectada", LogLevel.Info);
-                await LoadReferenciasAsync();
-            }
-            else
-            {
-                AddLog("⚠️ Sin conexión a la base de datos.", LogLevel.Warning);
-            }
+            await _repository.TestConnectionAsync();
+            await _repository.InitializeDatabaseAsync();
+            AddLog("🗄️ Base de datos conectada", LogLevel.Info);
+            await LoadReferenciasAsync();
         }
         catch (Exception ex)
         {
