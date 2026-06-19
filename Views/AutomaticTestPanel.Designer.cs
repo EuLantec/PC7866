@@ -1,4 +1,4 @@
-﻿namespace PC7866.Views;
+namespace PC7866.Views;
 
 partial class AutomaticTestPanel
 {
@@ -73,7 +73,7 @@ partial class AutomaticTestPanel
         grpConnection.Size = new Size(1250, 60);
         grpConnection.TabIndex = 0;
         grpConnection.TabStop = false;
-        grpConnection.Text = "ConexiÃ³n serie";
+        grpConnection.Text = "Conexión serie";
         // 
         // lblPort
         // 
@@ -115,7 +115,7 @@ partial class AutomaticTestPanel
         btnRefreshPorts.Name = "btnRefreshPorts";
         btnRefreshPorts.Size = new Size(30, 25);
         btnRefreshPorts.TabIndex = 4;
-        btnRefreshPorts.Text = "ðŸ”„";
+        btnRefreshPorts.Text = "🔄";
         // 
         // btnConnect
         // 
@@ -187,7 +187,7 @@ partial class AutomaticTestPanel
         btnRefreshRefs.Name = "btnRefreshRefs";
         btnRefreshRefs.Size = new Size(30, 25);
         btnRefreshRefs.TabIndex = 2;
-        btnRefreshRefs.Text = "ðŸ”„";
+        btnRefreshRefs.Text = "🔄";
         // 
         // lblOperario
         // 
@@ -228,7 +228,7 @@ partial class AutomaticTestPanel
         btnStartTest.Name = "btnStartTest";
         btnStartTest.Size = new Size(115, 28);
         btnStartTest.TabIndex = 7;
-        btnStartTest.Text = "â–¶ Iniciar";
+        btnStartTest.Text = "▶ Iniciar";
         // 
         // btnAbortTest
         // 
@@ -237,7 +237,7 @@ partial class AutomaticTestPanel
         btnAbortTest.Name = "btnAbortTest";
         btnAbortTest.Size = new Size(115, 28);
         btnAbortTest.TabIndex = 8;
-        btnAbortTest.Text = "â›” Abortar";
+        btnAbortTest.Text = "⛔ Abortar";
         // 
         // grpImagen
         // 
@@ -305,14 +305,14 @@ partial class AutomaticTestPanel
         // colMedido
         // 
         colMedido.FillWeight = 20F;
-        colMedido.HeaderText = "R medida (Î©)";
+        colMedido.HeaderText = "R medida (Ω)";
         colMedido.Name = "colMedido";
         colMedido.ReadOnly = true;
         // 
         // colNominal
         // 
         colNominal.FillWeight = 25F;
-        colNominal.HeaderText = "Nominal Â±tol (Î©)";
+        colNominal.HeaderText = "Nominal ±tol (Ω)";
         colNominal.Name = "colNominal";
         colNominal.ReadOnly = true;
         // 
@@ -349,7 +349,7 @@ partial class AutomaticTestPanel
         lblCurrentStep.Name = "lblCurrentStep";
         lblCurrentStep.Size = new Size(24, 15);
         lblCurrentStep.TabIndex = 1;
-        lblCurrentStep.Text = "â€”";
+        lblCurrentStep.Text = "—";
         // 
         // lblMachineState
         // 
@@ -370,7 +370,7 @@ partial class AutomaticTestPanel
         grpLog.Size = new Size(1250, 200);
         grpLog.TabIndex = 5;
         grpLog.TabStop = false;
-        grpLog.Text = "Log de ejecuciÃ³n";
+        grpLog.Text = "Log de ejecución";
         // 
         // txtLog
         // 
@@ -416,7 +416,7 @@ partial class AutomaticTestPanel
 
     #endregion
 
-    // ConexiÃ³n
+    // Conexión
     private GroupBox   grpConnection;
     private Label      lblPort;
     private ComboBox   cmbPort;
