@@ -54,6 +54,7 @@ namespace PC7866
                 panelContent.Controls.Add(_automaticPanel);
             }
             _automaticPanel.Show();
+            _ = _automaticPanel.RefreshAsync();
             SetTitle("Modo Automático");
             automáticoToolStripMenuItem.Checked = true;
         }

@@ -122,6 +122,49 @@ public partial class AutomaticTestPanel : UserControl
         }
     }
 
+    /// <summary>
+    /// Recarga las referencias y los parámetros de la referencia actualmente seleccionada.
+    /// Se llama cada vez que se muestra el panel automático.
+    /// </summary>
+    public async Task RefreshAsync()
+    {
+        if (_repository is null) return;
+        try
+        {
+            string? prevName = _referenciaActual?.ReferenciaNombre;
+
+            var refs = await _repository.GetAllReferenciasAsync();
+            cmbReferencia.Items.Clear();
+            foreach (var r in refs) cmbReferencia.Items.Add(r);
+            cmbReferencia.DisplayMember = "ReferenciaNombre";
+
+            if (cmbReferencia.Items.Count == 0) return;
+
+            // Buscar la referencia que estaba seleccionada, o usar la primera
+            int idx = 0;
+            if (prevName is not null)
+            {
+                for (int i = 0; i < cmbReferencia.Items.Count; i++)
+                {
+                    if (cmbReferencia.Items[i] is Referencia r && r.ReferenciaNombre == prevName)
+                    {
+                        idx = i;
+                        break;
+                    }
+                }
+            }
+
+            if (cmbReferencia.SelectedIndex != idx)
+                cmbReferencia.SelectedIndex = idx; // dispara SelectedIndexChanged → OnReferenciaChangedAsync
+            else
+                await OnReferenciaChangedAsync();  // mismo índice, forzar recarga de parámetros
+        }
+        catch (Exception ex)
+        {
+            AddLog($"❌ Error recargando referencias: {ex.Message}", LogLevel.Error);
+        }
+    }
+
     private async Task OnReferenciaChangedAsync()
     {
         if (cmbReferencia.SelectedItem is not Referencia ref_ || _repository is null) return;
@@ -223,9 +266,10 @@ public partial class AutomaticTestPanel : UserControl
 
         AddLog($"▶️ Ensayo: {_referenciaActual.ReferenciaNombre} | Op: {operario} | Lote: {lote}", LogLevel.Info);
 
+        Resultado? resultado = null;
         try
         {
-            var resultado = await _stateMachine.RunAsync(
+            resultado = await _stateMachine.RunAsync(
                 _referenciaActual,
                 _parametros,
                 operario,
@@ -236,19 +280,6 @@ public partial class AutomaticTestPanel : UserControl
                 OnStepCompleted,
                 AppSettings.Instance.DefaultTimeout,
                 _cts.Token);
-
-            ShowFinalResult(resultado);
-
-            if (_repository is not null)
-            {
-                resultado.Id = await _repository.InsertResultadoAsync(resultado);
-                foreach (var d in resultado.Detalles)
-                {
-                    d.ResultadoId = resultado.Id;
-                    await _repository.InsertDetalleAsync(d);
-                }
-                AddLog($"💾 Resultado guardado (ID {resultado.Id})", LogLevel.Info);
-            }
         }
         catch (OperationCanceledException)
         {
@@ -265,6 +296,12 @@ public partial class AutomaticTestPanel : UserControl
             btnAbortTest.Enabled = false;
             _cts?.Dispose();
             _cts = null;
+        }
+
+        if (resultado is not null)
+        {
+            ShowFinalResult(resultado);
+            await SaveResultadoAsync(resultado);
         }
     }
 
@@ -386,6 +423,35 @@ public partial class AutomaticTestPanel : UserControl
         _serialPort.Dispose();
         _repository?.Dispose();
         base.OnHandleDestroyed(e);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Guardado en BD
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task SaveResultadoAsync(Resultado resultado)
+    {
+        if (_repository is null)
+        {
+            AddLog("⚠️ Sin conexión a BD — resultado no guardado", LogLevel.Warning);
+            return;
+        }
+
+        try
+        {
+            resultado.Id = await _repository.InsertResultadoAsync(resultado);
+            foreach (var d in resultado.Detalles)
+            {
+                d.ResultadoId = resultado.Id;
+                await _repository.InsertDetalleAsync(d);
+            }
+            AddLog($"💾 Resultado guardado (ID {resultado.Id}, {resultado.Detalles.Count} detalles)", LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            AddLog($"⚠️ Error guardando en BD: {ex.Message}", LogLevel.Warning);
+            Logger.Instance.Error($"Error guardando resultado automático en BD: {ex}");
+        }
     }
 
     private void lblConnectionStatus_Click(object sender, EventArgs e) { }

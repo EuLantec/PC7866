@@ -71,7 +71,7 @@ public class RunningState : ITestState
         try
         {
             // 1. Construir y enviar comando de activaciÃ³n de salidas
-            string cmdSalidas = BuildOutputCommand(paso.NSalida);
+            string cmdSalidas = Pc7866Commands.BuildOutputsCommand(paso.NSalida);
             string respS = await context.SerialPort.SendCommandAsync(
                 cmdSalidas, context.TimeoutMs, context.CancellationToken);
 
@@ -119,33 +119,5 @@ public class RunningState : ITestState
         return detalle;
     }
 
-    /// <summary>
-    /// Convierte el array de 48 booleanos en la trama hexadecimal de 12 caracteres.
-    /// Tres grupos de 16 bits codificados como 4 hex ASCII cada uno.
-    /// Ejemplo: "S000000000001" = salida 1 activa.
-    /// </summary>
-    private static string BuildOutputCommand(bool[] salidas)
-    {
-        // Rellenar a 48 si es necesario
-        var bits = new bool[48];
-        Array.Copy(salidas, bits, Math.Min(salidas.Length, 48));
-
-        uint g1 = BoolsToUInt16(bits, 0);   // salidas 1-16
-        uint g2 = BoolsToUInt16(bits, 16);  // salidas 17-32
-        uint g3 = BoolsToUInt16(bits, 32);  // salidas 33-48
-
-        return $"S{g1:X4}{g2:X4}{g3:X4}";
-    }
-
-    private static uint BoolsToUInt16(bool[] bits, int offset)
-    {
-        uint v = 0;
-        for (int i = 0; i < 16; i++)
-        {
-            int idx = offset + i;
-            if (idx < bits.Length && bits[idx])
-                v |= (uint)(1 << i);
-        }
-        return v;
-    }
 }
+
