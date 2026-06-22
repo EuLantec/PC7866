@@ -254,9 +254,6 @@ public partial class ManualControlPanel : UserControl
         grpOutputs.Enabled    = connected;
         btnFullTest.Enabled   = connected;
         grpAnalog.Enabled     = connected;
-        grpFilter.Enabled     = connected;
-        grpSave.Enabled       = connected;
-        grpReset.Enabled      = connected;
 
         if (connected) AddLog($"✅ Conectado: {_serialPort.CurrentPort}", LogLevel.Info);
     }
