@@ -359,6 +359,7 @@ partial class ManualControlPanel
         grpFilter.Dock    = System.Windows.Forms.DockStyle.Top;
         grpFilter.Height  = 290;
         grpFilter.Enabled = false;
+        grpFilter.Visible = false;
         grpFilter.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
         lblCoefHint.Text      = "Decimal (0.95553) o hex de 4 dígitos (7373).  Fórmula: (coef + 2.0) × 10000";
@@ -425,6 +426,7 @@ partial class ManualControlPanel
         grpSave.Dock    = System.Windows.Forms.DockStyle.Top;
         grpSave.Height  = 62;
         grpSave.Enabled = false;
+        grpSave.Visible = false;
         grpSave.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
         StyleBtn(btnSaveWrite, "GG – Guardar EEPROM",  6,  22, 160);
@@ -441,6 +443,7 @@ partial class ManualControlPanel
         grpReset.Dock    = System.Windows.Forms.DockStyle.Top;
         grpReset.Height  = 62;
         grpReset.Enabled = false;
+        grpReset.Visible = false;
         grpReset.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
         btnReset.Text      = "Q – Reiniciar microcontrolador";

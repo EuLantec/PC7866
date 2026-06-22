@@ -1,5 +1,6 @@
 using PC7866.Configuration;
 using PC7866.Models;
+using PC7866.Services.Database;
 using PC7866.Services.SerialCommunication;
 using PC7866.Utils;
 using System.Globalization;
@@ -13,16 +14,20 @@ namespace PC7866.Views;
 public partial class ManualControlPanel : UserControl
 {
     private readonly ISerialPortService _serialPort;
+    private readonly bool               _ownsSerialPort;
     private readonly CommandParser      _parser;
     private readonly CheckBox[]         _outputChecks = new CheckBox[Pc7866Commands.OutputCount];
+    private ITestRepository?            _repository;
 
-    public ManualControlPanel()
+    public ManualControlPanel(ISerialPortService? serialPort = null)
     {
         InitializeComponent();
-        _serialPort = new SerialPortService();
+        _serialPort = serialPort ?? new SerialPortService();
+        _ownsSerialPort = serialPort is null;
         _parser     = new CommandParser();
         InitializeControls();
         AttachEventHandlers();
+        _ = TryInitRepositoryAsync();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -34,20 +39,93 @@ public partial class ManualControlPanel : UserControl
         LoadAvailablePorts();
         cmbBaudRate.Items.AddRange(new object[] { 9600, 19200, 38400, 57600, 115200 });
         cmbBaudRate.SelectedItem = AppSettings.Instance.DefaultBaudRate;
-        int com4idx = cmbPort.FindStringExact(AppSettings.Instance.DefaultPortName);
-        cmbPort.SelectedIndex = com4idx >= 0 ? com4idx : (cmbPort.Items.Count > 0 ? 0 : -1);
+        
+        // Solo buscar DefaultPortName si el puerto no está ya abierto
+        if (!_serialPort.IsOpen)
+        {
+            int com4idx = cmbPort.FindStringExact(AppSettings.Instance.DefaultPortName);
+            cmbPort.SelectedIndex = com4idx >= 0 ? com4idx : (cmbPort.Items.Count > 0 ? 0 : -1);
+        }
+        
         BuildOutputMatrix();
-        SetConnectedState(false);
+        SetConnectedState(_serialPort.IsOpen);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Base de datos
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task TryInitRepositoryAsync()
+    {
+        try
+        {
+            _repository = new TestRepository(AppSettings.Instance.GetConnectionString());
+            await _repository.TestConnectionAsync();
+        }
+        catch
+        {
+            _repository = null;
+        }
+    }
+
+    private async Task SaveFullTestResultsAsync(List<FullTestRow> rows)
+    {
+        if (_repository is null) return;
+        try
+        {
+            var resultado = new Resultado
+            {
+                ReferenciaId    = null,
+                FechaPrueba     = DateTime.Now,
+                ResultadoGlobal = true,
+                Operario        = string.Empty,
+                Lote            = string.Empty
+            };
+            int resultadoId = await _repository.InsertResultadoAsync(resultado);
+
+            foreach (var row in rows)
+            {
+                float rMedida = double.IsInfinity(row.Resistance) || double.IsNaN(row.Resistance)
+                    ? -1f
+                    : (float)row.Resistance;
+
+                var detalle = new ResultadoDetalle
+                {
+                    ResultadoId       = resultadoId,
+                    ParametroEnsayoId = null,
+                    NombreContacto    = $"S{row.Output:D2}",
+                    NPasoEnsayo       = row.Output,
+                    ResistenciaMedida = rMedida,
+                    ValorRawVain      = row.Ain1Raw,
+                    ValorRawVe        = row.Ain3Raw,
+                    Resultado         = true,
+                    Timestamp         = DateTime.Now
+                };
+                await _repository.InsertDetalleAsync(detalle);
+            }
+            AddLog($"💾 Test guardado en BD (id={resultadoId})", LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            AddLog($"⚠️ No se pudo guardar en BD: {ex.Message}", LogLevel.Warning);
+        }
     }
 
     private void LoadAvailablePorts()
-    {
-        cmbPort.Items.Clear();
+    {        cmbPort.Items.Clear();
         string[] ports = _serialPort.GetAvailablePorts();
         if (ports.Length > 0)
         {
             cmbPort.Items.AddRange(ports);
-            cmbPort.SelectedIndex = 0;
+            if (_serialPort.IsOpen && !string.IsNullOrWhiteSpace(_serialPort.CurrentPort))
+            {
+                int currentIdx = cmbPort.FindStringExact(_serialPort.CurrentPort);
+                cmbPort.SelectedIndex = currentIdx >= 0 ? currentIdx : 0;
+            }
+            else
+            {
+                cmbPort.SelectedIndex = 0;
+            }
         }
         else
         {
@@ -176,9 +254,6 @@ public partial class ManualControlPanel : UserControl
         grpOutputs.Enabled    = connected;
         btnFullTest.Enabled   = connected;
         grpAnalog.Enabled     = connected;
-        grpFilter.Enabled     = connected;
-        grpSave.Enabled       = connected;
-        grpReset.Enabled      = connected;
 
         if (connected) AddLog($"✅ Conectado: {_serialPort.CurrentPort}", LogLevel.Info);
     }
@@ -309,12 +384,12 @@ public partial class ManualControlPanel : UserControl
     // Helpers de resistencia
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Calcula R = Vain / denom × 390. Devuelve +∞ si denom ≤ 0 o R negativa.</summary>
+    /// <summary>Calcula R = Vain / denom × 390. Devuelve +∞ si R <= 0 o R > 1000.</summary>
     internal static double CalcResistance(double vain, double denom)
     {
         if (denom <= 1e-9) return double.PositiveInfinity;
         double r = vain / denom * 390.0;
-        return r < 0 ? double.PositiveInfinity : r;
+        return (r <= 0 || r > 1000.0) ? double.PositiveInfinity : r;
     }
 
     internal static string FormatResistance(double r)
@@ -398,7 +473,7 @@ public partial class ManualControlPanel : UserControl
             AddLog($"▶️  Salida {i + 1:D2} → {outCmd}", LogLevel.Info);
             await _serialPort.SendCommandAsync(outCmd, AppSettings.Instance.DefaultTimeout);
 
-            await Task.Delay(300);
+            await Task.Delay(3);
 
             var row = new Models.FullTestRow { Output = i + 1 };
 
@@ -451,6 +526,7 @@ public partial class ManualControlPanel : UserControl
         lblOutputMask.Text = "Trama:  S000000000000";
 
         AddLog($"✅ Test completo finalizado. {results.Count} salidas medidas.", LogLevel.Info);
+        await SaveFullTestResultsAsync(results);
         btnFullTest.Enabled = true;
 
         // Mostrar informe
@@ -484,8 +560,11 @@ public partial class ManualControlPanel : UserControl
 
     protected override void OnHandleDestroyed(EventArgs e)
     {
-        if (_serialPort.IsOpen) _serialPort.Close();
-        _serialPort.Dispose();
+        if (_ownsSerialPort)
+        {
+            if (_serialPort.IsOpen) _serialPort.Close();
+            _serialPort.Dispose();
+        }
         base.OnHandleDestroyed(e);
     }
 }

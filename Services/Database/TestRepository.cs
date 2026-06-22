@@ -200,7 +200,28 @@ public class TestRepository : ITestRepository
         const string sql = "SELECT * FROM resultados ORDER BY fecha_prueba DESC";
         using var conn = CreateConnection();
         var rows = await conn.QueryAsync(sql);
-        return rows.Select(MapResultado);
+        var resultados = rows.Select(MapResultado).ToList();
+        
+        if (resultados.Count > 0)
+        {
+            // Cargar todos los detalles en una sola query
+            var ids = string.Join(",", resultados.Select(r => r.Id));
+            var sqlDetalles = $"SELECT * FROM resultados_detalle WHERE resultado_id IN ({ids}) ORDER BY n_paso_ensayo";
+            var detalleRows = await conn.QueryAsync(sqlDetalles);
+            var detallesDict = new Dictionary<int, List<ResultadoDetalle>>();
+            foreach (var d in detalleRows.Select(MapResultadoDetalle))
+            {
+                if (!detallesDict.ContainsKey(d.ResultadoId))
+                    detallesDict[d.ResultadoId] = new();
+                detallesDict[d.ResultadoId].Add(d);
+            }
+            
+            foreach (var r in resultados)
+                if (detallesDict.TryGetValue(r.Id, out var detalles))
+                    r.Detalles = detalles;
+        }
+        
+        return resultados;
     }
 
     public async Task<IEnumerable<Resultado>> GetResultadosByReferenciaAsync(int referenciaId)
@@ -213,7 +234,28 @@ public class TestRepository : ITestRepository
 
         using var conn = CreateConnection();
         var rows = await conn.QueryAsync(sql, new { ReferenciaId = referenciaId });
-        return rows.Select(MapResultado);
+        var resultados = rows.Select(MapResultado).ToList();
+        
+        if (resultados.Count > 0)
+        {
+            // Cargar todos los detalles en una sola query
+            var ids = string.Join(",", resultados.Select(r => r.Id));
+            var sqlDetalles = $"SELECT * FROM resultados_detalle WHERE resultado_id IN ({ids}) ORDER BY n_paso_ensayo";
+            var detalleRows = await conn.QueryAsync(sqlDetalles);
+            var detallesDict = new Dictionary<int, List<ResultadoDetalle>>();
+            foreach (var d in detalleRows.Select(MapResultadoDetalle))
+            {
+                if (!detallesDict.ContainsKey(d.ResultadoId))
+                    detallesDict[d.ResultadoId] = new();
+                detallesDict[d.ResultadoId].Add(d);
+            }
+            
+            foreach (var r in resultados)
+                if (detallesDict.TryGetValue(r.Id, out var detalles))
+                    r.Detalles = detalles;
+        }
+        
+        return resultados;
     }
 
     public async Task<Resultado?> GetResultadoByIdAsync(int id)
@@ -221,7 +263,11 @@ public class TestRepository : ITestRepository
         const string sql = "SELECT * FROM resultados WHERE id = @Id";
         using var conn = CreateConnection();
         var row = await conn.QueryFirstOrDefaultAsync(sql, new { Id = id });
-        return row is null ? null : MapResultado(row);
+        if (row is null) return null;
+        
+        var resultado = MapResultado(row);
+        resultado.Detalles = (await GetDetallesByResultadoAsync(id)).ToList();
+        return resultado;
     }
 
     public async Task<int> InsertResultadoAsync(Resultado r)
@@ -294,13 +340,9 @@ public class TestRepository : ITestRepository
 
     public async Task<bool> TestConnectionAsync()
     {
-        try
-        {
-            using var conn = CreateConnection();
-            await conn.OpenAsync();
-            return true;
-        }
-        catch { return false; }
+        using var conn = CreateConnection();
+        await conn.OpenAsync();
+        return true;
     }
 
     public async Task InitializeDatabaseAsync()
@@ -368,6 +410,10 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync(sqlParametros);
         await conn.ExecuteAsync(sqlResultados);
         await conn.ExecuteAsync(sqlDetalle);
+
+        // Migraciones: hacer nullable referencia_id y parametro_ensayo_id
+        await conn.ExecuteAsync("ALTER TABLE resultados MODIFY COLUMN referencia_id INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE resultados_detalle MODIFY COLUMN parametro_ensayo_id INT NULL;");
     }
 
     public void Dispose() { }
@@ -414,7 +460,7 @@ public class TestRepository : ITestRepository
     private static Resultado MapResultado(dynamic row) => new()
     {
         Id              = (int)row.id,
-        ReferenciaId    = (int)row.referencia_id,
+        ReferenciaId    = row.referencia_id == null ? (int?)null : (int)row.referencia_id,
         FechaPrueba     = (DateTime)row.fecha_prueba,
         ResultadoGlobal = (bool)row.resultado,
         Operario        = (string?)row.operario ?? string.Empty,
@@ -425,7 +471,7 @@ public class TestRepository : ITestRepository
     {
         Id                = (int)row.id,
         ResultadoId       = (int)row.resultado_id,
-        ParametroEnsayoId = (int)row.parametro_ensayo_id,
+        ParametroEnsayoId = row.parametro_ensayo_id == null ? (int?)null : (int)row.parametro_ensayo_id,
         NombreContacto    = (string?)row.nombre_contacto ?? string.Empty,
         NPasoEnsayo       = (int)row.n_paso_ensayo,
         ResistenciaMedida = (float)row.resistencia_medida,

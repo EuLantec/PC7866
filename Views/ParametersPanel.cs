@@ -116,8 +116,9 @@ public partial class ParametersPanel : UserControl
         var parametros = await _repository.GetParametrosByReferenciaAsync(referenciaId);
         foreach (var p in parametros)
         {
-            gridParametros.Rows.Add(p.Id, p.NPasoEnsayo, p.NombreContacto,
+            int idx = gridParametros.Rows.Add(p.Id, p.NPasoEnsayo, p.NombreContacto,
                 p.ResistenciaNominal, p.Tolerancia, p.Offset, p.PosX, p.PosY);
+            gridParametros.Rows[idx].Tag = p.NSalida;
         }
 
         gridParametros.SelectionChanged += GridParametros_SelectionChanged;
@@ -244,7 +245,7 @@ public partial class ParametersPanel : UserControl
         nudOffset.Value  = Convert.ToDecimal(row.Cells["colP_Offset"].Value);
         nudPosX.Value    = Convert.ToDecimal(row.Cells["colP_PosX"].Value);
         nudPosY.Value    = Convert.ToDecimal(row.Cells["colP_PosY"].Value);
-        txtSalidas.Text  = string.Empty;
+        txtSalidas.Text  = row.Tag is bool[] s ? FormatSalidas(s) : string.Empty;
         _ignorarNudEvents = false;
     }
 
@@ -583,6 +584,17 @@ public partial class ParametersPanel : UserControl
         _modoNuevoParam  = false;
         _ignorarNudEvents = false;
         picPreview.Invalidate();
+    }
+
+    /// <summary>
+    /// Formatea un array de salidas activas como lista de números separados por coma (base 1).
+    /// </summary>
+    private static string FormatSalidas(bool[] salidas)
+    {
+        var nums = new List<int>();
+        for (int i = 0; i < salidas.Length; i++)
+            if (salidas[i]) nums.Add(i + 1);
+        return string.Join(",", nums);
     }
 
     /// <summary>
