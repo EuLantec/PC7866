@@ -10,6 +10,7 @@ namespace PC7866.Services.StateMachine.States;
 public class RunningState : ITestState
 {
     private const float R_REF = 390f;   // Ohm
+    private const float R_OPEN_THRESHOLD = 1000f; // Ohm
     private const string CMD_PREFIX_S = "S"; // Activar salidas
     private const string CMD_F        = "F"; // Leer filtradas
 
@@ -99,10 +100,16 @@ public class RunningState : ITestState
             float ve   = analogicas[2] - analogicas[3];  // Ch3 - Ch4
 
             // 3. Calcular resistencia: R = Vain / (Ve - Vain) * 390
-            float resistencia = 0f;
+            // Guardar -1 como indicador de abierta (infinito)
+            float resistencia = -1f;
             float denom = ve - vain;
             if (Math.Abs(denom) > 1e-6f)
-                resistencia = (vain / denom) * R_REF - paso.Offset;
+            {
+                float rCalculada = (vain / denom) * R_REF - paso.Offset;
+                resistencia = (rCalculada <= 0f || rCalculada > R_OPEN_THRESHOLD)
+                    ? -1f
+                    : rCalculada;
+            }
 
             detalle.ResistenciaMedida = resistencia;
 

@@ -1,9 +1,11 @@
 using PC7866.Views;
+using PC7866.Services.SerialCommunication;
 
 namespace PC7866
 {
     public partial class Form1 : Form
     {
+        private readonly ISerialPortService _serialPort;
         private ManualControlPanel? _manualPanel;
         private AutomaticTestPanel? _automaticPanel;
         private ParametersPanel?    _parametersPanel;
@@ -12,6 +14,7 @@ namespace PC7866
         public Form1()
         {
             InitializeComponent();
+            _serialPort = new SerialPortService();
             WindowState = FormWindowState.Maximized;
             AttachMenuHandlers();
             // Arranca en modo automático por defecto
@@ -37,7 +40,7 @@ namespace PC7866
             HideAllPanels();
             if (_manualPanel is null)
             {
-                _manualPanel = new ManualControlPanel { Dock = DockStyle.Fill };
+                _manualPanel = new ManualControlPanel(_serialPort) { Dock = DockStyle.Fill };
                 panelContent.Controls.Add(_manualPanel);
             }
             _manualPanel.Show();
@@ -50,7 +53,7 @@ namespace PC7866
             HideAllPanels();
             if (_automaticPanel is null)
             {
-                _automaticPanel = new AutomaticTestPanel { Dock = DockStyle.Fill };
+                _automaticPanel = new AutomaticTestPanel(_serialPort) { Dock = DockStyle.Fill };
                 panelContent.Controls.Add(_automaticPanel);
             }
             _automaticPanel.Show();
@@ -107,5 +110,11 @@ namespace PC7866
 
         private void SetTitle(string section)
             => Text = $"PC7866 – Test Resistivo Embega  |  {section}";
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _serialPort.Dispose();
+            base.OnFormClosed(e);
+        }
     }
 }

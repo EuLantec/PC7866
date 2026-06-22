@@ -15,6 +15,7 @@ namespace PC7866.Views;
 public partial class AutomaticTestPanel : UserControl
 {
     private readonly ISerialPortService _serialPort;
+    private readonly bool _ownsSerialPort;
     private readonly CommandParser _parser;
     private readonly TestStateMachine _stateMachine;
     private ITestRepository? _repository;
@@ -26,11 +27,12 @@ public partial class AutomaticTestPanel : UserControl
     // Colores de los dots: gris=no medido, verde=OK, rojo=NOK
     private readonly Dictionary<int, Color> _dotColors = new();
 
-    public AutomaticTestPanel()
+    public AutomaticTestPanel(ISerialPortService? serialPort = null)
     {
         InitializeComponent();
 
-        _serialPort   = new SerialPortService();
+        _serialPort   = serialPort ?? new SerialPortService();
+        _ownsSerialPort = serialPort is null;
         _parser       = new CommandParser();
         _stateMachine = new TestStateMachine();
         _stateMachine.StateChanged += (_, s) =>
@@ -47,19 +49,44 @@ public partial class AutomaticTestPanel : UserControl
 
     private void InitializeControls()
     {
-        cmbPort.Items.AddRange(_serialPort.GetAvailablePorts());
-        if (cmbPort.Items.Count > 0) cmbPort.SelectedIndex = 0;
+        LoadAvailablePorts();
 
         cmbBaudRate.Items.AddRange(new object[] { 9600, 19200, 38400, 57600, 115200 });
         cmbBaudRate.SelectedItem = AppSettings.Instance.DefaultBaudRate;
 
-        SetConnectedState(false);
-        btnStartTest.Enabled    = false;
+        SetConnectedState(_serialPort.IsOpen);
+        btnStartTest.Enabled    = _serialPort.IsOpen && _referenciaActual is not null && _parametros.Count > 0;
         btnAbortTest.Enabled    = false;
         progressBar.Value       = 0;
         lblCurrentStep.Text     = "—";
         lblMachineState.Text    = "Estado: Idle";
     }
+
+    private void LoadAvailablePorts()
+    {
+        cmbPort.Items.Clear();
+        string[] ports = _serialPort.GetAvailablePorts();
+        if (ports.Length > 0)
+        {
+            cmbPort.Items.AddRange(ports);
+            if (_serialPort.IsOpen && !string.IsNullOrWhiteSpace(_serialPort.CurrentPort))
+            {
+                int currentIdx = cmbPort.FindStringExact(_serialPort.CurrentPort);
+                cmbPort.SelectedIndex = currentIdx >= 0 ? currentIdx : 0;
+            }
+            else
+            {
+                cmbPort.SelectedIndex = 0;
+            }
+        }
+        else
+        {
+            AddLog("⚠️ Sin puertos serie disponibles", LogLevel.Warning);
+        }
+    }
+
+    private static string FormatResistance(float r)
+        => r < 0 ? "∞" : $"{r:F2}";
 
     private void AttachEventHandlers()
     {
@@ -67,12 +94,7 @@ public partial class AutomaticTestPanel : UserControl
         btnDisconnect.Click     += BtnDisconnect_Click;
         btnStartTest.Click      += BtnStartTest_Click;
         btnAbortTest.Click      += (_, _) => { _cts?.Cancel(); AddLog("⛔ Abortando…", LogLevel.Warning); };
-        btnRefreshPorts.Click   += (_, _) =>
-        {
-            cmbPort.Items.Clear();
-            cmbPort.Items.AddRange(_serialPort.GetAvailablePorts());
-            if (cmbPort.Items.Count > 0) cmbPort.SelectedIndex = 0;
-        };
+        btnRefreshPorts.Click   += (_, _) => LoadAvailablePorts();
         btnRefreshRefs.Click    += async (_, _) => await LoadReferenciasAsync();
 
         cmbReferencia.SelectedIndexChanged += async (_, _) => await OnReferenciaChangedAsync();
@@ -202,15 +224,20 @@ public partial class AutomaticTestPanel : UserControl
         btnConnect.Enabled = false;
         string port = cmbPort.SelectedItem.ToString()!;
         int baud    = (int)cmbBaudRate.SelectedItem;
+        AddLog($"📡 Conectando {port} @ {baud} bps…", LogLevel.Info);
         bool ok     = await Task.Run(() => _serialPort.Open(port, baud));
         if (!ok) { btnConnect.Enabled = true; AddLog($"❌ No se pudo abrir {port}", LogLevel.Error); }
     }
 
-    private void BtnDisconnect_Click(object? sender, EventArgs e) => _serialPort.Close();
+    private void BtnDisconnect_Click(object? sender, EventArgs e)
+    {
+        _serialPort.Close();
+        AddLog("🔌 Desconectado", LogLevel.Info);
+    }
 
     private void SetConnectedState(bool connected)
     {
-        lblConnectionStatus.Text      = connected ? $"● {_serialPort.CurrentPort}" : "○ Sin conexión";
+        lblConnectionStatus.Text      = connected ? $"● {_serialPort.CurrentPort}" : "○ Desconectado";
         lblConnectionStatus.ForeColor = connected ? Color.Green : Color.Red;
         btnConnect.Enabled            = !connected;
         btnDisconnect.Enabled         = connected;
@@ -318,7 +345,7 @@ public partial class AutomaticTestPanel : UserControl
         gridResultados.Rows.Add(
             paso.NPasoEnsayo,
             paso.NombreContacto,
-            $"{detalle.ResistenciaMedida:F2}",
+            $"{FormatResistance(detalle.ResistenciaMedida)}",
             $"{paso.ResistenciaNominal:F2} ±{paso.Tolerancia:F2}",
             resultado);
 
@@ -329,7 +356,7 @@ public partial class AutomaticTestPanel : UserControl
             : Color.FromArgb(255, 220, 220);
 
         AddLog($"  Paso {paso.NPasoEnsayo} {paso.NombreContacto}: " +
-               $"{detalle.ResistenciaMedida:F2} Ω → {resultado}", LogLevel.Info);
+               $"{FormatResistance(detalle.ResistenciaMedida)} Ω → {resultado}", LogLevel.Info);
     }
 
     private void ShowFinalResult(Resultado resultado)
@@ -420,7 +447,8 @@ public partial class AutomaticTestPanel : UserControl
     protected override void OnHandleDestroyed(EventArgs e)
     {
         _cts?.Cancel();
-        _serialPort.Dispose();
+        if (_ownsSerialPort)
+            _serialPort.Dispose();
         _repository?.Dispose();
         base.OnHandleDestroyed(e);
     }

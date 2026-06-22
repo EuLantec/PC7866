@@ -200,7 +200,28 @@ public class TestRepository : ITestRepository
         const string sql = "SELECT * FROM resultados ORDER BY fecha_prueba DESC";
         using var conn = CreateConnection();
         var rows = await conn.QueryAsync(sql);
-        return rows.Select(MapResultado);
+        var resultados = rows.Select(MapResultado).ToList();
+        
+        if (resultados.Count > 0)
+        {
+            // Cargar todos los detalles en una sola query
+            var ids = string.Join(",", resultados.Select(r => r.Id));
+            var sqlDetalles = $"SELECT * FROM resultados_detalle WHERE resultado_id IN ({ids}) ORDER BY n_paso_ensayo";
+            var detalleRows = await conn.QueryAsync(sqlDetalles);
+            var detallesDict = new Dictionary<int, List<ResultadoDetalle>>();
+            foreach (var d in detalleRows.Select(MapResultadoDetalle))
+            {
+                if (!detallesDict.ContainsKey(d.ResultadoId))
+                    detallesDict[d.ResultadoId] = new();
+                detallesDict[d.ResultadoId].Add(d);
+            }
+            
+            foreach (var r in resultados)
+                if (detallesDict.TryGetValue(r.Id, out var detalles))
+                    r.Detalles = detalles;
+        }
+        
+        return resultados;
     }
 
     public async Task<IEnumerable<Resultado>> GetResultadosByReferenciaAsync(int referenciaId)
@@ -213,7 +234,28 @@ public class TestRepository : ITestRepository
 
         using var conn = CreateConnection();
         var rows = await conn.QueryAsync(sql, new { ReferenciaId = referenciaId });
-        return rows.Select(MapResultado);
+        var resultados = rows.Select(MapResultado).ToList();
+        
+        if (resultados.Count > 0)
+        {
+            // Cargar todos los detalles en una sola query
+            var ids = string.Join(",", resultados.Select(r => r.Id));
+            var sqlDetalles = $"SELECT * FROM resultados_detalle WHERE resultado_id IN ({ids}) ORDER BY n_paso_ensayo";
+            var detalleRows = await conn.QueryAsync(sqlDetalles);
+            var detallesDict = new Dictionary<int, List<ResultadoDetalle>>();
+            foreach (var d in detalleRows.Select(MapResultadoDetalle))
+            {
+                if (!detallesDict.ContainsKey(d.ResultadoId))
+                    detallesDict[d.ResultadoId] = new();
+                detallesDict[d.ResultadoId].Add(d);
+            }
+            
+            foreach (var r in resultados)
+                if (detallesDict.TryGetValue(r.Id, out var detalles))
+                    r.Detalles = detalles;
+        }
+        
+        return resultados;
     }
 
     public async Task<Resultado?> GetResultadoByIdAsync(int id)
@@ -221,7 +263,11 @@ public class TestRepository : ITestRepository
         const string sql = "SELECT * FROM resultados WHERE id = @Id";
         using var conn = CreateConnection();
         var row = await conn.QueryFirstOrDefaultAsync(sql, new { Id = id });
-        return row is null ? null : MapResultado(row);
+        if (row is null) return null;
+        
+        var resultado = MapResultado(row);
+        resultado.Detalles = (await GetDetallesByResultadoAsync(id)).ToList();
+        return resultado;
     }
 
     public async Task<int> InsertResultadoAsync(Resultado r)

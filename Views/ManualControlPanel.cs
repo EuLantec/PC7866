@@ -14,14 +14,16 @@ namespace PC7866.Views;
 public partial class ManualControlPanel : UserControl
 {
     private readonly ISerialPortService _serialPort;
+    private readonly bool               _ownsSerialPort;
     private readonly CommandParser      _parser;
     private readonly CheckBox[]         _outputChecks = new CheckBox[Pc7866Commands.OutputCount];
     private ITestRepository?            _repository;
 
-    public ManualControlPanel()
+    public ManualControlPanel(ISerialPortService? serialPort = null)
     {
         InitializeComponent();
-        _serialPort = new SerialPortService();
+        _serialPort = serialPort ?? new SerialPortService();
+        _ownsSerialPort = serialPort is null;
         _parser     = new CommandParser();
         InitializeControls();
         AttachEventHandlers();
@@ -37,10 +39,16 @@ public partial class ManualControlPanel : UserControl
         LoadAvailablePorts();
         cmbBaudRate.Items.AddRange(new object[] { 9600, 19200, 38400, 57600, 115200 });
         cmbBaudRate.SelectedItem = AppSettings.Instance.DefaultBaudRate;
-        int com4idx = cmbPort.FindStringExact(AppSettings.Instance.DefaultPortName);
-        cmbPort.SelectedIndex = com4idx >= 0 ? com4idx : (cmbPort.Items.Count > 0 ? 0 : -1);
+        
+        // Solo buscar DefaultPortName si el puerto no está ya abierto
+        if (!_serialPort.IsOpen)
+        {
+            int com4idx = cmbPort.FindStringExact(AppSettings.Instance.DefaultPortName);
+            cmbPort.SelectedIndex = com4idx >= 0 ? com4idx : (cmbPort.Items.Count > 0 ? 0 : -1);
+        }
+        
         BuildOutputMatrix();
-        SetConnectedState(false);
+        SetConnectedState(_serialPort.IsOpen);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -109,7 +117,15 @@ public partial class ManualControlPanel : UserControl
         if (ports.Length > 0)
         {
             cmbPort.Items.AddRange(ports);
-            cmbPort.SelectedIndex = 0;
+            if (_serialPort.IsOpen && !string.IsNullOrWhiteSpace(_serialPort.CurrentPort))
+            {
+                int currentIdx = cmbPort.FindStringExact(_serialPort.CurrentPort);
+                cmbPort.SelectedIndex = currentIdx >= 0 ? currentIdx : 0;
+            }
+            else
+            {
+                cmbPort.SelectedIndex = 0;
+            }
         }
         else
         {
@@ -371,12 +387,12 @@ public partial class ManualControlPanel : UserControl
     // Helpers de resistencia
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Calcula R = Vain / denom × 390. Devuelve +∞ si denom ≤ 0 o R negativa.</summary>
+    /// <summary>Calcula R = Vain / denom × 390. Devuelve +∞ si R <= 0 o R > 1000.</summary>
     internal static double CalcResistance(double vain, double denom)
     {
         if (denom <= 1e-9) return double.PositiveInfinity;
         double r = vain / denom * 390.0;
-        return r < 0 ? double.PositiveInfinity : r;
+        return (r <= 0 || r > 1000.0) ? double.PositiveInfinity : r;
     }
 
     internal static string FormatResistance(double r)
@@ -547,8 +563,11 @@ public partial class ManualControlPanel : UserControl
 
     protected override void OnHandleDestroyed(EventArgs e)
     {
-        if (_serialPort.IsOpen) _serialPort.Close();
-        _serialPort.Dispose();
+        if (_ownsSerialPort)
+        {
+            if (_serialPort.IsOpen) _serialPort.Close();
+            _serialPort.Dispose();
+        }
         base.OnHandleDestroyed(e);
     }
 }

@@ -50,10 +50,11 @@ public sealed class ResultadoDetalleForm : Form
         foreach (var d in _detalles)
         {
             string res = d.Resultado ? "✅ OK" : "❌ NOK";
+            string rStr = d.ResistenciaMedida < 0 ? "∞" : $"{d.ResistenciaMedida:F3}";
             int idx = grid.Rows.Add(
                 d.NPasoEnsayo,
                 d.NombreContacto,
-                $"{d.ResistenciaMedida:F3}",
+                rStr,
                 d.ValorRawVain,
                 d.ValorRawVe,
                 res,
@@ -118,10 +119,11 @@ public sealed class ResultadoDetalleForm : Form
         sb.AppendLine("Paso;Contacto;R_medida_Ohm;RAW_Vain;RAW_Ve;Resultado;Timestamp");
         foreach (var d in _detalles)
         {
+            string rValue = d.ResistenciaMedida < 0 ? "∞" : d.ResistenciaMedida.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
             sb.AppendLine(string.Join(";",
                 d.NPasoEnsayo,
                 d.NombreContacto,
-                d.ResistenciaMedida.ToString("F3", System.Globalization.CultureInfo.InvariantCulture),
+                rValue,
                 d.ValorRawVain,
                 d.ValorRawVe,
                 d.Resultado ? "OK" : "NOK",
