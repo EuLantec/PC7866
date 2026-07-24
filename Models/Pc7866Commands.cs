@@ -124,4 +124,22 @@ public static class Pc7866Commands
         uint val = Convert.ToUInt32(hex, 16);
         return val / 10000.0 - 2.0;
     }
+
+    /// <summary>Número de chips MCP23017 usados por la trama de salidas (0x20, 0x21, 0x22).</summary>
+    public const int McpChipCount = 3;
+
+    /// <summary>Número de pines por chip MCP23017.</summary>
+    public const int McpPinCount = 16;
+
+    /// <summary>
+    /// Calcula el índice de bit (0-47) dentro de la trama S a partir del chip MCP23017
+    /// (1 = 0x20, 2 = 0x21, 3 = 0x22) y el pin (0-15) dentro de ese chip.
+    /// Devuelve -1 si el chip es 0 (no configurado) o los valores están fuera de rango.
+    /// </summary>
+    public static int McpBitIndex(int mcpChip, int mcpPin)
+    {
+        if (mcpChip < 1 || mcpChip > McpChipCount) return -1;
+        if (mcpPin < 0 || mcpPin >= McpPinCount) return -1;
+        return (mcpChip - 1) * McpPinCount + mcpPin;
+    }
 }

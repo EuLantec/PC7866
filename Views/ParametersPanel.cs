@@ -118,7 +118,7 @@ public partial class ParametersPanel : UserControl
         {
             int idx = gridParametros.Rows.Add(p.Id, p.NPasoEnsayo, p.NombreContacto,
                 p.ResistenciaNominal, p.Tolerancia, p.Offset, p.ResistenciaMinima, p.PosX, p.PosY);
-            gridParametros.Rows[idx].Tag = p.NSalida;
+            gridParametros.Rows[idx].Tag = p;
         }
 
         gridParametros.SelectionChanged += GridParametros_SelectionChanged;
@@ -246,7 +246,25 @@ public partial class ParametersPanel : UserControl
         nudMinima.Value  = Convert.ToDecimal(row.Cells["colP_Minima"].Value);
         nudPosX.Value    = Convert.ToDecimal(row.Cells["colP_PosX"].Value);
         nudPosY.Value    = Convert.ToDecimal(row.Cells["colP_PosY"].Value);
-        txtSalidas.Text  = row.Tag is bool[] s ? FormatSalidas(s) : string.Empty;
+
+        if (row.Tag is ParametroEnsayo p)
+        {
+            txtSalidas.Text        = FormatSalidas(p.NSalida);
+            nudMcpArribaChip.Value = p.McpArribaChip;
+            nudMcpArribaPin.Value  = p.McpArribaPin;
+            nudMcpAbajoChip.Value  = p.McpAbajoChip;
+            nudMcpAbajoPin.Value   = p.McpAbajoPin;
+            nudCanalMux.Value      = p.CanalMultiplexor;
+        }
+        else
+        {
+            txtSalidas.Text = string.Empty;
+            nudMcpArribaChip.Value = 0;
+            nudMcpArribaPin.Value  = 0;
+            nudMcpAbajoChip.Value  = 0;
+            nudMcpAbajoPin.Value   = 0;
+            nudCanalMux.Value      = 0;
+        }
         _ignorarNudEvents = false;
     }
 
@@ -302,6 +320,11 @@ public partial class ParametersPanel : UserControl
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
+        nudMcpArribaChip.Value = 0;
+        nudMcpArribaPin.Value  = 0;
+        nudMcpAbajoChip.Value  = 0;
+        nudMcpAbajoPin.Value   = 0;
+        nudCanalMux.Value      = 0;
         _ignorarNudEvents = false;
 
         picPreview.Invalidate();
@@ -338,6 +361,18 @@ public partial class ParametersPanel : UserControl
         }
 
         bool[] salidas = ParseSalidas(txtSalidas.Text);
+        int mcpArribaChip = (int)nudMcpArribaChip.Value;
+        int mcpArribaPin  = (int)nudMcpArribaPin.Value;
+        int mcpAbajoChip  = (int)nudMcpAbajoChip.Value;
+        int mcpAbajoPin   = (int)nudMcpAbajoPin.Value;
+        int canalMux      = (int)nudCanalMux.Value;
+
+        // Los selectores arriba/abajo activan directamente el bit de salida del MCP23017
+        // correspondiente (mismo mapeo que usa Pc7866Commands.BuildOutputsCommand).
+        int bitArriba = Pc7866Commands.McpBitIndex(mcpArribaChip, mcpArribaPin);
+        if (bitArriba >= 0) salidas[bitArriba] = true;
+        int bitAbajo = Pc7866Commands.McpBitIndex(mcpAbajoChip, mcpAbajoPin);
+        if (bitAbajo >= 0) salidas[bitAbajo] = true;
 
         if (existingId > 0)
         {
@@ -352,6 +387,11 @@ public partial class ParametersPanel : UserControl
                 Tolerancia         = (float)nudTol.Value,
                 Offset             = (float)nudOffset.Value,
                 ResistenciaMinima  = (float)nudMinima.Value,
+                McpArribaChip      = mcpArribaChip,
+                McpArribaPin       = mcpArribaPin,
+                McpAbajoChip       = mcpAbajoChip,
+                McpAbajoPin        = mcpAbajoPin,
+                CanalMultiplexor   = canalMux,
                 PosX               = (int)nudPosX.Value,
                 PosY               = (int)nudPosY.Value,
                 FechaModificacion  = DateTime.Now
@@ -370,6 +410,11 @@ public partial class ParametersPanel : UserControl
                 Tolerancia         = (float)nudTol.Value,
                 Offset             = (float)nudOffset.Value,
                 ResistenciaMinima  = (float)nudMinima.Value,
+                McpArribaChip      = mcpArribaChip,
+                McpArribaPin       = mcpArribaPin,
+                McpAbajoChip       = mcpAbajoChip,
+                McpAbajoPin        = mcpAbajoPin,
+                CanalMultiplexor   = canalMux,
                 PosX               = (int)nudPosX.Value,
                 PosY               = (int)nudPosY.Value,
                 FechaCreacion      = DateTime.Now,
@@ -586,6 +631,11 @@ public partial class ParametersPanel : UserControl
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
+        nudMcpArribaChip.Value = 0;
+        nudMcpArribaPin.Value  = 0;
+        nudMcpAbajoChip.Value  = 0;
+        nudMcpAbajoPin.Value   = 0;
+        nudCanalMux.Value      = 0;
         _modoNuevoParam  = false;
         _ignorarNudEvents = false;
         picPreview.Invalidate();
