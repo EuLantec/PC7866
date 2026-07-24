@@ -26,6 +26,9 @@ public class ParametroEnsayo
     /// <summary>Offset a restar a la resistencia medida.</summary>
     public float    Offset           { get; set; }
 
+    /// <summary>Umbral mínimo de resistencia (Ω); por debajo se considera cortocircuito.</summary>
+    public float    ResistenciaMinima { get; set; }
+
     public DateTime FechaCreacion    { get; set; } = DateTime.Now;
     public DateTime FechaModificacion { get; set; } = DateTime.Now;
 

@@ -117,7 +117,7 @@ public partial class ParametersPanel : UserControl
         foreach (var p in parametros)
         {
             int idx = gridParametros.Rows.Add(p.Id, p.NPasoEnsayo, p.NombreContacto,
-                p.ResistenciaNominal, p.Tolerancia, p.Offset, p.PosX, p.PosY);
+                p.ResistenciaNominal, p.Tolerancia, p.Offset, p.ResistenciaMinima, p.PosX, p.PosY);
             gridParametros.Rows[idx].Tag = p.NSalida;
         }
 
@@ -243,6 +243,7 @@ public partial class ParametersPanel : UserControl
         nudNominal.Value = Convert.ToDecimal(row.Cells["colP_Nominal"].Value);
         nudTol.Value     = Convert.ToDecimal(row.Cells["colP_Tol"].Value);
         nudOffset.Value  = Convert.ToDecimal(row.Cells["colP_Offset"].Value);
+        nudMinima.Value  = Convert.ToDecimal(row.Cells["colP_Minima"].Value);
         nudPosX.Value    = Convert.ToDecimal(row.Cells["colP_PosX"].Value);
         nudPosY.Value    = Convert.ToDecimal(row.Cells["colP_PosY"].Value);
         txtSalidas.Text  = row.Tag is bool[] s ? FormatSalidas(s) : string.Empty;
@@ -279,7 +280,7 @@ public partial class ParametersPanel : UserControl
         gridParametros.SelectionChanged -= GridParametros_SelectionChanged;
         gridParametros.ClearSelection();
 
-        int newIndex = gridParametros.Rows.Add(0, siguientePaso, string.Empty, 0, 0, 0, 0, 0);
+        int newIndex = gridParametros.Rows.Add(0, siguientePaso, string.Empty, 0, 0, 0, 0, 0, 0);
         DataGridViewRow nuevaFila = gridParametros.Rows[newIndex];
         nuevaFila.DefaultCellStyle.ForeColor = Color.Gray;
         nuevaFila.DefaultCellStyle.Font      = new Font(gridParametros.Font, FontStyle.Italic);
@@ -297,6 +298,7 @@ public partial class ParametersPanel : UserControl
         nudNominal.Value = 0;
         nudTol.Value     = 0;
         nudOffset.Value  = 0;
+        nudMinima.Value  = 0;
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
@@ -349,6 +351,7 @@ public partial class ParametersPanel : UserControl
                 ResistenciaNominal = (float)nudNominal.Value,
                 Tolerancia         = (float)nudTol.Value,
                 Offset             = (float)nudOffset.Value,
+                ResistenciaMinima  = (float)nudMinima.Value,
                 PosX               = (int)nudPosX.Value,
                 PosY               = (int)nudPosY.Value,
                 FechaModificacion  = DateTime.Now
@@ -366,6 +369,7 @@ public partial class ParametersPanel : UserControl
                 ResistenciaNominal = (float)nudNominal.Value,
                 Tolerancia         = (float)nudTol.Value,
                 Offset             = (float)nudOffset.Value,
+                ResistenciaMinima  = (float)nudMinima.Value,
                 PosX               = (int)nudPosX.Value,
                 PosY               = (int)nudPosY.Value,
                 FechaCreacion      = DateTime.Now,
@@ -578,6 +582,7 @@ public partial class ParametersPanel : UserControl
         nudNominal.Value = 0;
         nudTol.Value     = 0;
         nudOffset.Value  = 0;
+        nudMinima.Value  = 0;
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;

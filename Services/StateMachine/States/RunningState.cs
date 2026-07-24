@@ -113,13 +113,29 @@ public class RunningState : ITestState
 
             detalle.ResistenciaMedida = resistencia;
 
-            // 4. Evaluar resultado
-            float diferencia = Math.Abs(resistencia - paso.ResistenciaNominal);
-            detalle.Resultado = diferencia <= paso.Tolerancia;
+            // 4. Evaluar resultado: abierto → cortocircuito (< umbral mínimo) → tolerancia
+            if (resistencia < 0f)
+            {
+                detalle.Estado    = EstadoMedicion.Abierto;
+                detalle.Resultado = false;
+            }
+            else if (paso.ResistenciaMinima > 0f && resistencia < paso.ResistenciaMinima)
+            {
+                detalle.Estado    = EstadoMedicion.Cortocircuito;
+                detalle.Resultado = false;
+            }
+            else
+            {
+                float diferencia = Math.Abs(resistencia - paso.ResistenciaNominal);
+                bool ok = diferencia <= paso.Tolerancia;
+                detalle.Estado    = ok ? EstadoMedicion.Ok : EstadoMedicion.Nok;
+                detalle.Resultado = ok;
+            }
         }
         catch (Exception ex)
         {
-            detalle.Resultado = false;
+            detalle.Estado     = EstadoMedicion.Nok;
+            detalle.Resultado  = false;
             _ = ex; // registrado en nivel superior
         }
 

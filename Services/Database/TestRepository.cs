@@ -126,11 +126,11 @@ public class TestRepository : ITestRepository
         const string sql = """
             INSERT INTO parametros_ensayo
                 (referencia_id, nombre_contacto, n_paso_ensayo, n_salida_json,
-                 resistencia_nominal, tolerancia, offset_val,
+                 resistencia_nominal, tolerancia, offset_val, resistencia_minima,
                  fecha_creacion, fecha_modificacion, pos_x, pos_y)
             VALUES
                 (@ReferenciaId, @NombreContacto, @NPasoEnsayo, @NSalidaJson,
-                 @ResistenciaNominal, @Tolerancia, @Offset,
+                 @ResistenciaNominal, @Tolerancia, @Offset, @ResistenciaMinima,
                  @FechaCreacion, @FechaModificacion, @PosX, @PosY);
             SELECT LAST_INSERT_ID();
             """;
@@ -145,6 +145,7 @@ public class TestRepository : ITestRepository
             p.ResistenciaNominal,
             p.Tolerancia,
             p.Offset,
+            p.ResistenciaMinima,
             p.FechaCreacion,
             p.FechaModificacion,
             p.PosX,
@@ -162,6 +163,7 @@ public class TestRepository : ITestRepository
                 resistencia_nominal= @ResistenciaNominal,
                 tolerancia         = @Tolerancia,
                 offset_val         = @Offset,
+                resistencia_minima = @ResistenciaMinima,
                 fecha_modificacion = @FechaModificacion,
                 pos_x              = @PosX,
                 pos_y              = @PosY
@@ -178,6 +180,7 @@ public class TestRepository : ITestRepository
             p.ResistenciaNominal,
             p.Tolerancia,
             p.Offset,
+            p.ResistenciaMinima,
             p.FechaModificacion,
             p.PosX,
             p.PosY
@@ -313,10 +316,10 @@ public class TestRepository : ITestRepository
         const string sql = """
             INSERT INTO resultados_detalle
                 (resultado_id, parametro_ensayo_id, nombre_contacto, n_paso_ensayo,
-                 resistencia_medida, valor_raw_vain, valor_raw_ve, resultado, timestamp_medicion)
+                 resistencia_medida, valor_raw_vain, valor_raw_ve, resultado, estado_medicion, timestamp_medicion)
             VALUES
                 (@ResultadoId, @ParametroEnsayoId, @NombreContacto, @NPasoEnsayo,
-                 @ResistenciaMedida, @ValorRawVain, @ValorRawVe, @Resultado, @Timestamp)
+                 @ResistenciaMedida, @ValorRawVain, @ValorRawVe, @Resultado, @Estado, @Timestamp)
             """;
 
         using var conn = CreateConnection();
@@ -330,6 +333,7 @@ public class TestRepository : ITestRepository
             d.ValorRawVain,
             d.ValorRawVe,
             d.Resultado,
+            Estado = d.Estado.ToString(),
             d.Timestamp
         });
     }
@@ -369,6 +373,7 @@ public class TestRepository : ITestRepository
                 resistencia_nominal FLOAT NOT NULL DEFAULT 0,
                 tolerancia          FLOAT NOT NULL DEFAULT 0,
                 offset_val          FLOAT NOT NULL DEFAULT 0,
+                resistencia_minima  FLOAT NOT NULL DEFAULT 0,
                 fecha_creacion      DATETIME NOT NULL,
                 fecha_modificacion  DATETIME NOT NULL,
                 pos_x               INT NOT NULL DEFAULT 0,
@@ -400,6 +405,7 @@ public class TestRepository : ITestRepository
                 valor_raw_vain      INT   NOT NULL DEFAULT 0,
                 valor_raw_ve        INT   NOT NULL DEFAULT 0,
                 resultado           BOOLEAN NOT NULL,
+                estado_medicion     VARCHAR(20) NOT NULL DEFAULT 'Nok',
                 timestamp_medicion  DATETIME NOT NULL,
                 FOREIGN KEY (resultado_id) REFERENCES resultados(id)
             );
@@ -414,6 +420,10 @@ public class TestRepository : ITestRepository
         // Migraciones: hacer nullable referencia_id y parametro_ensayo_id
         await conn.ExecuteAsync("ALTER TABLE resultados MODIFY COLUMN referencia_id INT NULL;");
         await conn.ExecuteAsync("ALTER TABLE resultados_detalle MODIFY COLUMN parametro_ensayo_id INT NULL;");
+
+        // Migraciones: nuevas columnas para deteccion de cortocircuito (umbral minimo y estado detallado)
+        await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS resistencia_minima FLOAT NOT NULL DEFAULT 0;");
+        await conn.ExecuteAsync("ALTER TABLE resultados_detalle ADD COLUMN IF NOT EXISTS estado_medicion VARCHAR(20) NOT NULL DEFAULT 'Nok';");
     }
 
     public void Dispose() { }
@@ -450,6 +460,7 @@ public class TestRepository : ITestRepository
             ResistenciaNominal = (float)row.resistencia_nominal,
             Tolerancia         = (float)row.tolerancia,
             Offset             = (float)row.offset_val,
+            ResistenciaMinima  = HasColumn(row, "resistencia_minima") ? (float)row.resistencia_minima : 0f,
             FechaCreacion      = (DateTime)row.fecha_creacion,
             FechaModificacion  = (DateTime)row.fecha_modificacion,
             PosX               = (int)row.pos_x,
@@ -467,17 +478,40 @@ public class TestRepository : ITestRepository
         Lote            = (string?)row.lote ?? string.Empty
     };
 
-    private static ResultadoDetalle MapResultadoDetalle(dynamic row) => new()
+    private static ResultadoDetalle MapResultadoDetalle(dynamic row)
     {
-        Id                = (int)row.id,
-        ResultadoId       = (int)row.resultado_id,
-        ParametroEnsayoId = row.parametro_ensayo_id == null ? (int?)null : (int)row.parametro_ensayo_id,
-        NombreContacto    = (string?)row.nombre_contacto ?? string.Empty,
-        NPasoEnsayo       = (int)row.n_paso_ensayo,
-        ResistenciaMedida = (float)row.resistencia_medida,
-        ValorRawVain      = (int)row.valor_raw_vain,
-        ValorRawVe        = (int)row.valor_raw_ve,
-        Resultado         = (bool)row.resultado,
-        Timestamp         = (DateTime)row.timestamp_medicion
-    };
+        bool resultado = (bool)row.resultado;
+        var estado = EstadoMedicion.Nok;
+        if (HasColumn(row, "estado_medicion"))
+        {
+            string? estadoStr = (string?)row.estado_medicion;
+            if (!string.IsNullOrEmpty(estadoStr) && Enum.TryParse(estadoStr, out EstadoMedicion parsed))
+                estado = parsed;
+            else
+                estado = resultado ? EstadoMedicion.Ok : EstadoMedicion.Nok;
+        }
+        else
+        {
+            estado = resultado ? EstadoMedicion.Ok : EstadoMedicion.Nok;
+        }
+
+        return new ResultadoDetalle
+        {
+            Id                = (int)row.id,
+            ResultadoId       = (int)row.resultado_id,
+            ParametroEnsayoId = row.parametro_ensayo_id == null ? (int?)null : (int)row.parametro_ensayo_id,
+            NombreContacto    = (string?)row.nombre_contacto ?? string.Empty,
+            NPasoEnsayo       = (int)row.n_paso_ensayo,
+            ResistenciaMedida = (float)row.resistencia_medida,
+            ValorRawVain      = (int)row.valor_raw_vain,
+            ValorRawVe        = (int)row.valor_raw_ve,
+            Resultado         = resultado,
+            Estado            = estado,
+            Timestamp         = (DateTime)row.timestamp_medicion
+        };
+    }
+
+    /// <summary>Comprueba si una fila dinámica (IDictionary subyacente) contiene una columna dada.</summary>
+    private static bool HasColumn(dynamic row, string columnName)
+        => ((IDictionary<string, object>)row).ContainsKey(columnName);
 }

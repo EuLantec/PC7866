@@ -38,6 +38,7 @@ partial class ParametersPanel
         colP_Nominal   = new DataGridViewTextBoxColumn();
         colP_Tol       = new DataGridViewTextBoxColumn();
         colP_Offset    = new DataGridViewTextBoxColumn();
+        colP_Minima    = new DataGridViewTextBoxColumn();
         colP_PosX      = new DataGridViewTextBoxColumn();
         colP_PosY      = new DataGridViewTextBoxColumn();
 
@@ -52,6 +53,8 @@ partial class ParametersPanel
         nudTol         = new NumericUpDown();
         lblOffset      = new Label();
         nudOffset      = new NumericUpDown();
+        lblMinima      = new Label();
+        nudMinima      = new NumericUpDown();
         lblPosX        = new Label();
         nudPosX        = new NumericUpDown();
         lblPosY        = new Label();
@@ -72,6 +75,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudNominal).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudTol).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudOffset).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudMinima).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudPosX).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudPosY).BeginInit();
         SuspendLayout();
@@ -144,15 +148,17 @@ partial class ParametersPanel
         colP_Nominal.HeaderText = "Nominal Ω"; colP_Nominal.FillWeight = 14;
         colP_Tol.HeaderText = "Tol Ω";   colP_Tol.FillWeight = 12;
         colP_Offset.HeaderText = "Offset"; colP_Offset.FillWeight = 12;
+        colP_Minima.HeaderText = "R mín (corto)"; colP_Minima.FillWeight = 14;
         colP_PosX.HeaderText = "PosX";   colP_PosX.FillWeight = 10;
         colP_PosY.HeaderText = "PosY";   colP_PosY.FillWeight = 10;
 
         colP_Id.Name = "colP_Id"; colP_Paso.Name = "colP_Paso"; colP_Contacto.Name = "colP_Contacto";
         colP_Nominal.Name = "colP_Nominal"; colP_Tol.Name = "colP_Tol"; colP_Offset.Name = "colP_Offset";
+        colP_Minima.Name = "colP_Minima";
         colP_PosX.Name = "colP_PosX"; colP_PosY.Name = "colP_PosY";
 
         gridParametros.Columns.AddRange(colP_Id, colP_Paso, colP_Contacto,
-            colP_Nominal, colP_Tol, colP_Offset, colP_PosX, colP_PosY);
+            colP_Nominal, colP_Tol, colP_Offset, colP_Minima, colP_PosX, colP_PosY);
 
         // Form edición de parámetro
         pnlParamForm.Location = new Point(8, 368);
@@ -173,6 +179,7 @@ partial class ParametersPanel
         AddRow(lblNominal,  "R nominal (Ω):",nudNominal,  ref row);
         AddRow(lblTol,      "Tolerancia (Ω):",nudTol,     ref row);
         AddRow(lblOffset,   "Offset (Ω):",   nudOffset,  ref row);
+        AddRow(lblMinima,   "R mín cortocircuito (Ω):", nudMinima, ref row);
         AddRow(lblPosX,     "Pos X:",         nudPosX,    ref row);
         AddRow(lblPosY,     "Pos Y:",         nudPosY,    ref row);
         AddRow(lblSalidas,  "Salidas activas\n(1-48, coma):", txtSalidas, ref row);
@@ -180,6 +187,7 @@ partial class ParametersPanel
         nudNominal.DecimalPlaces = 2; nudNominal.Maximum = 100000;
         nudTol.DecimalPlaces     = 2; nudTol.Maximum     = 10000;
         nudOffset.DecimalPlaces  = 2; nudOffset.Minimum  = -1000; nudOffset.Maximum = 1000;
+        nudMinima.DecimalPlaces  = 2; nudMinima.Minimum  = 0; nudMinima.Maximum = 100000;
         nudPosX.Maximum = 4000; nudPosY.Maximum = 4000;
 
         btnNuevoParam.Text    = "➕ Nuevo";   btnNuevoParam.Location    = new Point(0, row + 10); btnNuevoParam.Size = new Size(100, 28);
@@ -207,6 +215,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudNominal).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudTol).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudOffset).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudMinima).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudPosX).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudPosY).EndInit();
         ResumeLayout(false);
@@ -238,6 +247,7 @@ partial class ParametersPanel
     private DataGridViewTextBoxColumn colP_Nominal;
     private DataGridViewTextBoxColumn colP_Tol;
     private DataGridViewTextBoxColumn colP_Offset;
+    private DataGridViewTextBoxColumn colP_Minima;
     private DataGridViewTextBoxColumn colP_PosX;
     private DataGridViewTextBoxColumn colP_PosY;
 
@@ -252,6 +262,8 @@ partial class ParametersPanel
     private NumericUpDown nudTol;
     private Label    lblOffset;
     private NumericUpDown nudOffset;
+    private Label    lblMinima;
+    private NumericUpDown nudMinima;
     private Label    lblPosX;
     private NumericUpDown nudPosX;
     private Label    lblPosY;

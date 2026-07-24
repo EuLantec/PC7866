@@ -49,7 +49,13 @@ public sealed class ResultadoDetalleForm : Form
         int ok = 0;
         foreach (var d in _detalles)
         {
-            string res = d.Resultado ? "✅ OK" : "❌ NOK";
+            string res = d.Estado switch
+            {
+                EstadoMedicion.Ok            => "✅ OK",
+                EstadoMedicion.Cortocircuito => "⚡ CORTOCIRCUITO",
+                EstadoMedicion.Abierto       => "🔵 ABIERTO",
+                _                             => "❌ NOK"
+            };
             string rStr = d.ResistenciaMedida < 0 ? "∞" : $"{d.ResistenciaMedida:F3}";
             int idx = grid.Rows.Add(
                 d.NPasoEnsayo,
@@ -60,9 +66,13 @@ public sealed class ResultadoDetalleForm : Form
                 res,
                 d.Timestamp.ToString("HH:mm:ss.fff"));
 
-            grid.Rows[idx].DefaultCellStyle.BackColor = d.Resultado
-                ? Color.FromArgb(220, 255, 220)
-                : Color.FromArgb(255, 220, 220);
+            grid.Rows[idx].DefaultCellStyle.BackColor = d.Estado switch
+            {
+                EstadoMedicion.Ok            => Color.FromArgb(220, 255, 220),
+                EstadoMedicion.Cortocircuito => Color.FromArgb(255, 235, 200),
+                EstadoMedicion.Abierto       => Color.FromArgb(215, 230, 255),
+                _                             => Color.FromArgb(255, 220, 220)
+            };
             if (d.Resultado) ok++;
         }
 

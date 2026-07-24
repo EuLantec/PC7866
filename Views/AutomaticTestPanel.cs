@@ -336,12 +336,12 @@ public partial class AutomaticTestPanel : UserControl
     {
         if (InvokeRequired) { Invoke(() => OnStepCompleted(paso, detalle)); return; }
 
-        // Actualizar dot
-        _dotColors[paso.Id] = detalle.Resultado ? Color.Green : Color.Red;
+        // Actualizar dot (verde=OK, rojo=NOK, naranja=cortocircuito, azul=abierto)
+        _dotColors[paso.Id] = DotColorForEstado(detalle.Estado);
         picReferencia.Invalidate();
 
         // Añadir fila al grid
-        string resultado = detalle.Resultado ? "✅ OK" : "❌ NOK";
+        string resultado = EtiquetaEstado(detalle.Estado);
         gridResultados.Rows.Add(
             paso.NPasoEnsayo,
             paso.NombreContacto,
@@ -351,13 +351,35 @@ public partial class AutomaticTestPanel : UserControl
 
         // Color de fila
         var row = gridResultados.Rows[gridResultados.Rows.Count - 1];
-        row.DefaultCellStyle.BackColor = detalle.Resultado
-            ? Color.FromArgb(220, 255, 220)
-            : Color.FromArgb(255, 220, 220);
+        row.DefaultCellStyle.BackColor = FilaColorForEstado(detalle.Estado);
 
         AddLog($"  Paso {paso.NPasoEnsayo} {paso.NombreContacto}: " +
                $"{FormatResistance(detalle.ResistenciaMedida)} Ω → {resultado}", LogLevel.Info);
     }
+
+    private static Color DotColorForEstado(EstadoMedicion estado) => estado switch
+    {
+        EstadoMedicion.Ok            => Color.Green,
+        EstadoMedicion.Cortocircuito => Color.Orange,
+        EstadoMedicion.Abierto       => Color.RoyalBlue,
+        _                             => Color.Red
+    };
+
+    private static Color FilaColorForEstado(EstadoMedicion estado) => estado switch
+    {
+        EstadoMedicion.Ok            => Color.FromArgb(220, 255, 220),
+        EstadoMedicion.Cortocircuito => Color.FromArgb(255, 235, 200),
+        EstadoMedicion.Abierto       => Color.FromArgb(215, 230, 255),
+        _                             => Color.FromArgb(255, 220, 220)
+    };
+
+    private static string EtiquetaEstado(EstadoMedicion estado) => estado switch
+    {
+        EstadoMedicion.Ok            => "✅ OK",
+        EstadoMedicion.Cortocircuito => "⚡ CORTOCIRCUITO",
+        EstadoMedicion.Abierto       => "🔵 ABIERTO",
+        _                             => "❌ NOK"
+    };
 
     private void ShowFinalResult(Resultado resultado)
     {
