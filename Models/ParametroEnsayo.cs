@@ -26,6 +26,28 @@ public class ParametroEnsayo
     /// <summary>Offset a restar a la resistencia medida.</summary>
     public float    Offset           { get; set; }
 
+    /// <summary>Umbral mínimo de resistencia (Ω); por debajo se considera cortocircuito.</summary>
+    public float    ResistenciaMinima { get; set; }
+
+    /// <summary>Chip MCP23017 (1-3, equivale a 0x20/0x21/0x22) del selector "aguas arriba". 0 = no configurado.</summary>
+    public int      McpArribaChip    { get; set; }
+
+    /// <summary>Pin (0-15) dentro del chip MCP23017 del selector "aguas arriba".</summary>
+    public int      McpArribaPin     { get; set; }
+
+    /// <summary>Chip MCP23017 (1-3) del selector "aguas abajo". 0 = no configurado.</summary>
+    public int      McpAbajoChip     { get; set; }
+
+    /// <summary>Pin (0-15) dentro del chip MCP23017 del selector "aguas abajo".</summary>
+    public int      McpAbajoPin      { get; set; }
+
+    /// <summary>
+    /// Canal del multiplexor usado para conectar el punto común de medida a este contacto.
+    /// Almacenado como referencia/documentación de cableado; su codificación en bits de
+    /// salida aún no está definida en el protocolo (ver cambio-proyecto.md).
+    /// </summary>
+    public int      CanalMultiplexor { get; set; }
+
     public DateTime FechaCreacion    { get; set; } = DateTime.Now;
     public DateTime FechaModificacion { get; set; } = DateTime.Now;
 
