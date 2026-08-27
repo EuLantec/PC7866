@@ -47,9 +47,11 @@ public class TestRepository : ITestRepository
     {
         const string sql = """
             INSERT INTO referencias
-                (b_activa, referencia, descripcion, fecha_creacion, fecha_modificacion, imagen)
+                (b_activa, referencia, descripcion, fecha_creacion, fecha_modificacion, imagen,
+                 num_mcps, inh1_pos, inh2_pos, inh3_pos, inh4_pos, muestras, retardo_ms)
             VALUES
-                (@BActiva, @Referencia, @Descripcion, @FechaCreacion, @FechaModificacion, @Imagen);
+                (@BActiva, @Referencia, @Descripcion, @FechaCreacion, @FechaModificacion, @Imagen,
+                 @NumMcps, @Inh1Pos, @Inh2Pos, @Inh3Pos, @Inh4Pos, @Muestras, @RetardoMs);
             SELECT LAST_INSERT_ID();
             """;
 
@@ -61,7 +63,14 @@ public class TestRepository : ITestRepository
             r.Descripcion,
             r.FechaCreacion,
             r.FechaModificacion,
-            r.Imagen
+            r.Imagen,
+            r.NumMcps,
+            r.Inh1Pos,
+            r.Inh2Pos,
+            r.Inh3Pos,
+            r.Inh4Pos,
+            r.Muestras,
+            r.RetardoMs
         });
     }
 
@@ -73,7 +82,14 @@ public class TestRepository : ITestRepository
                 referencia         = @Referencia,
                 descripcion        = @Descripcion,
                 fecha_modificacion = @FechaModificacion,
-                imagen             = @Imagen
+                imagen             = @Imagen,
+                num_mcps           = @NumMcps,
+                inh1_pos           = @Inh1Pos,
+                inh2_pos           = @Inh2Pos,
+                inh3_pos           = @Inh3Pos,
+                inh4_pos           = @Inh4Pos,
+                muestras           = @Muestras,
+                retardo_ms         = @RetardoMs
             WHERE id = @Id
             """;
 
@@ -85,7 +101,14 @@ public class TestRepository : ITestRepository
             Referencia         = r.ReferenciaNombre,
             r.Descripcion,
             r.FechaModificacion,
-            r.Imagen
+            r.Imagen,
+            r.NumMcps,
+            r.Inh1Pos,
+            r.Inh2Pos,
+            r.Inh3Pos,
+            r.Inh4Pos,
+            r.Muestras,
+            r.RetardoMs
         });
     }
 
@@ -397,7 +420,14 @@ public class TestRepository : ITestRepository
                 descripcion         TEXT,
                 fecha_creacion      DATETIME NOT NULL,
                 fecha_modificacion  DATETIME NOT NULL,
-                imagen              LONGBLOB
+                imagen              LONGBLOB,
+                num_mcps            INT NOT NULL DEFAULT 6,
+                inh1_pos            INT NULL,
+                inh2_pos            INT NULL,
+                inh3_pos            INT NULL,
+                inh4_pos            INT NULL,
+                muestras            INT NOT NULL DEFAULT 10,
+                retardo_ms          INT NOT NULL DEFAULT 20
             );
             """;
 
@@ -474,6 +504,15 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_abajo_chip INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_abajo_pin INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS canal_multiplexor INT NOT NULL DEFAULT 0;");
+
+        // Migraciones: configuracion de placa a nivel de Referencia (comando "I" del protocolo nuevo)
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS num_mcps INT NOT NULL DEFAULT 6;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh1_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh2_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh3_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh4_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS muestras INT NOT NULL DEFAULT 10;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS retardo_ms INT NOT NULL DEFAULT 20;");
     }
 
     public void Dispose() { }
@@ -490,12 +529,19 @@ public class TestRepository : ITestRepository
         Descripcion        = (string?)row.descripcion ?? string.Empty,
         FechaCreacion      = (DateTime)row.fecha_creacion,
         FechaModificacion  = (DateTime)row.fecha_modificacion,
-        Imagen             = (byte[]?)row.imagen
+        Imagen             = (byte[]?)row.imagen,
+        NumMcps            = HasColumn(row, "num_mcps")  ? (int)row.num_mcps  : Pc7866Commands.McpChipCount,
+        Inh1Pos            = HasColumn(row, "inh1_pos")  ? (int?)row.inh1_pos : null,
+        Inh2Pos            = HasColumn(row, "inh2_pos")  ? (int?)row.inh2_pos : null,
+        Inh3Pos            = HasColumn(row, "inh3_pos")  ? (int?)row.inh3_pos : null,
+        Inh4Pos            = HasColumn(row, "inh4_pos")  ? (int?)row.inh4_pos : null,
+        Muestras           = HasColumn(row, "muestras")  ? (int)row.muestras  : 10,
+        RetardoMs          = HasColumn(row, "retardo_ms") ? (int)row.retardo_ms : 20
     };
 
     private static ParametroEnsayo MapParametroEnsayo(dynamic row)
     {
-        bool[] salidas = new bool[48];
+        bool[] salidas = new bool[Pc7866Commands.OutputCount];
         string? json = (string?)row.n_salida_json;
         if (!string.IsNullOrEmpty(json))
             salidas = JsonSerializer.Deserialize<bool[]>(json) ?? salidas;

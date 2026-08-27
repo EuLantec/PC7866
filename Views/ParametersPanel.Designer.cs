@@ -22,8 +22,17 @@ partial class ParametersPanel
         txtRefNombre = new TextBox();
         lblRefDesc   = new Label();
         txtRefDesc   = new TextBox();
-        chkActiva    = new CheckBox();
-        btnCargarImagen = new Button();
+        chkActiva    = new CheckBox();        lblRefNumMcps  = new Label();
+        nudRefNumMcps  = new NumericUpDown();
+        lblRefMuestras = new Label();
+        nudRefMuestras = new NumericUpDown();
+        lblRefRetardo  = new Label();
+        nudRefRetardo  = new NumericUpDown();
+        lblRefInh      = new Label();
+        txtRefInh1     = new TextBox();
+        txtRefInh2     = new TextBox();
+        txtRefInh3     = new TextBox();
+        txtRefInh4     = new TextBox();        btnCargarImagen = new Button();
         picPreview   = new PictureBox();
         btnNuevaRef  = new Button();
         btnGuardarRef  = new Button();
@@ -82,6 +91,9 @@ partial class ParametersPanel
         pnlRefForm.SuspendLayout();
         pnlParamForm.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)picPreview).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefNumMcps).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefMuestras).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefRetardo).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gridParametros).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudPaso).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).BeginInit();
@@ -119,9 +131,33 @@ partial class ParametersPanel
         txtRefDesc.Location = new Point(83, 38); txtRefDesc.Size = new Size(500, 80);
         txtRefDesc.Multiline = true; txtRefDesc.ScrollBars = ScrollBars.Vertical;
 
-        btnCargarImagen.Text = "📂 Cargar imagen"; btnCargarImagen.Location = new Point(8, 126); btnCargarImagen.Size = new Size(140, 28);
+        // Configuración de placa (comando "I")
+        lblRefNumMcps.Text = "Nº MCPs (0-6):"; lblRefNumMcps.AutoSize = true; lblRefNumMcps.Location = new Point(8, 128);
+        nudRefNumMcps.Location = new Point(120, 124); nudRefNumMcps.Size = new Size(60, 23);
+        nudRefNumMcps.Minimum = 0; nudRefNumMcps.Maximum = PC7866.Models.Pc7866Commands.McpChipCount; nudRefNumMcps.Value = PC7866.Models.Pc7866Commands.McpChipCount;
 
-        picPreview.Location = new Point(8, 160); picPreview.Size = new Size(580, 340);
+        lblRefMuestras.Text = "Muestras (0-99):"; lblRefMuestras.AutoSize = true; lblRefMuestras.Location = new Point(196, 128);
+        nudRefMuestras.Location = new Point(320, 124); nudRefMuestras.Size = new Size(60, 23);
+        nudRefMuestras.Minimum = 0; nudRefMuestras.Maximum = 99; nudRefMuestras.Value = 10;
+
+        lblRefRetardo.Text = "Retardo ms (0-999):"; lblRefRetardo.AutoSize = true; lblRefRetardo.Location = new Point(396, 128);
+        nudRefRetardo.Location = new Point(540, 124); nudRefRetardo.Size = new Size(60, 23);
+        nudRefRetardo.Minimum = 0; nudRefRetardo.Maximum = 999; nudRefRetardo.Value = 20;
+
+        lblRefInh.Text = "INH1-4 pos (hex/N):"; lblRefInh.AutoSize = true; lblRefInh.Location = new Point(8, 158);
+        void InhRefBox(TextBox t, int x)
+        {
+            t.Text = "N"; t.Location = new Point(x, 154); t.Size = new Size(36, 23);
+            t.MaxLength = 1; t.CharacterCasing = CharacterCasing.Upper; t.TextAlign = HorizontalAlignment.Center;
+        }
+        InhRefBox(txtRefInh1, 150);
+        InhRefBox(txtRefInh2, 192);
+        InhRefBox(txtRefInh3, 234);
+        InhRefBox(txtRefInh4, 276);
+
+        btnCargarImagen.Text = "📂 Cargar imagen"; btnCargarImagen.Location = new Point(8, 190); btnCargarImagen.Size = new Size(140, 28);
+
+        picPreview.Location = new Point(8, 224); picPreview.Size = new Size(580, 276);
         picPreview.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
         picPreview.SizeMode = PictureBoxSizeMode.Zoom;
         picPreview.BackColor = Color.FromArgb(240, 240, 240);
@@ -131,6 +167,8 @@ partial class ParametersPanel
         {
             lblRefNombre, txtRefNombre, chkActiva,
             lblRefDesc, txtRefDesc,
+            lblRefNumMcps, nudRefNumMcps, lblRefMuestras, nudRefMuestras, lblRefRetardo, nudRefRetardo,
+            lblRefInh, txtRefInh1, txtRefInh2, txtRefInh3, txtRefInh4,
             btnCargarImagen, picPreview
         });
 
@@ -202,24 +240,24 @@ partial class ParametersPanel
         AddRow(lblTol,      "Tolerancia (Ω):",nudTol,     ref row);
         AddRow(lblOffset,   "Offset (Ω):",   nudOffset,  ref row);
         AddRow(lblMinima,   "R mín cortocircuito (Ω):", nudMinima, ref row);
-        AddRow(lblMcpArribaChip, "MCP arriba – chip (1-3):", nudMcpArribaChip, ref row);
+        AddRow(lblMcpArribaChip, "MCP arriba – chip (1-6):", nudMcpArribaChip, ref row);
         AddRow(lblMcpArribaPin,  "MCP arriba – pin (0-15):", nudMcpArribaPin,  ref row);
-        AddRow(lblMcpAbajoChip,  "MCP abajo – chip (1-3):",  nudMcpAbajoChip,  ref row);
+        AddRow(lblMcpAbajoChip,  "MCP abajo – chip (1-6):",  nudMcpAbajoChip,  ref row);
         AddRow(lblMcpAbajoPin,   "MCP abajo – pin (0-15):",  nudMcpAbajoPin,   ref row);
-        AddRow(lblCanalMux,      "Canal multiplexor:",       nudCanalMux,      ref row);
+        AddRow(lblCanalMux,      "Pista multiplexor (0-48):", nudCanalMux,      ref row);
         AddRow(lblPosX,     "Pos X:",         nudPosX,    ref row);
         AddRow(lblPosY,     "Pos Y:",         nudPosY,    ref row);
-        AddRow(lblSalidas,  "Salidas activas\n(1-48, coma):", txtSalidas, ref row);
+        AddRow(lblSalidas,  "Salidas activas\n(1-96, coma):", txtSalidas, ref row);
 
         nudNominal.DecimalPlaces = 2; nudNominal.Maximum = 100000;
         nudTol.DecimalPlaces     = 2; nudTol.Maximum     = 10000;
         nudOffset.DecimalPlaces  = 2; nudOffset.Minimum  = -1000; nudOffset.Maximum = 1000;
         nudMinima.DecimalPlaces  = 2; nudMinima.Minimum  = 0; nudMinima.Maximum = 100000;
-        nudMcpArribaChip.Minimum = 0; nudMcpArribaChip.Maximum = 3;
+        nudMcpArribaChip.Minimum = 0; nudMcpArribaChip.Maximum = PC7866.Models.Pc7866Commands.McpChipCount;
         nudMcpArribaPin.Minimum  = 0; nudMcpArribaPin.Maximum  = 15;
-        nudMcpAbajoChip.Minimum  = 0; nudMcpAbajoChip.Maximum  = 3;
+        nudMcpAbajoChip.Minimum  = 0; nudMcpAbajoChip.Maximum  = PC7866.Models.Pc7866Commands.McpChipCount;
         nudMcpAbajoPin.Minimum   = 0; nudMcpAbajoPin.Maximum   = 15;
-        nudCanalMux.Minimum      = 0; nudCanalMux.Maximum      = 31;
+        nudCanalMux.Minimum      = 0; nudCanalMux.Maximum      = PC7866.Models.Pc7866Commands.MaxTrackNumber;
         nudPosX.Maximum = 4000; nudPosY.Maximum = 4000;
 
         btnNuevoParam.Text    = "➕ Nuevo";   btnNuevoParam.Location    = new Point(8, 6); btnNuevoParam.Size = new Size(100, 28);
@@ -244,6 +282,9 @@ partial class ParametersPanel
         pnlRefForm.ResumeLayout(false); pnlRefForm.PerformLayout();
         pnlParamForm.ResumeLayout(false); pnlParamForm.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)picPreview).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefNumMcps).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefMuestras).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefRetardo).EndInit();
         ((System.ComponentModel.ISupportInitialize)gridParametros).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudPaso).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).EndInit();
@@ -271,6 +312,17 @@ partial class ParametersPanel
     private Label     lblRefDesc;
     private TextBox   txtRefDesc;
     private CheckBox  chkActiva;
+    private Label     lblRefNumMcps;
+    private NumericUpDown nudRefNumMcps;
+    private Label     lblRefMuestras;
+    private NumericUpDown nudRefMuestras;
+    private Label     lblRefRetardo;
+    private NumericUpDown nudRefRetardo;
+    private Label     lblRefInh;
+    private TextBox   txtRefInh1;
+    private TextBox   txtRefInh2;
+    private TextBox   txtRefInh3;
+    private TextBox   txtRefInh4;
     private Button    btnCargarImagen;
     private PictureBox picPreview;
     private Button    btnNuevaRef;

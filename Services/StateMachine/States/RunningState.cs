@@ -3,16 +3,15 @@
 namespace PC7866.Services.StateMachine.States;
 
 /// <summary>
-/// Estado: ejecuciÃ³n â€“ recorre los ParametrosEnsayo uno a uno,
-/// activa las salidas, lee analÃ³gicas filtradas y calcula la resistencia.
-/// FÃ³rmula: R = Vain / (Ve - Vain) * 390
+/// Estado: ejecución – recorre los ParametrosEnsayo uno a uno, selecciona la pista de medida
+/// (comando P), activa las salidas (comando S por cada MCP configurado), lee las analógicas
+/// filtradas (F0..F3) y calcula la resistencia.
+/// Fórmula: R = Vain / (Ve - Vain) * 390
 /// </summary>
 public class RunningState : ITestState
 {
     private const float R_REF = 390f;   // Ohm
     private const float R_OPEN_THRESHOLD = 1000f; // Ohm
-    private const string CMD_PREFIX_S = "S"; // Activar salidas
-    private const string CMD_F        = "F"; // Leer filtradas
 
     public TestState StateId => TestState.Running;
 
@@ -21,6 +20,7 @@ public class RunningState : ITestState
         var pasos = context.Parametros.OrderBy(p => p.NPasoEnsayo).ToList();
         int total = pasos.Count;
         bool anyFail = false;
+        int numMcps = context.Referencia.NumMcps;
 
         for (int i = 0; i < total; i++)
         {
@@ -40,26 +40,28 @@ public class RunningState : ITestState
                 State       = TestState.Running
             });
 
-            var detalle = await EjecutarPasoAsync(paso, context);
+            var detalle = await EjecutarPasoAsync(paso, context, numMcps);
             context.Resultado.Detalles.Add(detalle);
 
             if (!detalle.Resultado) anyFail = true;
 
             context.RaiseStepCompleted(paso, detalle);
 
-            // PequeÃ±a pausa entre pasos
+            // Pequeña pausa entre pasos
             await Task.Delay(150, context.CancellationToken);
         }
 
-        // Apagar todas las salidas al terminar
-        await context.SerialPort.SendCommandAsync("S000000000000", context.TimeoutMs, context.CancellationToken);
+        // Desconectar mux y apagar todas las salidas configuradas al terminar
+        await context.SerialPort.SendCommandAsync(Pc7866Commands.SelectTrack(0), context.TimeoutMs, context.CancellationToken);
+        foreach (string cmd in Pc7866Commands.BuildOutputCommands(new bool[Pc7866Commands.OutputCount], numMcps))
+            await context.SerialPort.SendCommandAsync(cmd, context.TimeoutMs, context.CancellationToken);
 
         context.Resultado.ResultadoGlobal = !anyFail;
         return TestState.Completed;
     }
 
     private static async Task<ResultadoDetalle> EjecutarPasoAsync(
-        ParametroEnsayo paso, TestContext context)
+        ParametroEnsayo paso, TestContext context, int numMcps)
     {
         var detalle = new ResultadoDetalle
         {
@@ -71,35 +73,52 @@ public class RunningState : ITestState
 
         try
         {
-            // 1. Construir y enviar comando de activaciÃ³n de salidas
-            string cmdSalidas = Pc7866Commands.BuildOutputsCommand(paso.NSalida);
-            string respS = await context.SerialPort.SendCommandAsync(
-                cmdSalidas, context.TimeoutMs, context.CancellationToken);
+            // 1. Seleccionar la pista de medida (multiplexores)
+            string respP = await context.SerialPort.SendCommandAsync(
+                Pc7866Commands.SelectTrack(paso.CanalMultiplexor), context.TimeoutMs, context.CancellationToken);
 
-            if (!respS.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
+            if (!respP.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
             {
                 detalle.Resultado = false;
                 return detalle;
             }
 
-            // PequeÃ±a espera para que la seÃ±al se estabilice
+            // 2. Activar salidas (una trama S por cada MCP configurado)
+            foreach (string cmdSalidas in Pc7866Commands.BuildOutputCommands(paso.NSalida, numMcps))
+            {
+                string respS = await context.SerialPort.SendCommandAsync(
+                    cmdSalidas, context.TimeoutMs, context.CancellationToken);
+
+                if (!respS.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
+                {
+                    detalle.Resultado = false;
+                    return detalle;
+                }
+            }
+
+            // Pequeña espera para que la señal se estabilice
             await Task.Delay(50, context.CancellationToken);
 
-            // 2. Leer analÃ³gicas filtradas
-            string respF = await context.SerialPort.SendCommandAsync(
-                CMD_F, context.TimeoutMs, context.CancellationToken);
-
-            var analogicas = context.Parser.ParseAnalogValues(respF);
-            if (analogicas is null || analogicas.Length < 4)
+            // 3. Leer las 4 analógicas filtradas (una trama F por canal)
+            var analogicas = new float[4];
+            for (int ch = 0; ch < 4; ch++)
             {
-                detalle.Resultado = false;
-                return detalle;
+                string respF = await context.SerialPort.SendCommandAsync(
+                    Pc7866Commands.ReadFiltered(ch), context.TimeoutMs, context.CancellationToken);
+
+                float? valor = context.Parser.ParseFilteredValue(respF);
+                if (valor is null)
+                {
+                    detalle.Resultado = false;
+                    return detalle;
+                }
+                analogicas[ch] = valor.Value;
             }
 
-            float vain = analogicas[0] - analogicas[1];  // Ch1 - Ch2
-            float ve   = analogicas[2] - analogicas[3];  // Ch3 - Ch4
+            float vain = analogicas[0] - analogicas[1];  // Ch0 - Ch1
+            float ve   = analogicas[2] - analogicas[3];  // Ch2 - Ch3
 
-            // 3. Calcular resistencia: R = Vain / (Ve - Vain) * 390
+            // 4. Calcular resistencia: R = Vain / (Ve - Vain) * 390
             // Guardar -1 como indicador de abierta (infinito)
             float resistencia = -1f;
             float denom = ve - vain;
@@ -113,7 +132,7 @@ public class RunningState : ITestState
 
             detalle.ResistenciaMedida = resistencia;
 
-            // 4. Evaluar resultado: abierto → cortocircuito (< umbral mínimo) → tolerancia
+            // 5. Evaluar resultado: abierto → cortocircuito (< umbral mínimo) → tolerancia
             if (resistencia < 0f)
             {
                 detalle.Estado    = EstadoMedicion.Abierto;

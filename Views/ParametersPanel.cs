@@ -93,6 +93,13 @@ public partial class ParametersPanel : UserControl
         txtRefNombre.Text = r.ReferenciaNombre;
         txtRefDesc.Text   = r.Descripcion;
         chkActiva.Checked = r.BActiva;
+        nudRefNumMcps.Value  = Math.Clamp(r.NumMcps, (int)nudRefNumMcps.Minimum, (int)nudRefNumMcps.Maximum);
+        nudRefMuestras.Value = Math.Clamp(r.Muestras, (int)nudRefMuestras.Minimum, (int)nudRefMuestras.Maximum);
+        nudRefRetardo.Value  = Math.Clamp(r.RetardoMs, (int)nudRefRetardo.Minimum, (int)nudRefRetardo.Maximum);
+        txtRefInh1.Text = FormatInh(r.Inh1Pos);
+        txtRefInh2.Text = FormatInh(r.Inh2Pos);
+        txtRefInh3.Text = FormatInh(r.Inh3Pos);
+        txtRefInh4.Text = FormatInh(r.Inh4Pos);
 
         if (r.Imagen?.Length > 0)
         {
@@ -142,6 +149,10 @@ public partial class ParametersPanel : UserControl
         txtRefNombre.Text = string.Empty;
         txtRefDesc.Text   = string.Empty;
         chkActiva.Checked = true;
+        nudRefNumMcps.Value  = PC7866.Models.Pc7866Commands.McpChipCount;
+        nudRefMuestras.Value = 10;
+        nudRefRetardo.Value  = 20;
+        txtRefInh1.Text = "N"; txtRefInh2.Text = "N"; txtRefInh3.Text = "N"; txtRefInh4.Text = "N";
         picPreview.Image  = null;
         gridParametros.Rows.Clear();
         ClearParamForm();
@@ -174,6 +185,13 @@ public partial class ParametersPanel : UserControl
                 ReferenciaNombre  = txtRefNombre.Text.Trim(),
                 Descripcion       = txtRefDesc.Text.Trim(),
                 BActiva           = chkActiva.Checked,
+                NumMcps           = (int)nudRefNumMcps.Value,
+                Muestras          = (int)nudRefMuestras.Value,
+                RetardoMs         = (int)nudRefRetardo.Value,
+                Inh1Pos           = ParseInh(txtRefInh1.Text),
+                Inh2Pos           = ParseInh(txtRefInh2.Text),
+                Inh3Pos           = ParseInh(txtRefInh3.Text),
+                Inh4Pos           = ParseInh(txtRefInh4.Text),
                 FechaCreacion     = DateTime.Now,
                 FechaModificacion = DateTime.Now,
                 Imagen            = imagen
@@ -186,6 +204,13 @@ public partial class ParametersPanel : UserControl
             _referenciaActual.ReferenciaNombre  = txtRefNombre.Text.Trim();
             _referenciaActual.Descripcion       = txtRefDesc.Text.Trim();
             _referenciaActual.BActiva           = chkActiva.Checked;
+            _referenciaActual.NumMcps           = (int)nudRefNumMcps.Value;
+            _referenciaActual.Muestras          = (int)nudRefMuestras.Value;
+            _referenciaActual.RetardoMs         = (int)nudRefRetardo.Value;
+            _referenciaActual.Inh1Pos           = ParseInh(txtRefInh1.Text);
+            _referenciaActual.Inh2Pos           = ParseInh(txtRefInh2.Text);
+            _referenciaActual.Inh3Pos           = ParseInh(txtRefInh3.Text);
+            _referenciaActual.Inh4Pos           = ParseInh(txtRefInh4.Text);
             _referenciaActual.FechaModificacion = DateTime.Now;
             _referenciaActual.Imagen            = imagen;
             await _repository.UpdateReferenciaAsync(_referenciaActual);
@@ -641,6 +666,19 @@ public partial class ParametersPanel : UserControl
         picPreview.Invalidate();
     }
 
+    /// <summary>Formatea una posición INH (0-15) como dígito hex, o "N" si no está asignada.</summary>
+    private static string FormatInh(int? pos)
+        => pos is null ? "N" : pos.Value.ToString("X1");
+
+    /// <summary>Parsea el texto de una posición INH ("N" o dígito hex 0-F) a su valor entero o null.</summary>
+    private static int? ParseInh(string texto)
+    {
+        texto = texto.Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(texto) || texto == "N") return null;
+        return int.TryParse(texto, System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out int v) ? v : null;
+    }
+
     /// <summary>
     /// Formatea un array de salidas activas como lista de números separados por coma (base 1).
     /// </summary>
@@ -659,12 +697,12 @@ public partial class ParametersPanel : UserControl
     /// </summary>
     private static bool[] ParseSalidas(string texto)
     {
-        var salidas = new bool[48];
+        var salidas = new bool[Pc7866Commands.OutputCount];
         if (string.IsNullOrWhiteSpace(texto)) return salidas;
 
         foreach (var tok in texto.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
         {
-            if (int.TryParse(tok.Trim(), out int n) && n >= 1 && n <= 48)
+            if (int.TryParse(tok.Trim(), out int n) && n >= 1 && n <= Pc7866Commands.OutputCount)
                 salidas[n - 1] = true;
         }
         return salidas;
