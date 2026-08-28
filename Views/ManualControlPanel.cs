@@ -189,6 +189,7 @@ public partial class ManualControlPanel : UserControl
         btnDiagAds.Click        += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagAds));
         btnDiagVersion.Click    += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagVersion));
         btnDiagReadConfig.Click += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagReadConfig));
+        btnDiagTemperature.Click += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagTemperature));
         for (int _mi = 0; _mi < Pc7866Commands.McpChipCount; _mi++)
         {
             int idx = _mi; // captura

@@ -26,7 +26,7 @@ public static class Pc7866Commands
     public const char DiagMcpFirst    = '2'; // D2 – MCP 0x20 (consecutivos: D3=0x21 … D7=0x25)
     public const char DiagVersion     = 'V'; // DV – lectura de versión de compilación
     public const char DiagReadConfig  = 'G'; // DG – lee configuración I2C (misma cadena que el comando "I")
-    public const char DiagTemperature = 'T'; // DT también documentado para lectura de temperatura (la spec original reutiliza 'T' para ambos subcomandos)
+    public const char DiagTemperature = 'C'; // DC – lectura de temperatura
 
     /// <summary>Subcomando de diagnosis para el MCP de índice 0-5 (0x20-0x25) → 'D2'..'D7'.</summary>
     public static char DiagMcpSubCmd(int mcpChip0Based) => (char)(DiagMcpFirst + mcpChip0Based);

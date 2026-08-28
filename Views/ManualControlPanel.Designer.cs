@@ -35,6 +35,7 @@ partial class ManualControlPanel
         btnDiagAds      = new System.Windows.Forms.Button();
         btnDiagVersion  = new System.Windows.Forms.Button();
         btnDiagReadConfig = new System.Windows.Forms.Button();
+        btnDiagTemperature = new System.Windows.Forms.Button();
         _btnDiagMcp     = new System.Windows.Forms.Button[Pc7866Commands.McpChipCount];
         for (int _i = 0; _i < Pc7866Commands.McpChipCount; _i++)
             _btnDiagMcp[_i] = new System.Windows.Forms.Button();
@@ -198,17 +199,20 @@ partial class ManualControlPanel
         tableMain.Padding = new System.Windows.Forms.Padding(4);
 
         // ── Panel izquierdo: contenedor vertical de Diagnosis + M + P + Salidas ─
+        // AutoScroll evita que los controles queden recortados/invisibles si la ventana no es lo bastante alta.
         var pnlLeft = new System.Windows.Forms.Panel
         {
             Dock = System.Windows.Forms.DockStyle.Fill,
-            Padding = new System.Windows.Forms.Padding(0, 0, 4, 0)
+            Padding = new System.Windows.Forms.Padding(0, 0, 4, 0),
+            AutoScroll = true
         };
 
         // ── Panel derecho: contenedor vertical de Analógica + Config placa + Reset
         var pnlRight = new System.Windows.Forms.Panel
         {
             Dock = System.Windows.Forms.DockStyle.Fill,
-            Padding = new System.Windows.Forms.Padding(4, 0, 0, 0)
+            Padding = new System.Windows.Forms.Padding(4, 0, 0, 0),
+            AutoScroll = true
         };
 
         void StyleBtn(System.Windows.Forms.Button b, string text, int x, int y, int w = 130)
@@ -237,6 +241,7 @@ partial class ManualControlPanel
         StyleBtn(btnDiagAds,        "D1 – ADS 0x48", 142, 22, 130);
         StyleBtn(btnDiagVersion,    "DV – Versión",  278, 22, 110);
         StyleBtn(btnDiagReadConfig, "DG – Ver config", 394, 22, 130);
+        StyleBtn(btnDiagTemperature, "DC – Temperatura", 534, 22, 130);
 
         for (int _di = 0; _di < Pc7866Commands.McpChipCount; _di++)
         {
@@ -244,13 +249,14 @@ partial class ManualControlPanel
             StyleBtn(_btnDiagMcp[_di], $"D{_di + 2} – MCP 0x{addr:X2}", 6 + _di * 116, 58, 110);
         }
 
-        var diagControls = new System.Windows.Forms.Control[4 + Pc7866Commands.McpChipCount];
+        var diagControls = new System.Windows.Forms.Control[5 + Pc7866Commands.McpChipCount];
         diagControls[0] = btnDiagTotal;
         diagControls[1] = btnDiagAds;
         diagControls[2] = btnDiagVersion;
         diagControls[3] = btnDiagReadConfig;
+        diagControls[4] = btnDiagTemperature;
         for (int _di = 0; _di < Pc7866Commands.McpChipCount; _di++)
-            diagControls[4 + _di] = _btnDiagMcp[_di];
+            diagControls[5 + _di] = _btnDiagMcp[_di];
         grpDiagnosis.Controls.AddRange(diagControls);
 
         // ═══════════════════════════════════════════════════════════════════
@@ -664,6 +670,7 @@ partial class ManualControlPanel
     private System.Windows.Forms.Button     btnDiagAds;
     private System.Windows.Forms.Button     btnDiagVersion;
     private System.Windows.Forms.Button     btnDiagReadConfig;
+    private System.Windows.Forms.Button     btnDiagTemperature;
     private System.Windows.Forms.Button[]   _btnDiagMcp;
 
     // ── M – configuración de dirección ─────────────────────────────────────────
