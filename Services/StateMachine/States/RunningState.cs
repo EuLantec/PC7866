@@ -22,6 +22,11 @@ public class RunningState : ITestState
     // la tensión de excitación nominal. Ajustar aquí si se define un valor distinto.
     private const float CORTOCIRCUITO_VOLTAGE_THRESHOLD = 2.5f; // V
 
+    // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S) antes de leer, para que el
+    // relé/mux y la carga del cableado se estabilicen (sin esto, la primera lectura tras la
+    // configuración global daba R≈0 y falso Cortocircuito).
+    private const int SETTLE_DELAY_MS = 300;
+
     public TestState StateId => TestState.Running;
 
     public async Task<TestState> ExecuteAsync(TestContext context)
@@ -41,12 +46,16 @@ public class RunningState : ITestState
             if (bAbajo >= 0) abajoBits[bAbajo] = true;
         }
 
+        // Solo los chips con al menos un pin "arriba"/"abajo" configurado reciben comandos M/S.
+        var chipsEnUso = ChipsEnUso(arribaBits, abajoBits, numMcps);
+
         // ── Fase A: configuración global + medición de resistencia ─────────────────────────
-        if (!await ConfigurarFaseResistenciaAsync(context, arribaBits, abajoBits, numMcps))
+        if (!await ConfigurarFaseResistenciaAsync(context, arribaBits, chipsEnUso))
         {
             context.Resultado.ResultadoGlobal = false;
             return TestState.Error;
         }
+        await Task.Delay(SETTLE_DELAY_MS, context.CancellationToken);
 
         var detallesPorPaso = new Dictionary<int, ResultadoDetalle>();
         for (int i = 0; i < total; i++)
@@ -71,11 +80,12 @@ public class RunningState : ITestState
         }
 
         // ── Fase B: configuración global de masa + verificación de cortocircuito ────────────
-        if (!await ConfigurarFaseCortocircuitoBaseAsync(context, arribaBits, abajoBits, numMcps))
+        if (!await ConfigurarFaseCortocircuitoBaseAsync(context, chipsEnUso))
         {
             context.Resultado.ResultadoGlobal = false;
             return TestState.Error;
         }
+        await Task.Delay(SETTLE_DELAY_MS, context.CancellationToken);
 
         for (int i = 0; i < total; i++)
         {
@@ -105,10 +115,10 @@ public class RunningState : ITestState
             await Task.Delay(150, context.CancellationToken);
         }
 
-        // Desconectar mux y dejar todas las salidas configuradas en reposo (0V)
-        await context.SerialPort.SendCommandAsync(Pc7866Commands.SelectTrack(0), context.TimeoutMs, context.CancellationToken);
-        foreach (string cmd in Pc7866Commands.BuildOutputCommands(new bool[Pc7866Commands.OutputCount], numMcps))
-            await context.SerialPort.SendCommandAsync(cmd, context.TimeoutMs, context.CancellationToken);
+        // Desconectar mux y dejar en reposo (0V) solo los chips que se usaron durante el ensayo
+        await SendLoggedAsync(context, Pc7866Commands.SelectTrack(0));
+        foreach (int chip in chipsEnUso)
+            await SendLoggedAsync(context, Pc7866Commands.BuildOutputCommand(chip, 0));
 
         context.Resultado.ResultadoGlobal = context.Resultado.Detalles.Count > 0 && context.Resultado.Detalles.All(d => d.Resultado);
         return TestState.Completed;
@@ -120,13 +130,14 @@ public class RunningState : ITestState
 
     /// <summary>Configura, una única vez, todos los pines "arriba" como salida a 5V y "abajo" como salida a 0V.</summary>
     private static async Task<bool> ConfigurarFaseResistenciaAsync(
-        TestContext context, bool[] arriba, bool[] abajo, int numMcps)
+        TestContext context, bool[] arriba, List<int> chipsEnUso)
     {
-        if (!await AplicarDireccionSalidaAsync(context, arriba, abajo, numMcps)) return false;
+        if (!await AplicarDireccionSalidaAsync(context, chipsEnUso)) return false;
 
-        foreach (string cmd in Pc7866Commands.BuildOutputCommands(arriba, numMcps))
+        foreach (int chip in chipsEnUso)
         {
-            string resp = await context.SerialPort.SendCommandAsync(cmd, context.TimeoutMs, context.CancellationToken);
+            string cmd = Pc7866Commands.BuildOutputCommand(chip, WordFromBits(arriba, chip));
+            string resp = await SendLoggedAsync(context, cmd);
             if (!resp.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase)) return false;
         }
         return true;
@@ -145,8 +156,7 @@ public class RunningState : ITestState
         try
         {
             // 1. Seleccionar la pista de medida (multiplexores)
-            string respP = await context.SerialPort.SendCommandAsync(
-                Pc7866Commands.SelectTrack(paso.CanalMultiplexor), context.TimeoutMs, context.CancellationToken);
+            string respP = await SendLoggedAsync(context, Pc7866Commands.SelectTrack(paso.CanalMultiplexor));
             if (!respP.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
             {
                 detalle.Estado = EstadoMedicion.Nok;
@@ -161,8 +171,7 @@ public class RunningState : ITestState
             var analogicas = new float[4];
             for (int ch = 0; ch < 4; ch++)
             {
-                string respF = await context.SerialPort.SendCommandAsync(
-                    Pc7866Commands.ReadFiltered(ch), context.TimeoutMs, context.CancellationToken);
+                string respF = await SendLoggedAsync(context, Pc7866Commands.ReadFiltered(ch));
 
                 float? valor = context.Parser.ParseFilteredValue(respF);
                 if (valor is null)
@@ -223,14 +232,14 @@ public class RunningState : ITestState
     // ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>Configura, una única vez, todos los pines "arriba" y "abajo" como salida a 0V (todo a masa).</summary>
-    private static async Task<bool> ConfigurarFaseCortocircuitoBaseAsync(
-        TestContext context, bool[] arriba, bool[] abajo, int numMcps)
+    private static async Task<bool> ConfigurarFaseCortocircuitoBaseAsync(TestContext context, List<int> chipsEnUso)
     {
-        if (!await AplicarDireccionSalidaAsync(context, arriba, abajo, numMcps)) return false;
+        if (!await AplicarDireccionSalidaAsync(context, chipsEnUso)) return false;
 
-        foreach (string cmd in Pc7866Commands.BuildOutputCommands(new bool[Pc7866Commands.OutputCount], numMcps))
+        foreach (int chip in chipsEnUso)
         {
-            string resp = await context.SerialPort.SendCommandAsync(cmd, context.TimeoutMs, context.CancellationToken);
+            string cmd = Pc7866Commands.BuildOutputCommand(chip, 0);
+            string resp = await SendLoggedAsync(context, cmd);
             if (!resp.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase)) return false;
         }
         return true;
@@ -255,25 +264,24 @@ public class RunningState : ITestState
         try
         {
             // 1. "Abajo" como entrada (alta impedancia)
-            string respMIn = await context.SerialPort.SendCommandAsync(
-                Pc7866Commands.BuildMcpModeCommand(chipAbajo, asOutput: false, (ushort)(1 << pinAbajo)),
-                context.TimeoutMs, context.CancellationToken);
+            string respMIn = await SendLoggedAsync(context,
+                Pc7866Commands.BuildMcpModeCommand(chipAbajo, asOutput: false, (ushort)(1 << pinAbajo)));
 
             // 2. "Arriba" a 5V
-            string respS = await context.SerialPort.SendCommandAsync(
-                Pc7866Commands.BuildOutputCommand(chipArriba, (ushort)(1 << pinArriba)),
-                context.TimeoutMs, context.CancellationToken);
+            string respS = await SendLoggedAsync(context,
+                Pc7866Commands.BuildOutputCommand(chipArriba, (ushort)(1 << pinArriba)));
 
             if (respMIn.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase) &&
                 respS.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
             {
+                // Asentamiento tras excitar "arriba"/liberar "abajo" antes de conmutar el mux
+                await Task.Delay(SETTLE_DELAY_MS, context.CancellationToken);
+
                 // 3. Seleccionar pista y leer tensión
-                await context.SerialPort.SendCommandAsync(
-                    Pc7866Commands.SelectTrack(paso.CanalMultiplexor), context.TimeoutMs, context.CancellationToken);
+                await SendLoggedAsync(context, Pc7866Commands.SelectTrack(paso.CanalMultiplexor));
                 await Task.Delay(50, context.CancellationToken);
 
-                string respF = await context.SerialPort.SendCommandAsync(
-                    Pc7866Commands.ReadFiltered(0), context.TimeoutMs, context.CancellationToken);
+                string respF = await SendLoggedAsync(context, Pc7866Commands.ReadFiltered(0));
                 float? voltaje = context.Parser.ParseFilteredValue(respF);
 
                 // Caída de tensión (o respuesta inválida) por debajo del umbral → cortocircuito real
@@ -287,13 +295,10 @@ public class RunningState : ITestState
         finally
         {
             // 4. Restaurar: "arriba" a 0V y "abajo" de nuevo como salida a 0V
-            await context.SerialPort.SendCommandAsync(
-                Pc7866Commands.BuildOutputCommand(chipArriba, 0), context.TimeoutMs, context.CancellationToken);
-            await context.SerialPort.SendCommandAsync(
-                Pc7866Commands.BuildMcpModeCommand(chipAbajo, asOutput: true, (ushort)(1 << pinAbajo)),
-                context.TimeoutMs, context.CancellationToken);
-            await context.SerialPort.SendCommandAsync(
-                Pc7866Commands.BuildOutputCommand(chipAbajo, 0), context.TimeoutMs, context.CancellationToken);
+            await SendLoggedAsync(context, Pc7866Commands.BuildOutputCommand(chipArriba, 0));
+            await SendLoggedAsync(context,
+                Pc7866Commands.BuildMcpModeCommand(chipAbajo, asOutput: true, (ushort)(1 << pinAbajo)));
+            await SendLoggedAsync(context, Pc7866Commands.BuildOutputCommand(chipAbajo, 0));
         }
 
         return cortocircuito;
@@ -303,20 +308,35 @@ public class RunningState : ITestState
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Configura como salida (M) todos los bits marcados en "arriba" u "abajo", por cada MCP.</summary>
-    private static async Task<bool> AplicarDireccionSalidaAsync(
-        TestContext context, bool[] arriba, bool[] abajo, int numMcps)
+    /// <summary>Determina qué chips MCP (0-based) tienen al menos un pin "arriba"/"abajo" configurado en algún paso.</summary>
+    private static List<int> ChipsEnUso(bool[] arriba, bool[] abajo, int numMcps)
     {
+        var chips = new List<int>();
         for (int chip = 0; chip < numMcps; chip++)
-        {
-            ushort mask = (ushort)(WordFromBits(arriba, chip) | WordFromBits(abajo, chip));
-            if (mask == 0) continue;
+            if ((WordFromBits(arriba, chip) | WordFromBits(abajo, chip)) != 0)
+                chips.Add(chip);
+        return chips;
+    }
 
-            string resp = await context.SerialPort.SendCommandAsync(
-                Pc7866Commands.BuildMcpModeCommand(chip, asOutput: true, mask), context.TimeoutMs, context.CancellationToken);
+    /// <summary>Configura como salida (M) los 16 pines completos de cada chip en uso.</summary>
+    private static async Task<bool> AplicarDireccionSalidaAsync(TestContext context, List<int> chipsEnUso)
+    {
+        foreach (int chip in chipsEnUso)
+        {
+            string resp = await SendLoggedAsync(context,
+                Pc7866Commands.BuildMcpModeCommand(chip, asOutput: true, 0xFFFF));
             if (!resp.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase)) return false;
         }
         return true;
+    }
+
+    /// <summary>Envía un comando y lo reporta vía <see cref="TestContext.CommandLogger"/> (TX/RX) para el log de la UI.</summary>
+    private static async Task<string> SendLoggedAsync(TestContext context, string command)
+    {
+        context.CommandLogger?.Invoke($"TX: {command}");
+        string response = await context.SerialPort.SendCommandAsync(command, context.TimeoutMs, context.CancellationToken);
+        context.CommandLogger?.Invoke($"RX: {response.Trim()}");
+        return response;
     }
 
     /// <summary>Extrae los 16 bits del chip indicado (0-based) de un array de <see cref="Pc7866Commands.OutputCount"/> bits.</summary>

@@ -157,13 +157,13 @@ public partial class ManualControlPanel : UserControl
             int col = i % cols, row = i / cols;
             var chk = new CheckBox
             {
-                Text     = $"{chip}.{pin:D2}",
+                Text     = $"{chip}.{(pin + 1):D2}",
                 Tag      = i,
                 Size     = new Size(cw, ch),
                 Location = new Point(padX + col * (cw + gapX), padY + row * (ch + gapY)),
                 Font     = new Font("Segoe UI", 8.5f)
             };
-            tip.SetToolTip(chk, $"MCP {chip} (0x{Pc7866Commands.McpI2cAddress(chip):X2})  pin {pin}  –  bit {i}");
+            tip.SetToolTip(chk, $"MCP {chip} (0x{Pc7866Commands.McpI2cAddress(chip):X2})  pin {pin + 1}  –  bit {i}");
             chk.CheckedChanged += OutputCheck_Changed;
             _outputChecks[i]    = chk;
             pnlOutputMatrix.Controls.Add(chk);

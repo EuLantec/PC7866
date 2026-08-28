@@ -29,14 +29,14 @@ public class ParametroEnsayo
     /// <summary>Umbral mínimo de resistencia (Ω); por debajo se considera cortocircuito.</summary>
     public float    ResistenciaMinima { get; set; }
 
-    /// <summary>Chip MCP23017 (1-6, equivale a 0x20-0x25) del selector "aguas arriba". 0 = no configurado.</summary>
-    public int      McpArribaChip    { get; set; }
+    /// <summary>Chip MCP23017 (0-5, equivale a 0x20-0x25) del selector "aguas arriba". -1 = no configurado.</summary>
+    public int      McpArribaChip    { get; set; } = -1;
 
     /// <summary>Pin (0-15) dentro del chip MCP23017 del selector "aguas arriba".</summary>
     public int      McpArribaPin     { get; set; }
 
-    /// <summary>Chip MCP23017 (1-6) del selector "aguas abajo". 0 = no configurado.</summary>
-    public int      McpAbajoChip     { get; set; }
+    /// <summary>Chip MCP23017 (0-5) del selector "aguas abajo". -1 = no configurado.</summary>
+    public int      McpAbajoChip     { get; set; } = -1;
 
     /// <summary>Pin (0-15) dentro del chip MCP23017 del selector "aguas abajo".</summary>
     public int      McpAbajoPin      { get; set; }

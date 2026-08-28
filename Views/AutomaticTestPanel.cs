@@ -306,7 +306,8 @@ public partial class AutomaticTestPanel : UserControl
                 progress,
                 OnStepCompleted,
                 AppSettings.Instance.DefaultTimeout,
-                _cts.Token);
+                _cts.Token,
+                cmd => AddLog(cmd, LogLevel.Debug));
         }
         catch (OperationCanceledException)
         {
@@ -352,9 +353,6 @@ public partial class AutomaticTestPanel : UserControl
         // Color de fila
         var row = gridResultados.Rows[gridResultados.Rows.Count - 1];
         row.DefaultCellStyle.BackColor = FilaColorForEstado(detalle.Estado);
-
-        AddLog($"  Paso {paso.NPasoEnsayo} {paso.NombreContacto}: " +
-               $"{FormatResistance(detalle.ResistenciaMedida)} Ω → {resultado}", LogLevel.Info);
     }
 
     private static Color DotColorForEstado(EstadoMedicion estado) => estado switch

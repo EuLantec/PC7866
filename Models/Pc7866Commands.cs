@@ -196,14 +196,14 @@ public static class Pc7866Commands
 
     /// <summary>
     /// Calcula el índice de bit (0 a <see cref="OutputCount"/>-1) dentro del array de salidas a
-    /// partir del chip MCP23017 (1-6, equivale a 0x20-0x25, convención de <see cref="ParametroEnsayo"/>)
-    /// y el pin (0-15) dentro de ese chip. Devuelve -1 si el chip es 0 (no configurado) o los valores
-    /// están fuera de rango.
+    /// partir del chip MCP23017 (0-5, equivale a 0x20-0x25) y el número de pin (1-16, no existe
+    /// el pin 0, convención de <see cref="ParametroEnsayo"/>). Devuelve -1 si el chip no está
+    /// configurado o los valores están fuera de rango.
     /// </summary>
     public static int McpBitIndex(int mcpChip, int mcpPin)
     {
-        if (mcpChip < 1 || mcpChip > McpChipCount) return -1;
-        if (mcpPin < 0 || mcpPin >= McpPinCount) return -1;
-        return (mcpChip - 1) * McpPinCount + mcpPin;
+        if (mcpChip < 0 || mcpChip >= McpChipCount) return -1;
+        if (mcpPin < 1 || mcpPin > McpPinCount) return -1;
+        return mcpChip * McpPinCount + (mcpPin - 1);
     }
 }

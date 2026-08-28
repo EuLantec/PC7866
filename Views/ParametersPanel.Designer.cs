@@ -240,10 +240,10 @@ partial class ParametersPanel
         AddRow(lblTol,      "Tolerancia (Ω):",nudTol,     ref row);
         AddRow(lblOffset,   "Offset (Ω):",   nudOffset,  ref row);
         AddRow(lblMinima,   "R mín cortocircuito (Ω):", nudMinima, ref row);
-        AddRow(lblMcpArribaChip, "MCP arriba – chip (1-6):", nudMcpArribaChip, ref row);
-        AddRow(lblMcpArribaPin,  "MCP arriba – pin (0-15):", nudMcpArribaPin,  ref row);
-        AddRow(lblMcpAbajoChip,  "MCP abajo – chip (1-6):",  nudMcpAbajoChip,  ref row);
-        AddRow(lblMcpAbajoPin,   "MCP abajo – pin (0-15):",  nudMcpAbajoPin,   ref row);
+        AddRow(lblMcpArribaChip, "MCP arriba – chip (0-5, -1=N/A):", nudMcpArribaChip, ref row);
+        AddRow(lblMcpArribaPin,  "MCP arriba – pin (1-16):", nudMcpArribaPin,  ref row);
+        AddRow(lblMcpAbajoChip,  "MCP abajo – chip (0-5, -1=N/A):",  nudMcpAbajoChip,  ref row);
+        AddRow(lblMcpAbajoPin,   "MCP abajo – pin (1-16):",  nudMcpAbajoPin,   ref row);
         AddRow(lblCanalMux,      "Pista multiplexor (0-48):", nudCanalMux,      ref row);
         AddRow(lblPosX,     "Pos X:",         nudPosX,    ref row);
         AddRow(lblPosY,     "Pos Y:",         nudPosY,    ref row);
@@ -253,10 +253,10 @@ partial class ParametersPanel
         nudTol.DecimalPlaces     = 2; nudTol.Maximum     = 10000;
         nudOffset.DecimalPlaces  = 2; nudOffset.Minimum  = -1000; nudOffset.Maximum = 1000;
         nudMinima.DecimalPlaces  = 2; nudMinima.Minimum  = 0; nudMinima.Maximum = 100000;
-        nudMcpArribaChip.Minimum = 0; nudMcpArribaChip.Maximum = PC7866.Models.Pc7866Commands.McpChipCount;
-        nudMcpArribaPin.Minimum  = 0; nudMcpArribaPin.Maximum  = 15;
-        nudMcpAbajoChip.Minimum  = 0; nudMcpAbajoChip.Maximum  = PC7866.Models.Pc7866Commands.McpChipCount;
-        nudMcpAbajoPin.Minimum   = 0; nudMcpAbajoPin.Maximum   = 15;
+        nudMcpArribaChip.Minimum = -1; nudMcpArribaChip.Maximum = PC7866.Models.Pc7866Commands.McpChipCount - 1;
+        nudMcpArribaPin.Minimum  = 1; nudMcpArribaPin.Maximum  = 16;
+        nudMcpAbajoChip.Minimum  = -1; nudMcpAbajoChip.Maximum  = PC7866.Models.Pc7866Commands.McpChipCount - 1;
+        nudMcpAbajoPin.Minimum   = 1; nudMcpAbajoPin.Maximum   = 16;
         nudCanalMux.Minimum      = 0; nudCanalMux.Maximum      = PC7866.Models.Pc7866Commands.MaxTrackNumber;
         nudPosX.Maximum = 4000; nudPosY.Maximum = 4000;
 

@@ -31,7 +31,9 @@ public class InitializingState : ITestState
             referencia.NumMcps, referencia.Inh1Pos, referencia.Inh2Pos, referencia.Inh3Pos, referencia.Inh4Pos,
             referencia.ReferenciaNombre, referencia.Muestras, referencia.RetardoMs);
 
+        context.CommandLogger?.Invoke($"TX: {cmdConfig}");
         string respI = await context.SerialPort.SendCommandAsync(cmdConfig, context.TimeoutMs, context.CancellationToken);
+        context.CommandLogger?.Invoke($"RX: {respI.Trim()}");
         if (!respI.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
         {
             context.Resultado.ResultadoGlobal = false;

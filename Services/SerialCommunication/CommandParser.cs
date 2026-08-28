@@ -106,25 +106,34 @@ public class CommandParser
         }
     }
 
+    // Como F/R no terminan en CR/LF, el firmware a veces añade bytes de ruido tras el valor
+    // (p.ej. "1.1736NN") que la trama de recepción (idle-timeout) acumula junto con la respuesta
+    // real. Por eso se extrae solo el número inicial en vez de exigir que toda la cadena sea numérica.
+    private static readonly Regex LeadingNumberPattern = new(@"^\s*[-+]?\d+\.?\d*", RegexOptions.Compiled);
+
     /// <summary>
     /// Parsea la respuesta de un comando "Fn" (valor filtrado en voltios de un único canal ADS).
-    /// Formato esperado: "f.ffff" (1 entero, 4 decimales). Devuelve null si no se puede parsear.
+    /// Formato esperado: "f.ffff" (1 entero, 4 decimales), tolerando ruido final no numérico.
+    /// Devuelve null si no se puede parsear.
     /// </summary>
     public float? ParseFilteredValue(string response)
     {
         if (string.IsNullOrWhiteSpace(response)) return null;
-        return float.TryParse(response.Trim(), System.Globalization.NumberStyles.Float,
+        var match = LeadingNumberPattern.Match(response.Trim());
+        return match.Success && float.TryParse(match.Value, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out float v) ? v : null;
     }
 
     /// <summary>
     /// Parsea la respuesta de un comando "Rn" (valor RAW de un único canal ADS).
-    /// Formato esperado: 5 dígitos decimales. Devuelve null si no se puede parsear.
+    /// Formato esperado: 5 dígitos decimales, tolerando ruido final no numérico.
+    /// Devuelve null si no se puede parsear.
     /// </summary>
     public int? ParseRawValue(string response)
     {
         if (string.IsNullOrWhiteSpace(response)) return null;
-        return int.TryParse(response.Trim(), System.Globalization.NumberStyles.Integer,
+        var match = LeadingNumberPattern.Match(response.Trim());
+        return match.Success && int.TryParse(match.Value, System.Globalization.NumberStyles.Integer,
             System.Globalization.CultureInfo.InvariantCulture, out int v) ? v : null;
     }
 }

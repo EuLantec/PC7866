@@ -38,7 +38,8 @@ public class TestStateMachine
         IProgress<TestProgressReport>? progress = null,
         Action<ParametroEnsayo, ResultadoDetalle>? stepCompleted = null,
         int timeoutMs = 5000,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Action<string>? commandLogger = null)
     {
         var resultado = new Resultado
         {
@@ -58,7 +59,8 @@ public class TestStateMachine
             Parser            = parser,
             TimeoutMs         = timeoutMs,
             CancellationToken = cancellationToken,
-            Progress          = progress
+            Progress          = progress,
+            CommandLogger     = commandLogger
         };
 
         if (stepCompleted is not null)

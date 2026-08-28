@@ -284,10 +284,10 @@ public partial class ParametersPanel : UserControl
         else
         {
             txtSalidas.Text = string.Empty;
-            nudMcpArribaChip.Value = 0;
-            nudMcpArribaPin.Value  = 0;
-            nudMcpAbajoChip.Value  = 0;
-            nudMcpAbajoPin.Value   = 0;
+            nudMcpArribaChip.Value = -1;
+            nudMcpArribaPin.Value  = 1;
+            nudMcpAbajoChip.Value  = -1;
+            nudMcpAbajoPin.Value   = 1;
             nudCanalMux.Value      = 0;
         }
         _ignorarNudEvents = false;
@@ -345,10 +345,10 @@ public partial class ParametersPanel : UserControl
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
-        nudMcpArribaChip.Value = 0;
-        nudMcpArribaPin.Value  = 0;
-        nudMcpAbajoChip.Value  = 0;
-        nudMcpAbajoPin.Value   = 0;
+        nudMcpArribaChip.Value = -1;
+        nudMcpArribaPin.Value  = 1;
+        nudMcpAbajoChip.Value  = -1;
+        nudMcpAbajoPin.Value   = 1;
         nudCanalMux.Value      = 0;
         _ignorarNudEvents = false;
 
@@ -387,7 +387,7 @@ public partial class ParametersPanel : UserControl
 
         bool[] salidas = ParseSalidas(txtSalidas.Text);
         int mcpArribaChip = (int)nudMcpArribaChip.Value;
-        int mcpArribaPin  = (int)nudMcpArribaPin.Value;
+        int mcpArribaPin  = (int)nudMcpArribaPin.Value; // NUD y modelo usan el mismo pin 1-16
         int mcpAbajoChip  = (int)nudMcpAbajoChip.Value;
         int mcpAbajoPin   = (int)nudMcpAbajoPin.Value;
         int canalMux      = (int)nudCanalMux.Value;
@@ -656,10 +656,10 @@ public partial class ParametersPanel : UserControl
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
-        nudMcpArribaChip.Value = 0;
-        nudMcpArribaPin.Value  = 0;
-        nudMcpAbajoChip.Value  = 0;
-        nudMcpAbajoPin.Value   = 0;
+        nudMcpArribaChip.Value = -1;
+        nudMcpArribaPin.Value  = 1;
+        nudMcpAbajoChip.Value  = -1;
+        nudMcpAbajoPin.Value   = 1;
         nudCanalMux.Value      = 0;
         _modoNuevoParam  = false;
         _ignorarNudEvents = false;
