@@ -8,6 +8,11 @@ La aplicacion permite:
 - Gestionar referencias y parametros de ensayo.
 - Guardar y consultar resultados en MariaDB.
 
+## Guias de uso
+
+- [Modo Manual](GUIA_MODO_MANUAL.md): comando a comando (diagnosis, salidas individuales, lectura analogica, filtros/coeficientes, guardar en memoria no volatil, reset).
+- [Modo Automatico](GUIA_MODO_AUTOMATICO.md): ejecucion de un ensayo completo por referencia (maquina de estados, resultados por paso, guardado en BD).
+
 ## Estado actual
 
 El proyecto ya incluye funcionalidad operativa en:
@@ -130,9 +135,11 @@ Detalles relevantes:
 
 1. Configurar puerto serie y conexion BD en configuracion.
 2. Crear o revisar referencias y parametros de ensayo.
-3. Ejecutar test automatico con operario y lote.
+3. Ejecutar test automatico con operario y lote (ver [guia de modo automatico](GUIA_MODO_AUTOMATICO.md)).
 4. Revisar resultado global y detalle por paso.
 5. Consultar historico en informes.
+
+Para diagnostico de hardware, calibracion o pruebas puntuales sin referencia asociada, usa el [modo manual](GUIA_MODO_MANUAL.md).
 
 ## Solucion de problemas
 
@@ -149,3 +156,5 @@ Detalles relevantes:
 ## Documentacion adicional
 
 - Arquitectura tecnica detallada: `ARCHITECTURE.md`
+- Guia de uso del modo manual: `GUIA_MODO_MANUAL.md`
+- Guia de uso del modo automatico: `GUIA_MODO_AUTOMATICO.md`
