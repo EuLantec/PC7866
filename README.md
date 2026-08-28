@@ -94,19 +94,20 @@ Notas:
 ## Protocolo serie (resumen)
 
 Comandos principales:
-- `D`: Diagnosis
-- `S`: Activacion de salidas (48 bits, 12 hex)
-- `R`: Lectura analogica RAW
-- `F`: Lectura analogica filtrada
-- `I`: Escritura de flags/coeficientes
-- `G`: Guardar/cargar/ver parametros en memoria no volatil
+- `D`: Diagnosis (subcomandos `T`=total, `1`=ADS1115, `2..7`=MCP23017 0x20-0x25, `V`=version, `G`=leer config, `C`=temperatura)
+- `M`: Configuracion de direccion (entrada/salida) de pines de un MCP23017
+- `S`: Activacion de salidas de un MCP23017 (16 bits, 4 hex; una trama por chip)
+- `P`: Seleccion de pista en los multiplexores analogicos (00-48)
+- `R`: Lectura analogica RAW de un canal ADS (0-3)
+- `F`: Lectura analogica filtrada de un canal ADS (0-3)
+- `I`: Configuracion de placa (num. MCP, posiciones INH1-4, referencia, muestras, retardo)
 - `Q`: Reset del microcontrolador
 
 Respuestas:
 - `O`: OK
 - `N`: NOK
 
-En modo manual y automatico se utilizan los builders de `Pc7866Commands` para construir tramas validas.
+En modo manual y automatico se utilizan los builders de `Pc7866Commands` para construir tramas validas. Ver el detalle completo de la secuencia usada por el ensayo automatico en [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).
 
 ## Estructura del proyecto
 
