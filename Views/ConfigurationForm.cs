@@ -37,8 +37,8 @@ public sealed class ConfigurationForm : Form
 
     private void BuildUi()
     {
-        AutoScaleMode   = AutoScaleMode.Font;
-        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode   = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(96F, 96F);
         Text            = "Configuración";
         Size            = new Size(520, 470);
         StartPosition   = FormStartPosition.CenterParent;

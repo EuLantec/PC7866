@@ -270,8 +270,8 @@ partial class ParametersPanel
         grpParams.Controls.AddRange(new Control[] { pnlParamForm, gridParametros, pnlParamButtons });
 
         // ── ParametersPanel ──────────────────────────────────────────────────
-        AutoScaleDimensions = new SizeF(7f, 15f);
-        AutoScaleMode = AutoScaleMode.Font;
+        AutoScaleDimensions = new SizeF(96f, 96f);
+        AutoScaleMode = AutoScaleMode.Dpi;
         Controls.AddRange(new Control[] { grpRefs, grpParams });
         Name = "ParametersPanel";
         Size = new Size(1260, 830);

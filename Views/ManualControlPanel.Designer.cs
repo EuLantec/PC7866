@@ -620,8 +620,8 @@ partial class ManualControlPanel
         // ═══════════════════════════════════════════════════════════════════
         // UserControl
         // ═══════════════════════════════════════════════════════════════════
-        AutoScaleDimensions = new System.Drawing.SizeF(7f, 15f);
-        AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Font;
+        AutoScaleDimensions = new System.Drawing.SizeF(96f, 96f);
+        AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Dpi;
         Dock                = System.Windows.Forms.DockStyle.Fill;
         Controls.Add(tableMain);
         Controls.Add(pnlTopBar);   // Top → se coloca encima del Fill
