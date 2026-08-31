@@ -14,9 +14,6 @@ public class ParametroEnsayo
     /// <summary>Número de paso dentro de la secuencia de ensayo.</summary>
     public int      NPasoEnsayo      { get; set; }
 
-    /// <summary>Array de <see cref="Pc7866Commands.OutputCount"/> (96) booleanos que indican qué salidas de los MCP23017 se activan (bit = chip*16 + pin).</summary>
-    public bool[]   NSalida          { get; set; } = new bool[Pc7866Commands.OutputCount];
-
     /// <summary>Resistencia nominal esperada en Ohmios.</summary>
     public float    ResistenciaNominal { get; set; }
 

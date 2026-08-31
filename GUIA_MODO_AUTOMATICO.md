@@ -15,8 +15,8 @@ Se accede desde el menú superior **Automático** (panel por defecto al abrir la
 
 Antes de ejecutar un ensayo automático debe existir en BD:
 
-1. Una **Referencia** (`Referencia`), que además de nombre/imagen guarda la **configuración de placa**: `ModeloPlaca` (modelo de 6 dígitos que se envía en el comando `I`; si está vacío se usa el nombre de la referencia), `NumMcps` (nº de MCP23017 activos, 0-6), `Inh1Pos`..`Inh4Pos` (posición de pin 0-15 de cada inhibición, o libre elección), `Muestras` (nº de muestras para el promedio analógico) y `RetardoMs` (retardo antes de leer tras F/R).
-2. Uno o varios **ParametroEnsayo** asociados a esa referencia — un registro por contacto/paso —, cada uno con: `NombreContacto`, `NPasoEnsayo` (orden), `McpArribaChip`/`McpArribaPin` y `McpAbajoChip`/`McpAbajoPin` (selectores de excitación 5V/masa usados por el algoritmo de medición, ver más abajo), `NSalida` (array de 96 bits, heredado, ya no se usa en el bucle de medición), `CanalMultiplexor` (nº de pista 0-48 para el comando `P`), `ResistenciaNominal`, `Tolerancia`, `Pendiente`, `Offset` y `ResistenciaMinima` (umbral de cortocircuito por software). `Pendiente` y `Offset` forman la función lineal de calibración aplicada a la resistencia bruta calculada (ver Paso 2); `Pendiente` por defecto es `1` (sin efecto sobre el cálculo anterior).
+1. Una **Referencia** (`Referencia`), que además de nombre/imagen guarda la **configuración de placa**: `ModeloPlaca` (modelo de 7 dígitos que se envía en el comando `I`; el nombre de la referencia puede ser cualquiera y no se usa para configurar el micro), `NumMcps` (nº de MCP23017 activos, 0-6), `Inh1Pos`..`Inh4Pos` (posición de pin 0-15 de cada inhibición, o libre elección), `Muestras` (nº de muestras para el promedio analógico) y `RetardoMs` (retardo antes de leer tras F/R).
+2. Uno o varios **ParametroEnsayo** asociados a esa referencia — un registro por contacto/paso —, cada uno con: `NombreContacto`, `NPasoEnsayo` (orden), `McpArribaChip`/`McpArribaPin` y `McpAbajoChip`/`McpAbajoPin` (selectores de excitación 5V/masa usados por el algoritmo de medición, ver más abajo), `CanalMultiplexor` (nº de pista 0-48 para el comando `P`), `ResistenciaNominal`, `Tolerancia`, `Pendiente`, `Offset` y `ResistenciaMinima` (umbral de cortocircuito por software). `Pendiente` y `Offset` forman la función lineal de calibración aplicada a la resistencia bruta calculada (ver Paso 2); `Pendiente` por defecto es `1` (sin efecto sobre el cálculo anterior).
 
 Sin al menos un parámetro para la referencia seleccionada, el botón **Iniciar ensayo** queda deshabilitado (`UpdateStartButton`).
 
@@ -36,7 +36,7 @@ Clase [`InitializingState`](Services/StateMachine/States/InitializingState.cs):
    ```
    I <numMcps> <inh1> <inh2> <inh3> <inh4> <referencia:7> <muestras:2> <retardo:3>
    ```
-   generada por `Pc7866Commands.BuildBoardConfigCommand(referencia.NumMcps, referencia.Inh1Pos..Inh4Pos, modelo, referencia.Muestras, referencia.RetardoMs)`, donde `modelo` es `referencia.ModeloPlaca` (o el nombre de la referencia si está vacío). Cada `InhX` se codifica como dígito hexadecimal (0-F) o `'N'` si no está configurado.
+   generada por `Pc7866Commands.BuildBoardConfigCommand(referencia.NumMcps, referencia.Inh1Pos..Inh4Pos, modelo, referencia.Muestras, referencia.RetardoMs)`, donde `modelo` es `referencia.ModeloPlaca` (el nombre de la referencia no interviene). Cada `InhX` se codifica como dígito hexadecimal (0-F) o `'N'` si no está configurado.
 3. Si la respuesta no empieza por `O` (OK), el ensayo pasa a `Error` y se aborta.
 4. Si es OK, limpia los detalles previos del resultado y pasa a `Running`.
 
