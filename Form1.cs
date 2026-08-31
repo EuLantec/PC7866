@@ -40,6 +40,7 @@ namespace PC7866
             parámetrosToolStripMenuItem.Click     += (_, _) => ShowParametersPanel();
             informesToolStripMenuItem.Click       += (_, _) => ShowReportsPanel();
             configuraciónToolStripMenuItem.Click  += (_, _) => ShowConfiguration();
+            acercaDeToolStripMenuItem.Click       += (_, _) => ShowAbout();
             salirToolStripMenuItem.Click          += (_, _) => Application.Exit();
         }
 
@@ -110,6 +111,12 @@ namespace PC7866
             using var form = new ConfigurationForm();
             UiTheme.ApplyPanel(form);
             form.ShowDialog(this);
+        }
+
+        private void ShowAbout()
+        {
+            using var about = new AboutForm();
+            about.ShowDialog(this);
         }
 
         private void HideAllPanels()
