@@ -151,12 +151,12 @@ public class TestRepository : ITestRepository
     {
         const string sql = """
             INSERT INTO parametros_ensayo
-                (referencia_id, nombre_contacto, n_paso_ensayo, n_salida_json,
+                (referencia_id, nombre_contacto, n_paso_ensayo,
                  resistencia_nominal, tolerancia, pendiente_val, offset_val, resistencia_minima,
                  mcp_arriba_chip, mcp_arriba_pin, mcp_abajo_chip, mcp_abajo_pin, canal_multiplexor,
                  fecha_creacion, fecha_modificacion, pos_x, pos_y)
             VALUES
-                (@ReferenciaId, @NombreContacto, @NPasoEnsayo, @NSalidaJson,
+                (@ReferenciaId, @NombreContacto, @NPasoEnsayo,
                  @ResistenciaNominal, @Tolerancia, @Pendiente, @Offset, @ResistenciaMinima,
                  @McpArribaChip, @McpArribaPin, @McpAbajoChip, @McpAbajoPin, @CanalMultiplexor,
                  @FechaCreacion, @FechaModificacion, @PosX, @PosY);
@@ -169,7 +169,6 @@ public class TestRepository : ITestRepository
             p.ReferenciaId,
             p.NombreContacto,
             p.NPasoEnsayo,
-            NSalidaJson        = JsonSerializer.Serialize(p.NSalida),
             p.ResistenciaNominal,
             p.Tolerancia,
             p.Pendiente,
@@ -193,7 +192,6 @@ public class TestRepository : ITestRepository
             UPDATE parametros_ensayo SET
                 nombre_contacto    = @NombreContacto,
                 n_paso_ensayo      = @NPasoEnsayo,
-                n_salida_json      = @NSalidaJson,
                 resistencia_nominal= @ResistenciaNominal,
                 tolerancia         = @Tolerancia,
                 pendiente_val      = @Pendiente,
@@ -216,7 +214,6 @@ public class TestRepository : ITestRepository
             p.Id,
             p.NombreContacto,
             p.NPasoEnsayo,
-            NSalidaJson        = JsonSerializer.Serialize(p.NSalida),
             p.ResistenciaNominal,
             p.Tolerancia,
             p.Pendiente,
@@ -444,7 +441,6 @@ public class TestRepository : ITestRepository
                 referencia_id       INT  NOT NULL,
                 nombre_contacto     VARCHAR(20)  NOT NULL,
                 n_paso_ensayo       INT  NOT NULL,
-                n_salida_json       LONGTEXT,
                 resistencia_nominal FLOAT NOT NULL DEFAULT 0,
                 tolerancia          FLOAT NOT NULL DEFAULT 0,
                 pendiente_val       FLOAT NOT NULL DEFAULT 1,
@@ -516,6 +512,10 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_abajo_pin INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS canal_multiplexor INT NOT NULL DEFAULT 0;");
 
+        // Migracion: se elimino el campo "salidas activas" (n_salida_json), reemplazado por los
+        // selectores arriba/abajo (mcp_arriba_*/mcp_abajo_*).
+        await conn.ExecuteAsync("ALTER TABLE parametros_ensayo DROP COLUMN IF EXISTS n_salida_json;");
+
         // Migraciones: configuracion de placa a nivel de Referencia (comando "I" del protocolo nuevo)
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS modelo_placa VARCHAR(10) NOT NULL DEFAULT '';");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS num_mcps INT NOT NULL DEFAULT 6;");
@@ -557,18 +557,12 @@ public class TestRepository : ITestRepository
 
     private static ParametroEnsayo MapParametroEnsayo(dynamic row)
     {
-        bool[] salidas = new bool[Pc7866Commands.OutputCount];
-        string? json = (string?)row.n_salida_json;
-        if (!string.IsNullOrEmpty(json))
-            salidas = JsonSerializer.Deserialize<bool[]>(json) ?? salidas;
-
         return new ParametroEnsayo
         {
             Id                 = (int)row.id,
             ReferenciaId       = (int)row.referencia_id,
             NombreContacto     = (string)row.nombre_contacto,
             NPasoEnsayo        = (int)row.n_paso_ensayo,
-            NSalida            = salidas,
             ResistenciaNominal = (float)row.resistencia_nominal,
             Tolerancia         = (float)row.tolerancia,
             Pendiente          = HasColumn(row, "pendiente_val") ? (float)row.pendiente_val : 1f,
