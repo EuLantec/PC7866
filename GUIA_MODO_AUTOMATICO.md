@@ -42,80 +42,75 @@ Clase [`InitializingState`](Services/StateMachine/States/InitializingState.cs):
 
 ## Paso 2 — Estado `Running`: dos pasadas (resistencia + cortocircuito)
 
-Clase [`RunningState`](Services/StateMachine/States/RunningState.cs). Los parámetros se ordenan por `NPasoEnsayo`. Antes de nada se calculan las máscaras globales "arriba"/"abajo" agregando `McpArribaChip/Pin` y `McpAbajoChip/Pin` de **todos** los pasos de la referencia.
+Clase [`RunningState`](Services/StateMachine/States/RunningState.cs). Los parámetros se ordenan por `NPasoEnsayo`. **Al inicio** se ponen TODOS los MCP de la placa (se usen o no, `0..NumMcps-1`) como **salida** (`M...FFFF`) y a **0V** (`S...0000`). Después el ensayo es **punto a punto**: por cada paso se mide su resistencia y, a continuación, se comprueba su cortocircuito, restaurando el paso antes de pasar al siguiente.
 
-**Fase A (resistencia)** — configuración global una única vez (todos los "arriba" salida a 5V, todos los "abajo" salida a 0V vía `M`+`S`) y luego, por cada paso: comprobar cancelación → reportar progreso (`"[Resistencia i/total] NombreContacto"`) → `P<CanalMultiplexor>` para seleccionar la pista → esperar 50 ms → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1` deja el cálculo igual que antes) → clasificar provisionalmente `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última solo si `R < ResistenciaMinima`). El detalle se guarda en memoria (todavía no se dispara `StepCompleted`).
+Por cada paso (comprobar cancelación → reportar progreso `"[i/total] NombreContacto"`):
 
-**Fase B (cortocircuito)** — configuración global una única vez (todos los "arriba"+"abajo" salida a 0V, todo a masa) y luego, por cada paso: comprobar cancelación → reportar progreso (`"[Cortocircuito i/total] NombreContacto"`) → poner el "abajo" de ese paso como entrada (`M`) → poner su "arriba" a 5V (`S`) → `P<CanalMultiplexor>` → leer `F0`; si la tensión cae por debajo de 2,5V (o falla la lectura) se marca `Cortocircuito` sobre el detalle de la Fase A → restaurar "arriba" a 0V y "abajo" a salida 0V → **ahora sí** se dispara `StepCompleted`, que la UI usa para:
+1. **Resistencia** — poner su "arriba" a **5V** (`S`), su "abajo" ya está a 0V → esperar asentamiento → `P<CanalMultiplexor>` para seleccionar la pista → esperar 50 ms → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` dejan el cálculo bruto). El abierto/cortocircuito se detecta sobre la resistencia **bruta** (igual que el modo manual) y solo a lecturas válidas se aplica la calibración. Se clasifica `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última si `R < ResistenciaMinima`).
+2. **Cortocircuito** — poner su "abajo" como **entrada** (`M`, alta impedancia) manteniendo "arriba" a 5V → esperar asentamiento → `P<CanalMultiplexor>` → leer `F0`; si la tensión cae por debajo de 2,5V (o falla la lectura) se marca `Cortocircuito` sobre el resultado del punto 1.
+3. **Restaurar el paso** — "arriba" a **0V** (`S`), "abajo" de nuevo como **salida** (`M`) y a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
+4. Se dispara `StepCompleted` con el `ResultadoDetalle` final, que la UI usa para:
 - Pintar el punto (dot) de ese paso sobre la imagen: verde=Ok, rojo=Nok, naranja=Cortocircuito, azul=Abierto.
 - Añadir una fila a la tabla de resultados con paso, contacto, resistencia medida, nominal±tolerancia y etiqueta de resultado.
 - Registrar la línea correspondiente en el log.
 
-Si se pulsa "Abortar ensayo" en cualquier fase, el resultado global pasa a `Aborted`. Cualquier excepción durante un paso (timeout, error de parseo, etc.) se captura y ese paso se clasifica **Nok** (Fase A) o se trata como no concluyente (Fase B), sin interrumpir el resto del ensayo. Ver la sección ["Procedimiento eléctrico real"](#procedimiento-eléctrico-real-de-medición-fase-a-resistencia--fase-b-cortocircuito) más abajo para el detalle completo de tramas.
+Si se pulsa "Abortar ensayo", el resultado global pasa a `Aborted`. Cualquier excepción durante un paso (timeout, error de parseo, etc.) se captura y ese paso se clasifica **Nok**, sin interrumpir el resto del ensayo; el paso siempre se restaura (bloque `finally`) antes de continuar. Ver la sección ["Procedimiento eléctrico real"](#procedimiento-eléctrico-real-de-medición-punto-a-punto) más abajo para el detalle completo de tramas.
 
-Al terminar ambas fases, `RunningState`:
+Al terminar todos los pasos, `RunningState`:
 
 - Envía `P00` para desconectar el multiplexor de medida.
 - Envía una trama `S` por cada MCP con todas las salidas a 0, para dejar el banco en reposo.
 - Marca `Resultado.ResultadoGlobal = true` solo si **todos** los pasos quedaron en `Ok`.
 - Pasa a `Completed`.
 
-## Procedimiento eléctrico real de medición (Fase A resistencia + Fase B cortocircuito)
+## Procedimiento eléctrico real de medición (punto a punto)
 
 > **Estado:** implementado en `Services/StateMachine/States/RunningState.cs`. Sustituye al
-> esquema anterior (activar `NSalida` tal cual por paso, una sola fase).
+> esquema anterior (dos pasadas globales: toda la resistencia y luego todo el cortocircuito).
 >
 > Mapeo de contactos: "arriba" = `ParametroEnsayo.McpArribaChip`/`McpArribaPin` y "abajo" =
 > `ParametroEnsayo.McpAbajoChip`/`McpAbajoPin` de cada paso.
 >
 > **Decisiones tomadas por defecto (pendientes de validar con el hardware real):**
-> - Umbral de "caída de tensión" en la Fase B: **2,5 V** (constante `CORTOCIRCUITO_VOLTAGE_THRESHOLD`
+> - Umbral de "caída de tensión" del cortocircuito: **2,5 V** (constante `CORTOCIRCUITO_VOLTAGE_THRESHOLD`
 >   en `RunningState.cs`), asumido como la mitad de la excitación nominal de 5V a falta de un valor
 >   confirmado. Ajustar esa constante si el hardware define otro valor.
 > - Relación con la detección por software existente (`ResistenciaMinima`): **coexisten**. Si
 >   cualquiera de los dos criterios (resistencia medida por debajo de `ResistenciaMinima`, o caída
->   de tensión detectada en la Fase B) indica cortocircuito, el paso se marca como `Cortocircuito`.
+>   de tensión detectada) indica cortocircuito, el paso se marca como `Cortocircuito`.
 
-El ensayo se divide en **dos pasadas completas** sobre todos los pasos de la referencia (en ese orden: primero toda la Fase A, luego toda la Fase B):
+El ensayo recorre los pasos de la referencia **uno a uno**; por cada paso se hace primero la
+medición de resistencia y a continuación la comprobación de cortocircuito, antes de pasar al
+siguiente.
 
-### Fase A — Medición de resistencia
+### Configuración inicial (una sola vez)
 
-1. **Configuración global** (una sola vez, antes de recorrer las pistas): todos los pines "arriba"
-   (de todos los pasos) se configuran como **salida** (`M`) y se ponen a **5V/HIGH** (`S`); todos los
-   pines "abajo" se configuran como **salida** (`M`) y se ponen a **0V/LOW** (`S`).
-2. Para cada paso, en orden: seleccionar la pista con `P<CanalMultiplexor>` y leer/calcular la
-   resistencia (igual que antes: `F0..F3` → `Vain`, `Ve` → `R`). Se clasifica provisionalmente
-   como `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última solo por el umbral `ResistenciaMinima`).
-3. No hace falta volver a tocar `M`/`S` entre pistas de esta fase: el multiplexor (`P`) es el que
-   conmuta qué contacto se está midiendo; arriba/abajo quedan fijos en 5V/0V durante toda la fase.
+Todos los MCP de la placa (`0..NumMcps-1`, se usen o no en algún paso) se configuran como **salida**
+(`M<chip>SFFFF`) y se ponen a **0V/LOW** (`S<chip>0000`). Así se parte de todo el banco a masa.
 
-### Fase B — Detección de cortocircuito
+### Por cada paso
 
-1. **Configuración global**: tanto los pines "arriba" como "abajo" (de todos los pasos) se
-   configuran como **salida** (`M`) y se ponen a **0V/LOW** (`S`) — todo el banco a masa.
-2. Para cada paso, en orden:
-   - El pin "arriba" de ese paso concreto se pone a **5V/HIGH** (`S`), manteniendo el resto de
-     "arriba"/"abajo" a 0V.
-   - El pin "abajo" de ese paso concreto se reconfigura como **entrada** (`M`, en vez de salida a 0V).
-   - Se selecciona la pista (`P<CanalMultiplexor>`) y se lee la tensión (`F0`).
-   - Si la tensión leída cae por debajo del umbral (2,5V por defecto) o la lectura falla, se marca
-     `Cortocircuito` (se combina con el resultado de la Fase A: prevalece sobre `Ok`/`Nok`, no sobre `Abierto`
-     salvo que también caiga el umbral). Si no hay caída, el `Estado` de la Fase A se mantiene.
-   - Antes de pasar al siguiente paso, se restaura el pin "abajo" a **salida a 0V** y el "arriba" de
-     este paso vuelve a **0V**, dejando el banco a masa para el siguiente contacto.
-   - Solo entonces (al cerrar la Fase B de ese paso) se dispara `StepCompleted` con el `ResultadoDetalle`
-     final — durante la Fase A no se actualiza todavía el grid/imagen de la UI para ese paso.
-3. Si un paso no tiene `McpArribaChip`/`McpAbajoChip` configurados, la comprobación de cortocircuito
-   se omite para ese paso (se conserva el resultado de la Fase A).
+1. **Resistencia** — el pin "arriba" de ese paso se pone a **5V/HIGH** (`S`), manteniendo su "abajo"
+   a 0V. Se selecciona la pista con `P<CanalMultiplexor>` y se lee/calcula la resistencia (`F0..F3` →
+   `Vain`, `Ve` → `R`). Abierto/cortocircuito se detectan sobre la resistencia **bruta**; solo a
+   lecturas válidas se aplica `R = Pendiente×R_bruta + Offset`.
+2. **Cortocircuito** — el pin "abajo" de ese paso se reconfigura como **entrada** (`M`, alta
+   impedancia), manteniendo su "arriba" a 5V. Se selecciona la pista (`P`) y se lee la tensión
+   (`F0`). Si la tensión cae por debajo del umbral (2,5V por defecto) o la lectura falla, se marca
+   `Cortocircuito` (prevalece sobre el resultado de resistencia).
+3. **Restaurar** — el pin "arriba" vuelve a **0V** (`S`), el "abajo" se reconfigura como **salida**
+   (`M`) y se pone a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
+4. Solo entonces se dispara `StepCompleted` con el `ResultadoDetalle` final del paso.
+
+Si un paso no tiene `McpArribaChip`/`McpAbajoChip` configurados (índice de bit inválido), se marca
+**Nok** y se omiten las medidas de ese paso.
 
 ### Notas de la implementación
 
-- `RunningState.cs` calcula al inicio las máscaras de "todos los arriba" / "todos los abajo"
-  agregando `McpArribaChip/Pin` y `McpAbajoChip/Pin` de **todos** los `ParametroEnsayo` de la
-  referencia (no solo del paso actual), antes de arrancar la Fase A.
-- Cualquier fallo de comunicación (timeout, respuesta `N`) durante la Fase B se trata como "no
-  concluyente" (no se marca cortocircuito solo por eso); el fallo de comunicación ya queda
-  reflejado por la clasificación `Nok` de la Fase A si corresponde.
+- El paso siempre se restaura en un bloque `finally`, incluso si hubo una excepción durante la
+  medición, para no dejar salidas activas entre contactos.
+- Cualquier fallo de comunicación (timeout, respuesta `N`) durante la comprobación de cortocircuito
+  se trata como "no concluyente" (no se marca cortocircuito solo por eso).
 
 ## Paso 3 — Estado `Completed`
 
@@ -146,19 +141,19 @@ En cualquier momento del bucle de `Running`, pulsar **Abortar ensayo** cancela e
 flowchart TD
     A[Operario pulsa Iniciar ensayo] --> B[Initializing: enviar config de placa 'I']
     B -->|NOK / timeout| E[Error]
-    B -->|OK| FA0[Fase A: config global arriba=5V abajo=0V]
-    FA0 --> FA[Por cada paso: P pista -> F0..F3 -> calcular R -> clasificar]
-    FA -->|todos los pasos| FB0[Fase B: config global arriba+abajo=0V]
-    FB0 --> FB[Por cada paso: abajo=entrada, arriba=5V, P pista, leer tension]
-    FB --> FB1{Cae la tension?}
-    FB1 -->|si| CORTO[Marcar Cortocircuito]
-    FB1 -->|no| KEEP[Mantener estado de Fase A]
-    CORTO --> RESTORE[Restaurar arriba=0V abajo=salida 0V]
+    B -->|OK| INIT[Poner TODOS los MCP de la placa a 0V]
+    INIT --> P0[Por cada paso...]
+    P0 --> R1[Resistencia: arriba=5V, P pista, F0..F3, calcular R, clasificar]
+    R1 --> C1[Cortocircuito: abajo=entrada, arriba=5V, P pista, leer tension]
+    C1 --> C2{Cae la tension?}
+    C2 -->|si| CORTO[Marcar Cortocircuito]
+    C2 -->|no| KEEP[Mantener estado de resistencia]
+    CORTO --> RESTORE[Restaurar arriba=0V, abajo=salida 0V]
     KEEP --> RESTORE
     RESTORE --> UI[Disparar StepCompleted: dot, grid, log]
-    UI -->|siguiente paso| FB
+    UI -->|siguiente paso| P0
     UI -->|cancelado| X[Aborted]
-    FB -->|todos los pasos hechos| D[Apagar salidas + P00]
+    UI -->|todos los pasos hechos| D[Apagar salidas + P00]
     D --> F[Completed: reporte final]
     F --> G[Guardar Resultado + Detalles en BD]
 ```
