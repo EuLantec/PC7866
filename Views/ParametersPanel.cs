@@ -39,6 +39,8 @@ public partial class ParametersPanel : UserControl
         btnNuevoParam.Click                  += BtnNuevoParam_Click;
         btnGuardarParam.Click                += BtnGuardarParam_Click;
         btnEliminarParam.Click               += BtnEliminarParam_Click;
+        btnExportarParam.Click               += BtnExportarParam_Click;
+        btnImportarParam.Click               += BtnImportarParam_Click;
         gridParametros.SelectionChanged      += GridParametros_SelectionChanged;
 
         // Punto sobre imagen
@@ -92,7 +94,15 @@ public partial class ParametersPanel : UserControl
         _referenciaActual = r;
         txtRefNombre.Text = r.ReferenciaNombre;
         txtRefDesc.Text   = r.Descripcion;
+        txtRefModelo.Text = r.ModeloPlaca;
         chkActiva.Checked = r.BActiva;
+        nudRefNumMcps.Value  = Math.Clamp(r.NumMcps, (int)nudRefNumMcps.Minimum, (int)nudRefNumMcps.Maximum);
+        nudRefMuestras.Value = Math.Clamp(r.Muestras, (int)nudRefMuestras.Minimum, (int)nudRefMuestras.Maximum);
+        nudRefRetardo.Value  = Math.Clamp(r.RetardoMs, (int)nudRefRetardo.Minimum, (int)nudRefRetardo.Maximum);
+        txtRefInh1.Text = FormatInh(r.Inh1Pos);
+        txtRefInh2.Text = FormatInh(r.Inh2Pos);
+        txtRefInh3.Text = FormatInh(r.Inh3Pos);
+        txtRefInh4.Text = FormatInh(r.Inh4Pos);
 
         if (r.Imagen?.Length > 0)
         {
@@ -117,7 +127,7 @@ public partial class ParametersPanel : UserControl
         foreach (var p in parametros)
         {
             int idx = gridParametros.Rows.Add(p.Id, p.NPasoEnsayo, p.NombreContacto,
-                p.ResistenciaNominal, p.Tolerancia, p.Offset, p.ResistenciaMinima, p.PosX, p.PosY);
+                p.ResistenciaNominal, p.Tolerancia, p.Pendiente, p.Offset, p.ResistenciaMinima, p.PosX, p.PosY);
             gridParametros.Rows[idx].Tag = p;
         }
 
@@ -141,7 +151,12 @@ public partial class ParametersPanel : UserControl
         _referenciaActual = null;
         txtRefNombre.Text = string.Empty;
         txtRefDesc.Text   = string.Empty;
+        txtRefModelo.Text = string.Empty;
         chkActiva.Checked = true;
+        nudRefNumMcps.Value  = PC7866.Models.Pc7866Commands.McpChipCount;
+        nudRefMuestras.Value = 10;
+        nudRefRetardo.Value  = 20;
+        txtRefInh1.Text = "N"; txtRefInh2.Text = "N"; txtRefInh3.Text = "N"; txtRefInh4.Text = "N";
         picPreview.Image  = null;
         gridParametros.Rows.Clear();
         ClearParamForm();
@@ -173,7 +188,15 @@ public partial class ParametersPanel : UserControl
             {
                 ReferenciaNombre  = txtRefNombre.Text.Trim(),
                 Descripcion       = txtRefDesc.Text.Trim(),
+                ModeloPlaca       = txtRefModelo.Text.Trim(),
                 BActiva           = chkActiva.Checked,
+                NumMcps           = (int)nudRefNumMcps.Value,
+                Muestras          = (int)nudRefMuestras.Value,
+                RetardoMs         = (int)nudRefRetardo.Value,
+                Inh1Pos           = ParseInh(txtRefInh1.Text),
+                Inh2Pos           = ParseInh(txtRefInh2.Text),
+                Inh3Pos           = ParseInh(txtRefInh3.Text),
+                Inh4Pos           = ParseInh(txtRefInh4.Text),
                 FechaCreacion     = DateTime.Now,
                 FechaModificacion = DateTime.Now,
                 Imagen            = imagen
@@ -185,7 +208,15 @@ public partial class ParametersPanel : UserControl
         {
             _referenciaActual.ReferenciaNombre  = txtRefNombre.Text.Trim();
             _referenciaActual.Descripcion       = txtRefDesc.Text.Trim();
+            _referenciaActual.ModeloPlaca       = txtRefModelo.Text.Trim();
             _referenciaActual.BActiva           = chkActiva.Checked;
+            _referenciaActual.NumMcps           = (int)nudRefNumMcps.Value;
+            _referenciaActual.Muestras          = (int)nudRefMuestras.Value;
+            _referenciaActual.RetardoMs         = (int)nudRefRetardo.Value;
+            _referenciaActual.Inh1Pos           = ParseInh(txtRefInh1.Text);
+            _referenciaActual.Inh2Pos           = ParseInh(txtRefInh2.Text);
+            _referenciaActual.Inh3Pos           = ParseInh(txtRefInh3.Text);
+            _referenciaActual.Inh4Pos           = ParseInh(txtRefInh4.Text);
             _referenciaActual.FechaModificacion = DateTime.Now;
             _referenciaActual.Imagen            = imagen;
             await _repository.UpdateReferenciaAsync(_referenciaActual);
@@ -242,6 +273,7 @@ public partial class ParametersPanel : UserControl
         txtContacto.Text = row.Cells["colP_Contacto"].Value?.ToString() ?? string.Empty;
         nudNominal.Value = Convert.ToDecimal(row.Cells["colP_Nominal"].Value);
         nudTol.Value     = Convert.ToDecimal(row.Cells["colP_Tol"].Value);
+        nudPendiente.Value = Convert.ToDecimal(row.Cells["colP_Pendiente"].Value);
         nudOffset.Value  = Convert.ToDecimal(row.Cells["colP_Offset"].Value);
         nudMinima.Value  = Convert.ToDecimal(row.Cells["colP_Minima"].Value);
         nudPosX.Value    = Convert.ToDecimal(row.Cells["colP_PosX"].Value);
@@ -259,10 +291,10 @@ public partial class ParametersPanel : UserControl
         else
         {
             txtSalidas.Text = string.Empty;
-            nudMcpArribaChip.Value = 0;
-            nudMcpArribaPin.Value  = 0;
-            nudMcpAbajoChip.Value  = 0;
-            nudMcpAbajoPin.Value   = 0;
+            nudMcpArribaChip.Value = -1;
+            nudMcpArribaPin.Value  = 1;
+            nudMcpAbajoChip.Value  = -1;
+            nudMcpAbajoPin.Value   = 1;
             nudCanalMux.Value      = 0;
         }
         _ignorarNudEvents = false;
@@ -298,7 +330,7 @@ public partial class ParametersPanel : UserControl
         gridParametros.SelectionChanged -= GridParametros_SelectionChanged;
         gridParametros.ClearSelection();
 
-        int newIndex = gridParametros.Rows.Add(0, siguientePaso, string.Empty, 0, 0, 0, 0, 0, 0);
+        int newIndex = gridParametros.Rows.Add(0, siguientePaso, string.Empty, 0, 0, 1, 0, 0, 0, 0);
         DataGridViewRow nuevaFila = gridParametros.Rows[newIndex];
         nuevaFila.DefaultCellStyle.ForeColor = Color.Gray;
         nuevaFila.DefaultCellStyle.Font      = new Font(gridParametros.Font, FontStyle.Italic);
@@ -315,15 +347,16 @@ public partial class ParametersPanel : UserControl
         txtContacto.Text = string.Empty;
         nudNominal.Value = 0;
         nudTol.Value     = 0;
+        nudPendiente.Value = 1;
         nudOffset.Value  = 0;
         nudMinima.Value  = 0;
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
-        nudMcpArribaChip.Value = 0;
-        nudMcpArribaPin.Value  = 0;
-        nudMcpAbajoChip.Value  = 0;
-        nudMcpAbajoPin.Value   = 0;
+        nudMcpArribaChip.Value = -1;
+        nudMcpArribaPin.Value  = 1;
+        nudMcpAbajoChip.Value  = -1;
+        nudMcpAbajoPin.Value   = 1;
         nudCanalMux.Value      = 0;
         _ignorarNudEvents = false;
 
@@ -362,7 +395,7 @@ public partial class ParametersPanel : UserControl
 
         bool[] salidas = ParseSalidas(txtSalidas.Text);
         int mcpArribaChip = (int)nudMcpArribaChip.Value;
-        int mcpArribaPin  = (int)nudMcpArribaPin.Value;
+        int mcpArribaPin  = (int)nudMcpArribaPin.Value; // NUD y modelo usan el mismo pin 1-16
         int mcpAbajoChip  = (int)nudMcpAbajoChip.Value;
         int mcpAbajoPin   = (int)nudMcpAbajoPin.Value;
         int canalMux      = (int)nudCanalMux.Value;
@@ -385,6 +418,7 @@ public partial class ParametersPanel : UserControl
                 NSalida            = salidas,
                 ResistenciaNominal = (float)nudNominal.Value,
                 Tolerancia         = (float)nudTol.Value,
+                Pendiente          = (float)nudPendiente.Value,
                 Offset             = (float)nudOffset.Value,
                 ResistenciaMinima  = (float)nudMinima.Value,
                 McpArribaChip      = mcpArribaChip,
@@ -408,6 +442,7 @@ public partial class ParametersPanel : UserControl
                 NSalida            = salidas,
                 ResistenciaNominal = (float)nudNominal.Value,
                 Tolerancia         = (float)nudTol.Value,
+                Pendiente          = (float)nudPendiente.Value,
                 Offset             = (float)nudOffset.Value,
                 ResistenciaMinima  = (float)nudMinima.Value,
                 McpArribaChip      = mcpArribaChip,
@@ -438,6 +473,132 @@ public partial class ParametersPanel : UserControl
         await _repository.DeleteParametroAsync(id);
         if (_referenciaActual is not null)
             await LoadParametrosAsync(_referenciaActual.Id);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Importar / exportar parámetros (CSV / JSON)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async void BtnExportarParam_Click(object? sender, EventArgs e)
+    {
+        if (_referenciaActual is null || _repository is null)
+        {
+            MessageBox.Show("Primero seleccione una referencia.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var parametros = (await _repository.GetParametrosByReferenciaAsync(_referenciaActual.Id)).ToList();
+        if (parametros.Count == 0)
+        {
+            MessageBox.Show("Esta referencia no tiene parámetros que exportar.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        using var dlg = new SaveFileDialog
+        {
+            Filter   = "CSV (*.csv)|*.csv|JSON (*.json)|*.json",
+            FileName = $"parametros_{_referenciaActual.ReferenciaNombre}",
+            Title    = "Exportar parámetros"
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        try
+        {
+            if (dlg.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                ParametroImportExport.ExportJson(dlg.FileName, parametros);
+            else
+                ParametroImportExport.ExportCsv(dlg.FileName, parametros);
+
+            MessageBox.Show($"Exportados {parametros.Count} parámetros.", "OK",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al exportar: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async void BtnImportarParam_Click(object? sender, EventArgs e)
+    {
+        if (_referenciaActual is null || _repository is null)
+        {
+            MessageBox.Show("Primero seleccione una referencia.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        using var dlg = new OpenFileDialog
+        {
+            Filter = "Parámetros (*.csv;*.json)|*.csv;*.json|CSV (*.csv)|*.csv|JSON (*.json)|*.json",
+            Title  = "Importar parámetros"
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        List<ParametroEnsayo> parametros;
+        try
+        {
+            parametros = dlg.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                ? ParametroImportExport.ImportJson(dlg.FileName)
+                : ParametroImportExport.ImportCsv(dlg.FileName);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al leer el archivo: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        if (parametros.Count == 0)
+        {
+            MessageBox.Show("El archivo no contiene parámetros.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var resp = MessageBox.Show(
+            $"Se importarán {parametros.Count} parámetros a la referencia '{_referenciaActual.ReferenciaNombre}'.\n\n" +
+            "Sí = reemplazar los existentes  |  No = añadir  |  Cancelar",
+            "Importar parámetros", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+        if (resp == DialogResult.Cancel) return;
+
+        try
+        {
+            if (resp == DialogResult.Yes)
+            {
+                var existentes = await _repository.GetParametrosByReferenciaAsync(_referenciaActual.Id);
+                foreach (var ex in existentes)
+                    await _repository.DeleteParametroAsync(ex.Id);
+            }
+
+            foreach (var p in parametros)
+            {
+                p.Id           = 0;
+                p.ReferenciaId = _referenciaActual.Id;
+
+                // Recalcular las salidas activas a partir de los selectores arriba/abajo.
+                p.NSalida = new bool[Pc7866Commands.OutputCount];
+                int bA = Pc7866Commands.McpBitIndex(p.McpArribaChip, p.McpArribaPin);
+                if (bA >= 0) p.NSalida[bA] = true;
+                int bB = Pc7866Commands.McpBitIndex(p.McpAbajoChip, p.McpAbajoPin);
+                if (bB >= 0) p.NSalida[bB] = true;
+
+                p.FechaCreacion     = DateTime.Now;
+                p.FechaModificacion = DateTime.Now;
+                await _repository.InsertParametroAsync(p);
+            }
+
+            await LoadParametrosAsync(_referenciaActual.Id);
+            MessageBox.Show($"Importados {parametros.Count} parámetros.", "OK",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al importar: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -626,19 +787,33 @@ public partial class ParametersPanel : UserControl
         txtContacto.Text = string.Empty;
         nudNominal.Value = 0;
         nudTol.Value     = 0;
+        nudPendiente.Value = 1;
         nudOffset.Value  = 0;
         nudMinima.Value  = 0;
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
-        nudMcpArribaChip.Value = 0;
-        nudMcpArribaPin.Value  = 0;
-        nudMcpAbajoChip.Value  = 0;
-        nudMcpAbajoPin.Value   = 0;
+        nudMcpArribaChip.Value = -1;
+        nudMcpArribaPin.Value  = 1;
+        nudMcpAbajoChip.Value  = -1;
+        nudMcpAbajoPin.Value   = 1;
         nudCanalMux.Value      = 0;
         _modoNuevoParam  = false;
         _ignorarNudEvents = false;
         picPreview.Invalidate();
+    }
+
+    /// <summary>Formatea una posición INH (0-15) como dígito hex, o "N" si no está asignada.</summary>
+    private static string FormatInh(int? pos)
+        => pos is null ? "N" : pos.Value.ToString("X1");
+
+    /// <summary>Parsea el texto de una posición INH ("N" o dígito hex 0-F) a su valor entero o null.</summary>
+    private static int? ParseInh(string texto)
+    {
+        texto = texto.Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(texto) || texto == "N") return null;
+        return int.TryParse(texto, System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out int v) ? v : null;
     }
 
     /// <summary>
@@ -659,12 +834,12 @@ public partial class ParametersPanel : UserControl
     /// </summary>
     private static bool[] ParseSalidas(string texto)
     {
-        var salidas = new bool[48];
+        var salidas = new bool[Pc7866Commands.OutputCount];
         if (string.IsNullOrWhiteSpace(texto)) return salidas;
 
         foreach (var tok in texto.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
         {
-            if (int.TryParse(tok.Trim(), out int n) && n >= 1 && n <= 48)
+            if (int.TryParse(tok.Trim(), out int n) && n >= 1 && n <= Pc7866Commands.OutputCount)
                 salidas[n - 1] = true;
         }
         return salidas;

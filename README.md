@@ -8,12 +8,17 @@ La aplicacion permite:
 - Gestionar referencias y parametros de ensayo.
 - Guardar y consultar resultados en MariaDB.
 
+## Guias de uso
+
+- [Modo Manual](GUIA_MODO_MANUAL.md): comando a comando (diagnosis, salidas individuales, lectura analogica, filtros/coeficientes, guardar en memoria no volatil, reset).
+- [Modo Automatico](GUIA_MODO_AUTOMATICO.md): ejecucion de un ensayo completo por referencia (maquina de estados, resultados por paso, guardado en BD).
+
 ## Estado actual
 
 El proyecto ya incluye funcionalidad operativa en:
 - Modo manual: diagnosis, activacion de salidas, lecturas analogicas y test completo.
-- Modo automatico: ejecucion por pasos con maquina de estados y progreso visual.
-- Parametros: gestion de referencias y parametros de ensayo.
+- Modo automatico: ejecucion punto a punto (resistencia + cortocircuito por contacto) con maquina de estados y progreso visual.
+- Parametros: gestion de referencias y parametros de ensayo, con import/export en CSV y JSON.
 - Informes: consulta de historico y detalle de resultados.
 - Configuracion: puerto serie, conexion BD y opciones generales mediante `appsettings.json`.
 
@@ -89,19 +94,20 @@ Notas:
 ## Protocolo serie (resumen)
 
 Comandos principales:
-- `D`: Diagnosis
-- `S`: Activacion de salidas (48 bits, 12 hex)
-- `R`: Lectura analogica RAW
-- `F`: Lectura analogica filtrada
-- `I`: Escritura de flags/coeficientes
-- `G`: Guardar/cargar/ver parametros en memoria no volatil
+- `D`: Diagnosis (subcomandos `T`=total, `1`=ADS1115, `2..7`=MCP23017 0x20-0x25, `V`=version, `G`=leer config, `C`=temperatura)
+- `M`: Configuracion de direccion (entrada/salida) de pines de un MCP23017
+- `S`: Activacion de salidas de un MCP23017 (16 bits, 4 hex; una trama por chip)
+- `P`: Seleccion de pista en los multiplexores analogicos (00-48)
+- `R`: Lectura analogica RAW de un canal ADS (0-3)
+- `F`: Lectura analogica filtrada de un canal ADS (0-3)
+- `I`: Configuracion de placa (modelo de placa, num. MCP, posiciones INH1-4, muestras, retardo)
 - `Q`: Reset del microcontrolador
 
 Respuestas:
 - `O`: OK
 - `N`: NOK
 
-En modo manual y automatico se utilizan los builders de `Pc7866Commands` para construir tramas validas.
+En modo manual y automatico se utilizan los builders de `Pc7866Commands` para construir tramas validas. Ver el detalle completo de la secuencia usada por el ensayo automatico en [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).
 
 ## Estructura del proyecto
 
@@ -130,9 +136,11 @@ Detalles relevantes:
 
 1. Configurar puerto serie y conexion BD en configuracion.
 2. Crear o revisar referencias y parametros de ensayo.
-3. Ejecutar test automatico con operario y lote.
+3. Ejecutar test automatico con operario y lote (ver [guia de modo automatico](GUIA_MODO_AUTOMATICO.md)).
 4. Revisar resultado global y detalle por paso.
 5. Consultar historico en informes.
+
+Para diagnostico de hardware, calibracion o pruebas puntuales sin referencia asociada, usa el [modo manual](GUIA_MODO_MANUAL.md).
 
 ## Solucion de problemas
 
@@ -149,3 +157,5 @@ Detalles relevantes:
 ## Documentacion adicional
 
 - Arquitectura tecnica detallada: `ARCHITECTURE.md`
+- Guia de uso del modo manual: `GUIA_MODO_MANUAL.md`
+- Guia de uso del modo automatico: `GUIA_MODO_AUTOMATICO.md`

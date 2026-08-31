@@ -29,13 +29,31 @@ partial class ManualControlPanel
         // ── Main layout ────────────────────────────────────────────────────
         tableMain       = new System.Windows.Forms.TableLayoutPanel();
 
-        // ── Col izquierda: Diagnosis + Salidas ─────────────────────────────
+        // ── Col izquierda: Diagnosis + M + P + Salidas ─────────────────────
         grpDiagnosis    = new System.Windows.Forms.GroupBox();
         btnDiagTotal    = new System.Windows.Forms.Button();
-        btnDiag1        = new System.Windows.Forms.Button();
-        btnDiag2        = new System.Windows.Forms.Button();
-        btnDiag3        = new System.Windows.Forms.Button();
-        btnDiag4        = new System.Windows.Forms.Button();
+        btnDiagAds      = new System.Windows.Forms.Button();
+        btnDiagVersion  = new System.Windows.Forms.Button();
+        btnDiagReadConfig = new System.Windows.Forms.Button();
+        btnDiagTemperature = new System.Windows.Forms.Button();
+        _btnDiagMcp     = new System.Windows.Forms.Button[Pc7866Commands.McpChipCount];
+        for (int _i = 0; _i < Pc7866Commands.McpChipCount; _i++)
+            _btnDiagMcp[_i] = new System.Windows.Forms.Button();
+
+        grpMcpMode      = new System.Windows.Forms.GroupBox();
+        lblMcpModeAddr  = new System.Windows.Forms.Label();
+        cmbMcpModeAddr  = new System.Windows.Forms.ComboBox();
+        rbModeOutput    = new System.Windows.Forms.RadioButton();
+        rbModeInput     = new System.Windows.Forms.RadioButton();
+        lblMcpModeMask  = new System.Windows.Forms.Label();
+        txtMcpModeMask  = new System.Windows.Forms.TextBox();
+        btnSendMcpMode  = new System.Windows.Forms.Button();
+
+        grpTrack        = new System.Windows.Forms.GroupBox();
+        lblTrack        = new System.Windows.Forms.Label();
+        nudTrack        = new System.Windows.Forms.NumericUpDown();
+        btnSelectTrack  = new System.Windows.Forms.Button();
+        lblTrackHint    = new System.Windows.Forms.Label();
 
         grpOutputs      = new System.Windows.Forms.GroupBox();
         pnlOutputMatrix = new System.Windows.Forms.Panel();
@@ -44,11 +62,16 @@ partial class ManualControlPanel
         btnOutputsAllOff= new System.Windows.Forms.Button();
         btnFullTest     = new System.Windows.Forms.Button();
 
-        // ── Col derecha: Analógica + Filtros + Guardar + Reset ─────────────
+        // ── Col derecha: Analógica + Config placa + Reset ──────────────────
         grpAnalog       = new System.Windows.Forms.GroupBox();
-        btnReadRaw      = new System.Windows.Forms.Button();
-        btnReadFiltered = new System.Windows.Forms.Button();
         lblAnalogTitle  = new System.Windows.Forms.Label();
+        lblChannel      = new System.Windows.Forms.Label();
+        cmbChannel      = new System.Windows.Forms.ComboBox();
+        btnReadRaw      = new System.Windows.Forms.Button();
+        lblRawValue     = new System.Windows.Forms.Label();
+        btnReadFiltered = new System.Windows.Forms.Button();
+        lblFilteredValue= new System.Windows.Forms.Label();
+        btnReadAllFiltered = new System.Windows.Forms.Button();
         // Resultado R
         tableResult     = new System.Windows.Forms.TableLayoutPanel();
         lblVainLbl      = new System.Windows.Forms.Label();
@@ -61,27 +84,21 @@ partial class ManualControlPanel
         lblResistance   = new System.Windows.Forms.Label();
         lblFormula      = new System.Windows.Forms.Label();
 
-        grpFilter       = new System.Windows.Forms.GroupBox();
-        lblCoefHint     = new System.Windows.Forms.Label();
-        lblFilterFlags  = new System.Windows.Forms.Label();
-        txtFilterFlags  = new System.Windows.Forms.TextBox();
-        btnFilterFlags  = new System.Windows.Forms.Button();
-        // Arrays de 10 coeficientes
-        _lblCoef    = new System.Windows.Forms.Label  [10];
-        _txtCoef    = new System.Windows.Forms.TextBox[10];
-        _btnCoef    = new System.Windows.Forms.Button [10];
-        for (int _i = 0; _i < 10; _i++)
-        {
-            _lblCoef[_i] = new System.Windows.Forms.Label();
-            _txtCoef[_i] = new System.Windows.Forms.TextBox();
-            _btnCoef[_i] = new System.Windows.Forms.Button();
-        }
-
-        grpSave         = new System.Windows.Forms.GroupBox();
-        btnSaveWrite    = new System.Windows.Forms.Button();
-        btnSaveRead     = new System.Windows.Forms.Button();
-        btnSaveView     = new System.Windows.Forms.Button();
-
+        grpBoardConfig    = new System.Windows.Forms.GroupBox();
+        lblNumMcps        = new System.Windows.Forms.Label();
+        nudNumMcps        = new System.Windows.Forms.NumericUpDown();
+        lblInh            = new System.Windows.Forms.Label();
+        txtInh1           = new System.Windows.Forms.TextBox();
+        txtInh2           = new System.Windows.Forms.TextBox();
+        txtInh3           = new System.Windows.Forms.TextBox();
+        txtInh4           = new System.Windows.Forms.TextBox();
+        lblBoardRef       = new System.Windows.Forms.Label();
+        txtBoardRef       = new System.Windows.Forms.TextBox();
+        lblMuestras       = new System.Windows.Forms.Label();
+        nudMuestras       = new System.Windows.Forms.NumericUpDown();
+        lblRetardo        = new System.Windows.Forms.Label();
+        nudRetardo        = new System.Windows.Forms.NumericUpDown();
+        btnSendBoardConfig= new System.Windows.Forms.Button();
 
         grpReset        = new System.Windows.Forms.GroupBox();
         btnReset        = new System.Windows.Forms.Button();
@@ -94,13 +111,18 @@ partial class ManualControlPanel
         pnlTopBar.SuspendLayout();
         tableMain.SuspendLayout();
         grpDiagnosis.SuspendLayout();
+        grpMcpMode.SuspendLayout();
+        grpTrack.SuspendLayout();
         grpOutputs.SuspendLayout();
         grpAnalog.SuspendLayout();
         tableResult.SuspendLayout();
-        grpFilter.SuspendLayout();
-        grpSave.SuspendLayout();
+        grpBoardConfig.SuspendLayout();
         grpReset.SuspendLayout();
         grpLog.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)nudTrack).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudNumMcps).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudMuestras).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudRetardo).BeginInit();
         SuspendLayout();
 
         // ═══════════════════════════════════════════════════════════════════
@@ -175,30 +197,23 @@ partial class ManualControlPanel
         tableMain.RowStyles.Add(new System.Windows.Forms.RowStyle(
             System.Windows.Forms.SizeType.Percent, 32f));
         tableMain.Padding = new System.Windows.Forms.Padding(4);
-        tableMain.SetColumnSpan(grpLog, 2);   // el log ocupa las 2 columnas
 
-        // ── Panel izquierdo: contenedor vertical de Diagnosis + Salidas ────
+        // ── Panel izquierdo: contenedor vertical de Diagnosis + M + P + Salidas ─
+        // AutoScroll evita que los controles queden recortados/invisibles si la ventana no es lo bastante alta.
         var pnlLeft = new System.Windows.Forms.Panel
         {
             Dock = System.Windows.Forms.DockStyle.Fill,
-            Padding = new System.Windows.Forms.Padding(0, 0, 4, 0)
+            Padding = new System.Windows.Forms.Padding(0, 0, 4, 0),
+            AutoScroll = true
         };
 
-        // ── Panel derecho: contenedor vertical de Analógica + Filtros + Guardar/Reset
+        // ── Panel derecho: contenedor vertical de Analógica + Config placa + Reset
         var pnlRight = new System.Windows.Forms.Panel
         {
             Dock = System.Windows.Forms.DockStyle.Fill,
-            Padding = new System.Windows.Forms.Padding(4, 0, 0, 0)
+            Padding = new System.Windows.Forms.Padding(4, 0, 0, 0),
+            AutoScroll = true
         };
-
-        // ═══════════════════════════════════════════════════════════════════
-        // grpDiagnosis
-        // ═══════════════════════════════════════════════════════════════════
-        grpDiagnosis.Text    = "D – Diagnosis";
-        grpDiagnosis.Dock    = System.Windows.Forms.DockStyle.Top;
-        grpDiagnosis.Height  = 82;
-        grpDiagnosis.Enabled = false;
-        grpDiagnosis.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
         void StyleBtn(System.Windows.Forms.Button b, string text, int x, int y, int w = 130)
         {
@@ -209,28 +224,127 @@ partial class ManualControlPanel
             b.Font      = new System.Drawing.Font("Segoe UI", 8.5f);
         }
 
-        StyleBtn(btnDiagTotal, "DT – Total",    6,  22, 148);
+        // ═══════════════════════════════════════════════════════════════════
+        // grpDiagnosis
+        // ═══════════════════════════════════════════════════════════════════
+        grpDiagnosis.Text    = "D – Diagnosis";
+        grpDiagnosis.Dock    = System.Windows.Forms.DockStyle.Top;
+        grpDiagnosis.Height  = 118;
+        grpDiagnosis.Enabled = false;
+        grpDiagnosis.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
+        StyleBtn(btnDiagTotal, "DT – Total", 6, 22, 130);
         btnDiagTotal.BackColor = System.Drawing.Color.FromArgb(0, 120, 215);
         btnDiagTotal.ForeColor = System.Drawing.Color.White;
         btnDiagTotal.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
-        StyleBtn(btnDiag1, "D1 – MCP 0x20", 162, 22);
-        StyleBtn(btnDiag2, "D2 – MCP 0x21", 298, 22);
-        StyleBtn(btnDiag3, "D3 – MCP 0x22", 434, 22);
-        StyleBtn(btnDiag4, "D4 – 0x48",     570, 22);
+        StyleBtn(btnDiagAds,        "D1 – ADS 0x48", 142, 22, 130);
+        StyleBtn(btnDiagVersion,    "DV – Versión",  278, 22, 110);
+        StyleBtn(btnDiagReadConfig, "DG – Ver config", 394, 22, 130);
+        StyleBtn(btnDiagTemperature, "DC – Temperatura", 534, 22, 130);
 
-        grpDiagnosis.Controls.AddRange(new System.Windows.Forms.Control[]
-            { btnDiagTotal, btnDiag1, btnDiag2, btnDiag3, btnDiag4 });
+        for (int _di = 0; _di < Pc7866Commands.McpChipCount; _di++)
+        {
+            int addr = 0x20 + _di;
+            StyleBtn(_btnDiagMcp[_di], $"D{_di + 2} – MCP 0x{addr:X2}", 6 + _di * 116, 58, 110);
+        }
+
+        var diagControls = new System.Windows.Forms.Control[5 + Pc7866Commands.McpChipCount];
+        diagControls[0] = btnDiagTotal;
+        diagControls[1] = btnDiagAds;
+        diagControls[2] = btnDiagVersion;
+        diagControls[3] = btnDiagReadConfig;
+        diagControls[4] = btnDiagTemperature;
+        for (int _di = 0; _di < Pc7866Commands.McpChipCount; _di++)
+            diagControls[5 + _di] = _btnDiagMcp[_di];
+        grpDiagnosis.Controls.AddRange(diagControls);
+
+        // ═══════════════════════════════════════════════════════════════════
+        // grpMcpMode  (M – dirección de pines)
+        // ═══════════════════════════════════════════════════════════════════
+        grpMcpMode.Text    = "M – Configuración de dirección (E/S)";
+        grpMcpMode.Dock    = System.Windows.Forms.DockStyle.Top;
+        grpMcpMode.Height  = 116;
+        grpMcpMode.Enabled = false;
+        grpMcpMode.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
+        lblMcpModeAddr.Text     = "Dirección MCP:";
+        lblMcpModeAddr.AutoSize = true;
+        lblMcpModeAddr.Location = new System.Drawing.Point(6, 26);
+        lblMcpModeAddr.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        cmbMcpModeAddr.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+        cmbMcpModeAddr.Location      = new System.Drawing.Point(120, 22);
+        cmbMcpModeAddr.Size          = new System.Drawing.Size(130, 24);
+
+        rbModeOutput.Text     = "Salida (S)";
+        rbModeOutput.Checked  = true;
+        rbModeOutput.AutoSize = true;
+        rbModeOutput.Location = new System.Drawing.Point(270, 24);
+        rbModeOutput.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        rbModeInput.Text     = "Entrada (E)";
+        rbModeInput.AutoSize = true;
+        rbModeInput.Location = new System.Drawing.Point(390, 24);
+        rbModeInput.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        lblMcpModeMask.Text     = "Máscara (hex 4):";
+        lblMcpModeMask.AutoSize = true;
+        lblMcpModeMask.Location = new System.Drawing.Point(6, 60);
+        lblMcpModeMask.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        txtMcpModeMask.Text           = "0000";
+        txtMcpModeMask.Location       = new System.Drawing.Point(120, 56);
+        txtMcpModeMask.Size           = new System.Drawing.Size(90, 24);
+        txtMcpModeMask.MaxLength      = 4;
+        txtMcpModeMask.CharacterCasing= System.Windows.Forms.CharacterCasing.Upper;
+        txtMcpModeMask.Font           = new System.Drawing.Font("Consolas", 9f);
+
+        StyleBtn(btnSendMcpMode, "Enviar M", 230, 55, 130);
+
+        grpMcpMode.Controls.AddRange(new System.Windows.Forms.Control[]
+            { lblMcpModeAddr, cmbMcpModeAddr, rbModeOutput, rbModeInput,
+              lblMcpModeMask, txtMcpModeMask, btnSendMcpMode });
+
+        // ═══════════════════════════════════════════════════════════════════
+        // grpTrack  (P – selección de pista)
+        // ═══════════════════════════════════════════════════════════════════
+        grpTrack.Text    = "P – Selección de pista (multiplexores)";
+        grpTrack.Dock    = System.Windows.Forms.DockStyle.Top;
+        grpTrack.Height  = 78;
+        grpTrack.Enabled = false;
+        grpTrack.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
+        lblTrack.Text     = "Pista (0-48):";
+        lblTrack.AutoSize = true;
+        lblTrack.Location = new System.Drawing.Point(6, 26);
+        lblTrack.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        nudTrack.Location = new System.Drawing.Point(100, 22);
+        nudTrack.Size     = new System.Drawing.Size(70, 24);
+        nudTrack.Minimum  = 0;
+        nudTrack.Maximum  = Pc7866Commands.MaxTrackNumber;
+
+        StyleBtn(btnSelectTrack, "Enviar P", 182, 21, 120);
+
+        lblTrackHint.Text      = "P00 desconecta el mux del ADS";
+        lblTrackHint.AutoSize  = true;
+        lblTrackHint.Location  = new System.Drawing.Point(312, 26);
+        lblTrackHint.Font      = new System.Drawing.Font("Segoe UI", 8f, System.Drawing.FontStyle.Italic);
+        lblTrackHint.ForeColor = System.Drawing.Color.Gray;
+
+        grpTrack.Controls.AddRange(new System.Windows.Forms.Control[]
+            { lblTrack, nudTrack, btnSelectTrack, lblTrackHint });
 
         // ═══════════════════════════════════════════════════════════════════
         // grpOutputs  (Salidas S)
         // ═══════════════════════════════════════════════════════════════════
-        grpOutputs.Text    = "S – Activación de salidas  (48 canales)";
+        grpOutputs.Text    = $"S – Activación de salidas  ({Pc7866Commands.OutputCount} canales, 6 × MCP23017)";
         grpOutputs.Dock    = System.Windows.Forms.DockStyle.Fill;
         grpOutputs.Enabled = false;
         grpOutputs.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
-        lblOutputMask.Text      = "Trama:  S000000000000";
+        lblOutputMask.Text      = "Trama:  —";
         lblOutputMask.AutoSize  = true;
         lblOutputMask.Location  = new System.Drawing.Point(6, 22);
         lblOutputMask.Font      = new System.Drawing.Font("Consolas", 9.5f, System.Drawing.FontStyle.Bold);
@@ -248,9 +362,9 @@ partial class ManualControlPanel
         btnOutputsAllOff.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         btnOutputsAllOff.Font      = new System.Drawing.Font("Segoe UI", 8.5f);
 
-        btnFullTest.Text      = "▶  Test completo (48 salidas)";
+        btnFullTest.Text      = "▶  Test completo (todas las salidas)";
         btnFullTest.Location  = new System.Drawing.Point(438, 18);
-        btnFullTest.Size      = new System.Drawing.Size(220, 28);
+        btnFullTest.Size      = new System.Drawing.Size(240, 28);
         btnFullTest.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         btnFullTest.BackColor = System.Drawing.Color.FromArgb(180, 100, 0);
         btnFullTest.ForeColor = System.Drawing.Color.White;
@@ -263,32 +377,56 @@ partial class ManualControlPanel
         grpOutputs.Controls.AddRange(new System.Windows.Forms.Control[]
             { lblOutputMask, btnOutputsAllOn, btnOutputsAllOff, btnFullTest, pnlOutputMatrix });
 
+        // Apilar izquierda: Dock=Top se añade después → queda encima
         pnlLeft.Controls.Add(grpOutputs);
-        pnlLeft.Controls.Add(grpDiagnosis);   // Top se añade después → queda encima
+        pnlLeft.Controls.Add(grpTrack);
+        pnlLeft.Controls.Add(grpMcpMode);
+        pnlLeft.Controls.Add(grpDiagnosis);
 
         // ═══════════════════════════════════════════════════════════════════
         // grpAnalog  (R / F + resultado)
         // ═══════════════════════════════════════════════════════════════════
         grpAnalog.Text    = "R / F – Lecturas analógicas";
         grpAnalog.Dock    = System.Windows.Forms.DockStyle.Top;
-        grpAnalog.Height  = 200;
+        grpAnalog.Height  = 260;
         grpAnalog.Enabled = false;
         grpAnalog.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
-        lblAnalogTitle.Text      = "Canales: Ch1 – Ch2 = Vain  |  Ch3 – Ch4 = Ve";
+        lblAnalogTitle.Text      = "Canales ADS: Ch0 – Ch1 = Vain  |  Ch2 – Ch3 = Ve";
         lblAnalogTitle.AutoSize  = true;
         lblAnalogTitle.Location  = new System.Drawing.Point(6, 22);
         lblAnalogTitle.Font      = new System.Drawing.Font("Segoe UI", 8.5f);
         lblAnalogTitle.ForeColor = System.Drawing.Color.Gray;
 
-        StyleBtn(btnReadRaw,      "R – Leer RAW",      6, 44, 140);
-        StyleBtn(btnReadFiltered, "F – Leer Filtrado", 154, 44, 155);
+        lblChannel.Text     = "Canal (0-3):";
+        lblChannel.AutoSize = true;
+        lblChannel.Location = new System.Drawing.Point(6, 50);
+        lblChannel.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        cmbChannel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+        cmbChannel.Location      = new System.Drawing.Point(96, 46);
+        cmbChannel.Size          = new System.Drawing.Size(60, 24);
+
+        StyleBtn(btnReadRaw,      "R – Leer RAW",      166, 45, 130);
+        StyleBtn(btnReadFiltered, "F – Leer Filtrado", 302, 45, 140);
         btnReadFiltered.BackColor = System.Drawing.Color.FromArgb(0, 120, 215);
         btnReadFiltered.ForeColor = System.Drawing.Color.White;
         btnReadFiltered.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
+        lblRawValue.Text      = "RAW: —   Filtrado: —";
+        lblRawValue.AutoSize  = true;
+        lblRawValue.Location  = new System.Drawing.Point(6, 78);
+        lblRawValue.Font      = new System.Drawing.Font("Consolas", 9.5f, System.Drawing.FontStyle.Bold);
+        lblRawValue.ForeColor = System.Drawing.Color.FromArgb(0, 80, 160);
+        lblFilteredValue.Visible = false; // el valor se muestra en lblRawValue
+
+        StyleBtn(btnReadAllFiltered, "F0..F3 → calcular R", 6, 100, 200);
+        btnReadAllFiltered.BackColor = System.Drawing.Color.FromArgb(0, 153, 76);
+        btnReadAllFiltered.ForeColor = System.Drawing.Color.White;
+        btnReadAllFiltered.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
         // Tabla de resultado de R
-        tableResult.Location     = new System.Drawing.Point(6, 82);
+        tableResult.Location     = new System.Drawing.Point(6, 132);
         tableResult.Size         = new System.Drawing.Size(480, 108);
         tableResult.ColumnCount  = 4;
         tableResult.RowCount     = 3;
@@ -321,9 +459,9 @@ partial class ManualControlPanel
             l.Padding   = new System.Windows.Forms.Padding(6, 0, 0, 0);
         }
 
-        LblCaption(lblVainLbl,       "Vain (Ch1–Ch2):");
+        LblCaption(lblVainLbl,       "Vain (Ch0–Ch1):");
         LblValue  (lblVain,          "—");
-        LblCaption(lblVeLbl,         "Ve (Ch3–Ch4):");
+        LblCaption(lblVeLbl,         "Ve (Ch2–Ch3):");
         LblValue  (lblVe,            "—");
         LblCaption(lblDenomLbl,      "Ve – Vain:");
         LblValue  (lblDenom,         "—");
@@ -334,7 +472,7 @@ partial class ManualControlPanel
 
         lblFormula.Text      = "R = Vain / (Ve – Vain) × 390 Ω";
         lblFormula.AutoSize  = true;
-        lblFormula.Location  = new System.Drawing.Point(300, 48);
+        lblFormula.Location  = new System.Drawing.Point(230, 104);
         lblFormula.Font      = new System.Drawing.Font("Segoe UI", 8.5f, System.Drawing.FontStyle.Italic);
         lblFormula.ForeColor = System.Drawing.Color.Gray;
 
@@ -350,91 +488,79 @@ partial class ManualControlPanel
         tableResult.SetColumnSpan(lblResistance,   3);
 
         grpAnalog.Controls.AddRange(new System.Windows.Forms.Control[]
-            { lblAnalogTitle, btnReadRaw, btnReadFiltered, tableResult, lblFormula });
+            { lblAnalogTitle, lblChannel, cmbChannel, btnReadRaw, btnReadFiltered,
+              lblRawValue, lblFilteredValue, btnReadAllFiltered, tableResult, lblFormula });
 
         // ═══════════════════════════════════════════════════════════════════
-        // grpFilter
+        // grpBoardConfig  (I – configuración de placa)
         // ═══════════════════════════════════════════════════════════════════
-        grpFilter.Text    = "I – Filtros";
-        grpFilter.Dock    = System.Windows.Forms.DockStyle.Top;
-        grpFilter.Height  = 290;
-        grpFilter.Enabled = false;
-        grpFilter.Visible = false;
-        grpFilter.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+        grpBoardConfig.Text    = "I – Configuración de placa";
+        grpBoardConfig.Dock    = System.Windows.Forms.DockStyle.Top;
+        grpBoardConfig.Height  = 226;
+        grpBoardConfig.Enabled = false;
+        grpBoardConfig.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
-        lblCoefHint.Text      = "Decimal (0.95553) o hex de 4 dígitos (7373).  Fórmula: (coef + 2.0) × 10000";
-        lblCoefHint.AutoSize  = true;
-        lblCoefHint.Location  = new System.Drawing.Point(6, 20);
-        lblCoefHint.Font      = new System.Drawing.Font("Segoe UI", 8f);
-        lblCoefHint.ForeColor = System.Drawing.Color.Gray;
-
-        var pnlFilterScroll = new System.Windows.Forms.Panel
+        int bx = 6, blx = 190, bw = 120, bh = 24;
+        void BoardRow(System.Windows.Forms.Label l, string text, System.Windows.Forms.Control c, int y)
         {
-            Location    = new System.Drawing.Point(6, 40),
-            Size        = new System.Drawing.Size(490, 264),
-            AutoScroll  = true,
-            BorderStyle = System.Windows.Forms.BorderStyle.None
-        };
-
-        void FilterRowInPanel(System.Windows.Forms.Label lbl, string caption,
-                              System.Windows.Forms.TextBox txt, string defVal,
-                              System.Windows.Forms.Button btn, string btnText, int y)
-        {
-            lbl.Text     = caption;
-            lbl.AutoSize = true;
-            lbl.Location = new System.Drawing.Point(0, y + 3);
-            lbl.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
-
-            txt.Text     = defVal;
-            txt.Location = new System.Drawing.Point(180, y);
-            txt.Size     = new System.Drawing.Size(100, 24);
-            txt.Font     = new System.Drawing.Font("Consolas", 9f);
-
-            btn.Text      = btnText;
-            btn.Location  = new System.Drawing.Point(286, y);
-            btn.Size      = new System.Drawing.Size(88, 24);
-            btn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            btn.Font      = new System.Drawing.Font("Segoe UI", 8.5f);
+            l.Text      = text;
+            l.AutoSize  = true;
+            l.Location  = new System.Drawing.Point(bx, y + 3);
+            l.Font      = new System.Drawing.Font("Segoe UI", 8.5f);
+            c.Location  = new System.Drawing.Point(blx, y);
         }
 
-        // FLAGS
-        FilterRowInPanel(lblFilterFlags, "I0 – FLAGS (hex):", txtFilterFlags, "0000", btnFilterFlags, "Enviar I0", 2);
-        txtFilterFlags.MaxLength       = 4;
-        txtFilterFlags.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
-        pnlFilterScroll.Controls.AddRange(new System.Windows.Forms.Control[]
-            { lblFilterFlags, txtFilterFlags, btnFilterFlags });
+        nudNumMcps.Size    = new System.Drawing.Size(bw, bh);
+        nudNumMcps.Minimum = 0;
+        nudNumMcps.Maximum = Pc7866Commands.McpChipCount;
+        nudNumMcps.Value   = Pc7866Commands.McpChipCount;
+        BoardRow(lblNumMcps, "Nº MCPs (0-6):", nudNumMcps, 22);
 
-        // Coeficientes I1 – I10
-        for (int _ci = 0; _ci < 10; _ci++)
+        lblInh.Text     = "INH1-4 pos (hex/N):";
+        lblInh.AutoSize = true;
+        lblInh.Location = new System.Drawing.Point(bx, 52);
+        lblInh.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        void InhBox(System.Windows.Forms.TextBox t, int x)
         {
-            int _y = 28 + _ci * 26;
-            FilterRowInPanel(
-                _lblCoef[_ci], $"I{_ci + 1} – Coef. {_ci + 1}:",
-                _txtCoef[_ci], "0.0",
-                _btnCoef[_ci], $"Enviar I{_ci + 1}", _y);
-            pnlFilterScroll.Controls.AddRange(new System.Windows.Forms.Control[]
-                { _lblCoef[_ci], _txtCoef[_ci], _btnCoef[_ci] });
+            t.Text      = "N";
+            t.Location  = new System.Drawing.Point(x, 48);
+            t.Size      = new System.Drawing.Size(40, 24);
+            t.MaxLength = 1;
+            t.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
+            t.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            t.Font      = new System.Drawing.Font("Consolas", 9f);
         }
+        InhBox(txtInh1, blx);
+        InhBox(txtInh2, blx + 48);
+        InhBox(txtInh3, blx + 96);
+        InhBox(txtInh4, blx + 144);
 
-        grpFilter.Controls.AddRange(new System.Windows.Forms.Control[]
-            { lblCoefHint, pnlFilterScroll });
+        txtBoardRef.Location  = new System.Drawing.Point(blx, 78);
+        txtBoardRef.Size      = new System.Drawing.Size(bw, bh);
+        txtBoardRef.MaxLength = Pc7866Commands.BoardReferenceLength;
+        BoardRow(lblBoardRef, "Referencia (7 car.):", txtBoardRef, 82);
 
-        // ═══════════════════════════════════════════════════════════════════
-        // grpSave
-        // ═══════════════════════════════════════════════════════════════════
-        grpSave.Text    = "G – Parámetros EEPROM";
-        grpSave.Dock    = System.Windows.Forms.DockStyle.Top;
-        grpSave.Height  = 62;
-        grpSave.Enabled = false;
-        grpSave.Visible = false;
-        grpSave.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+        nudMuestras.Size    = new System.Drawing.Size(bw, bh);
+        nudMuestras.Minimum = 0;
+        nudMuestras.Maximum = 99;
+        nudMuestras.Value   = 10;
+        BoardRow(lblMuestras, "Muestras (0-99):", nudMuestras, 112);
 
-        StyleBtn(btnSaveWrite, "GG – Guardar EEPROM",  6,  22, 160);
-        StyleBtn(btnSaveRead,  "GL – Leer EEPROM→RAM", 174, 22, 160);
-        StyleBtn(btnSaveView,  "GV – Ver RAM",         342, 22, 120);
+        nudRetardo.Size    = new System.Drawing.Size(bw, bh);
+        nudRetardo.Minimum = 0;
+        nudRetardo.Maximum = 999;
+        nudRetardo.Value   = 20;
+        BoardRow(lblRetardo, "Retardo ms (0-999):", nudRetardo, 142);
 
-        grpSave.Controls.AddRange(new System.Windows.Forms.Control[]
-            { btnSaveWrite, btnSaveRead, btnSaveView });
+        StyleBtn(btnSendBoardConfig, "Enviar I", 6, 178, 160);
+        btnSendBoardConfig.BackColor = System.Drawing.Color.FromArgb(0, 120, 215);
+        btnSendBoardConfig.ForeColor = System.Drawing.Color.White;
+
+        grpBoardConfig.Controls.AddRange(new System.Windows.Forms.Control[]
+            { lblNumMcps, nudNumMcps, lblInh, txtInh1, txtInh2, txtInh3, txtInh4,
+              lblBoardRef, txtBoardRef, lblMuestras, nudMuestras, lblRetardo, nudRetardo,
+              btnSendBoardConfig });
 
         // ═══════════════════════════════════════════════════════════════════
         // grpReset
@@ -443,7 +569,6 @@ partial class ManualControlPanel
         grpReset.Dock    = System.Windows.Forms.DockStyle.Top;
         grpReset.Height  = 62;
         grpReset.Enabled = false;
-        grpReset.Visible = false;
         grpReset.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
         btnReset.Text      = "Q – Reiniciar microcontrolador";
@@ -457,8 +582,7 @@ partial class ManualControlPanel
 
         // Apilar derecha (de abajo hacia arriba con Dock.Top)
         pnlRight.Controls.Add(grpReset);
-        pnlRight.Controls.Add(grpSave);
-        pnlRight.Controls.Add(grpFilter);
+        pnlRight.Controls.Add(grpBoardConfig);
         pnlRight.Controls.Add(grpAnalog);
 
         // ═══════════════════════════════════════════════════════════════════
@@ -496,8 +620,8 @@ partial class ManualControlPanel
         // ═══════════════════════════════════════════════════════════════════
         // UserControl
         // ═══════════════════════════════════════════════════════════════════
-        AutoScaleDimensions = new System.Drawing.SizeF(7f, 15f);
-        AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Font;
+        AutoScaleDimensions = new System.Drawing.SizeF(96f, 96f);
+        AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Dpi;
         Dock                = System.Windows.Forms.DockStyle.Fill;
         Controls.Add(tableMain);
         Controls.Add(pnlTopBar);   // Top → se coloca encima del Fill
@@ -506,14 +630,22 @@ partial class ManualControlPanel
         pnlTopBar.PerformLayout();
         tableMain.ResumeLayout(false);
         grpDiagnosis.ResumeLayout(false);
+        grpMcpMode.ResumeLayout(false);
+        grpMcpMode.PerformLayout();
+        grpTrack.ResumeLayout(false);
+        grpTrack.PerformLayout();
         grpOutputs.ResumeLayout(false);
         grpAnalog.ResumeLayout(false);
+        grpAnalog.PerformLayout();
         tableResult.ResumeLayout(false);
-        grpFilter.ResumeLayout(false);
-        grpFilter.PerformLayout();
-        grpSave.ResumeLayout(false);
+        grpBoardConfig.ResumeLayout(false);
+        grpBoardConfig.PerformLayout();
         grpReset.ResumeLayout(false);
         grpLog.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)nudTrack).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudNumMcps).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudMuestras).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudRetardo).EndInit();
         ResumeLayout(false);
     }
     #endregion
@@ -535,10 +667,28 @@ partial class ManualControlPanel
     // ── Diagnosis ─────────────────────────────────────────────────────────────
     private System.Windows.Forms.GroupBox   grpDiagnosis;
     private System.Windows.Forms.Button     btnDiagTotal;
-    private System.Windows.Forms.Button     btnDiag1;
-    private System.Windows.Forms.Button     btnDiag2;
-    private System.Windows.Forms.Button     btnDiag3;
-    private System.Windows.Forms.Button     btnDiag4;
+    private System.Windows.Forms.Button     btnDiagAds;
+    private System.Windows.Forms.Button     btnDiagVersion;
+    private System.Windows.Forms.Button     btnDiagReadConfig;
+    private System.Windows.Forms.Button     btnDiagTemperature;
+    private System.Windows.Forms.Button[]   _btnDiagMcp;
+
+    // ── M – configuración de dirección ─────────────────────────────────────────
+    private System.Windows.Forms.GroupBox      grpMcpMode;
+    private System.Windows.Forms.Label         lblMcpModeAddr;
+    private System.Windows.Forms.ComboBox      cmbMcpModeAddr;
+    private System.Windows.Forms.RadioButton   rbModeOutput;
+    private System.Windows.Forms.RadioButton   rbModeInput;
+    private System.Windows.Forms.Label         lblMcpModeMask;
+    private System.Windows.Forms.TextBox       txtMcpModeMask;
+    private System.Windows.Forms.Button        btnSendMcpMode;
+
+    // ── P – selección de pista ───────────────────────────────────────────────
+    private System.Windows.Forms.GroupBox        grpTrack;
+    private System.Windows.Forms.Label           lblTrack;
+    private System.Windows.Forms.NumericUpDown   nudTrack;
+    private System.Windows.Forms.Button          btnSelectTrack;
+    private System.Windows.Forms.Label           lblTrackHint;
 
     // ── Outputs ───────────────────────────────────────────────────────────────
     private System.Windows.Forms.GroupBox   grpOutputs;
@@ -551,8 +701,13 @@ partial class ManualControlPanel
     // ── Analog ────────────────────────────────────────────────────────────────
     private System.Windows.Forms.GroupBox         grpAnalog;
     private System.Windows.Forms.Label            lblAnalogTitle;
+    private System.Windows.Forms.Label            lblChannel;
+    private System.Windows.Forms.ComboBox         cmbChannel;
     private System.Windows.Forms.Button           btnReadRaw;
+    private System.Windows.Forms.Label            lblRawValue;
     private System.Windows.Forms.Button           btnReadFiltered;
+    private System.Windows.Forms.Label            lblFilteredValue;
+    private System.Windows.Forms.Button           btnReadAllFiltered;
     private System.Windows.Forms.TableLayoutPanel tableResult;
     private System.Windows.Forms.Label            lblVainLbl;
     private System.Windows.Forms.Label            lblVain;
@@ -564,22 +719,22 @@ partial class ManualControlPanel
     private System.Windows.Forms.Label            lblResistance;
     private System.Windows.Forms.Label            lblFormula;
 
-    // ── Filter ────────────────────────────────────────────────────────────────
-    private System.Windows.Forms.GroupBox   grpFilter;
-    private System.Windows.Forms.Label      lblCoefHint;
-    private System.Windows.Forms.Label      lblFilterFlags;
-    private System.Windows.Forms.TextBox    txtFilterFlags;
-    private System.Windows.Forms.Button     btnFilterFlags;
-    // Coeficientes I1..I10 (arrays, índice 0-based = coef 1-based)
-    private System.Windows.Forms.Label  []  _lblCoef;
-    private System.Windows.Forms.TextBox[]  _txtCoef;
-    private System.Windows.Forms.Button []  _btnCoef;
-
-    // ── Save
-    private System.Windows.Forms.GroupBox   grpSave;
-    private System.Windows.Forms.Button     btnSaveWrite;
-    private System.Windows.Forms.Button     btnSaveRead;
-    private System.Windows.Forms.Button     btnSaveView;
+    // ── I – configuración de placa ───────────────────────────────────────────
+    private System.Windows.Forms.GroupBox        grpBoardConfig;
+    private System.Windows.Forms.Label           lblNumMcps;
+    private System.Windows.Forms.NumericUpDown   nudNumMcps;
+    private System.Windows.Forms.Label           lblInh;
+    private System.Windows.Forms.TextBox         txtInh1;
+    private System.Windows.Forms.TextBox         txtInh2;
+    private System.Windows.Forms.TextBox         txtInh3;
+    private System.Windows.Forms.TextBox         txtInh4;
+    private System.Windows.Forms.Label           lblBoardRef;
+    private System.Windows.Forms.TextBox         txtBoardRef;
+    private System.Windows.Forms.Label           lblMuestras;
+    private System.Windows.Forms.NumericUpDown   nudMuestras;
+    private System.Windows.Forms.Label           lblRetardo;
+    private System.Windows.Forms.NumericUpDown   nudRetardo;
+    private System.Windows.Forms.Button          btnSendBoardConfig;
 
     // ── Reset ─────────────────────────────────────────────────────────────────
     private System.Windows.Forms.GroupBox   grpReset;

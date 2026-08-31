@@ -106,26 +106,34 @@ public class CommandParser
         }
     }
 
+    // Como F/R no terminan en CR/LF, el firmware a veces añade bytes de ruido tras el valor
+    // (p.ej. "1.1736NN") que la trama de recepción (idle-timeout) acumula junto con la respuesta
+    // real. Por eso se extrae solo el número inicial en vez de exigir que toda la cadena sea numérica.
+    private static readonly Regex LeadingNumberPattern = new(@"^\s*[-+]?\d+\.?\d*", RegexOptions.Compiled);
+
     /// <summary>
-    /// Parsea la respuesta del comando F (analógicas filtradas en voltios).
-    /// Formato esperado: "1.234 4.567 3.210 0.123"  (cuatro valores separados por espacios).
+    /// Parsea la respuesta de un comando "Fn" (valor filtrado en voltios de un único canal ADS).
+    /// Formato esperado: "f.ffff" (1 entero, 4 decimales), tolerando ruido final no numérico.
     /// Devuelve null si no se puede parsear.
     /// </summary>
-    public float[]? ParseAnalogValues(string response)
+    public float? ParseFilteredValue(string response)
     {
         if (string.IsNullOrWhiteSpace(response)) return null;
+        var match = LeadingNumberPattern.Match(response.Trim());
+        return match.Success && float.TryParse(match.Value, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out float v) ? v : null;
+    }
 
-        var parts = response.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 2) return null;
-
-        var values = new List<float>();
-        foreach (var part in parts)
-        {
-            if (float.TryParse(part, System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out float v))
-                values.Add(v);
-        }
-
-        return values.Count >= 2 ? values.ToArray() : null;
+    /// <summary>
+    /// Parsea la respuesta de un comando "Rn" (valor RAW de un único canal ADS).
+    /// Formato esperado: 5 dígitos decimales, tolerando ruido final no numérico.
+    /// Devuelve null si no se puede parsear.
+    /// </summary>
+    public int? ParseRawValue(string response)
+    {
+        if (string.IsNullOrWhiteSpace(response)) return null;
+        var match = LeadingNumberPattern.Match(response.Trim());
+        return match.Success && int.TryParse(match.Value, System.Globalization.NumberStyles.Integer,
+            System.Globalization.CultureInfo.InvariantCulture, out int v) ? v : null;
     }
 }

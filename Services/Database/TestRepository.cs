@@ -47,9 +47,11 @@ public class TestRepository : ITestRepository
     {
         const string sql = """
             INSERT INTO referencias
-                (b_activa, referencia, descripcion, fecha_creacion, fecha_modificacion, imagen)
+                (b_activa, referencia, descripcion, fecha_creacion, fecha_modificacion, imagen,
+                 modelo_placa, num_mcps, inh1_pos, inh2_pos, inh3_pos, inh4_pos, muestras, retardo_ms)
             VALUES
-                (@BActiva, @Referencia, @Descripcion, @FechaCreacion, @FechaModificacion, @Imagen);
+                (@BActiva, @Referencia, @Descripcion, @FechaCreacion, @FechaModificacion, @Imagen,
+                 @ModeloPlaca, @NumMcps, @Inh1Pos, @Inh2Pos, @Inh3Pos, @Inh4Pos, @Muestras, @RetardoMs);
             SELECT LAST_INSERT_ID();
             """;
 
@@ -61,7 +63,15 @@ public class TestRepository : ITestRepository
             r.Descripcion,
             r.FechaCreacion,
             r.FechaModificacion,
-            r.Imagen
+            r.Imagen,
+            r.ModeloPlaca,
+            r.NumMcps,
+            r.Inh1Pos,
+            r.Inh2Pos,
+            r.Inh3Pos,
+            r.Inh4Pos,
+            r.Muestras,
+            r.RetardoMs
         });
     }
 
@@ -73,7 +83,15 @@ public class TestRepository : ITestRepository
                 referencia         = @Referencia,
                 descripcion        = @Descripcion,
                 fecha_modificacion = @FechaModificacion,
-                imagen             = @Imagen
+                imagen             = @Imagen,
+                modelo_placa       = @ModeloPlaca,
+                num_mcps           = @NumMcps,
+                inh1_pos           = @Inh1Pos,
+                inh2_pos           = @Inh2Pos,
+                inh3_pos           = @Inh3Pos,
+                inh4_pos           = @Inh4Pos,
+                muestras           = @Muestras,
+                retardo_ms         = @RetardoMs
             WHERE id = @Id
             """;
 
@@ -85,7 +103,15 @@ public class TestRepository : ITestRepository
             Referencia         = r.ReferenciaNombre,
             r.Descripcion,
             r.FechaModificacion,
-            r.Imagen
+            r.Imagen,
+            r.ModeloPlaca,
+            r.NumMcps,
+            r.Inh1Pos,
+            r.Inh2Pos,
+            r.Inh3Pos,
+            r.Inh4Pos,
+            r.Muestras,
+            r.RetardoMs
         });
     }
 
@@ -126,12 +152,12 @@ public class TestRepository : ITestRepository
         const string sql = """
             INSERT INTO parametros_ensayo
                 (referencia_id, nombre_contacto, n_paso_ensayo, n_salida_json,
-                 resistencia_nominal, tolerancia, offset_val, resistencia_minima,
+                 resistencia_nominal, tolerancia, pendiente_val, offset_val, resistencia_minima,
                  mcp_arriba_chip, mcp_arriba_pin, mcp_abajo_chip, mcp_abajo_pin, canal_multiplexor,
                  fecha_creacion, fecha_modificacion, pos_x, pos_y)
             VALUES
                 (@ReferenciaId, @NombreContacto, @NPasoEnsayo, @NSalidaJson,
-                 @ResistenciaNominal, @Tolerancia, @Offset, @ResistenciaMinima,
+                 @ResistenciaNominal, @Tolerancia, @Pendiente, @Offset, @ResistenciaMinima,
                  @McpArribaChip, @McpArribaPin, @McpAbajoChip, @McpAbajoPin, @CanalMultiplexor,
                  @FechaCreacion, @FechaModificacion, @PosX, @PosY);
             SELECT LAST_INSERT_ID();
@@ -146,6 +172,7 @@ public class TestRepository : ITestRepository
             NSalidaJson        = JsonSerializer.Serialize(p.NSalida),
             p.ResistenciaNominal,
             p.Tolerancia,
+            p.Pendiente,
             p.Offset,
             p.ResistenciaMinima,
             p.McpArribaChip,
@@ -169,6 +196,7 @@ public class TestRepository : ITestRepository
                 n_salida_json      = @NSalidaJson,
                 resistencia_nominal= @ResistenciaNominal,
                 tolerancia         = @Tolerancia,
+                pendiente_val      = @Pendiente,
                 offset_val         = @Offset,
                 resistencia_minima = @ResistenciaMinima,
                 mcp_arriba_chip    = @McpArribaChip,
@@ -191,6 +219,7 @@ public class TestRepository : ITestRepository
             NSalidaJson        = JsonSerializer.Serialize(p.NSalida),
             p.ResistenciaNominal,
             p.Tolerancia,
+            p.Pendiente,
             p.Offset,
             p.ResistenciaMinima,
             p.McpArribaChip,
@@ -397,7 +426,15 @@ public class TestRepository : ITestRepository
                 descripcion         TEXT,
                 fecha_creacion      DATETIME NOT NULL,
                 fecha_modificacion  DATETIME NOT NULL,
-                imagen              LONGBLOB
+                imagen              LONGBLOB,
+                modelo_placa        VARCHAR(10) NOT NULL DEFAULT '',
+                num_mcps            INT NOT NULL DEFAULT 6,
+                inh1_pos            INT NULL,
+                inh2_pos            INT NULL,
+                inh3_pos            INT NULL,
+                inh4_pos            INT NULL,
+                muestras            INT NOT NULL DEFAULT 10,
+                retardo_ms          INT NOT NULL DEFAULT 20
             );
             """;
 
@@ -410,6 +447,7 @@ public class TestRepository : ITestRepository
                 n_salida_json       LONGTEXT,
                 resistencia_nominal FLOAT NOT NULL DEFAULT 0,
                 tolerancia          FLOAT NOT NULL DEFAULT 0,
+                pendiente_val       FLOAT NOT NULL DEFAULT 1,
                 offset_val          FLOAT NOT NULL DEFAULT 0,
                 resistencia_minima  FLOAT NOT NULL DEFAULT 0,
                 mcp_arriba_chip     INT NOT NULL DEFAULT 0,
@@ -468,12 +506,25 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS resistencia_minima FLOAT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE resultados_detalle ADD COLUMN IF NOT EXISTS estado_medicion VARCHAR(20) NOT NULL DEFAULT 'Nok';");
 
+        // Migracion: pendiente de la funcion lineal de calculo de resistencia (R = Pendiente * R_bruta - Offset)
+        await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS pendiente_val FLOAT NOT NULL DEFAULT 1;");
+
         // Migraciones: configuracion de placa (chip/pin MCP23017 arriba/abajo y canal de multiplexor)
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_arriba_chip INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_arriba_pin INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_abajo_chip INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_abajo_pin INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS canal_multiplexor INT NOT NULL DEFAULT 0;");
+
+        // Migraciones: configuracion de placa a nivel de Referencia (comando "I" del protocolo nuevo)
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS modelo_placa VARCHAR(10) NOT NULL DEFAULT '';");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS num_mcps INT NOT NULL DEFAULT 6;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh1_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh2_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh3_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh4_pos INT NULL;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS muestras INT NOT NULL DEFAULT 10;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS retardo_ms INT NOT NULL DEFAULT 20;");
     }
 
     public void Dispose() { }
@@ -490,12 +541,20 @@ public class TestRepository : ITestRepository
         Descripcion        = (string?)row.descripcion ?? string.Empty,
         FechaCreacion      = (DateTime)row.fecha_creacion,
         FechaModificacion  = (DateTime)row.fecha_modificacion,
-        Imagen             = (byte[]?)row.imagen
+        Imagen             = (byte[]?)row.imagen,
+        ModeloPlaca        = HasColumn(row, "modelo_placa") ? (string?)row.modelo_placa ?? string.Empty : string.Empty,
+        NumMcps            = HasColumn(row, "num_mcps")  ? (int)row.num_mcps  : Pc7866Commands.McpChipCount,
+        Inh1Pos            = HasColumn(row, "inh1_pos")  ? (int?)row.inh1_pos : null,
+        Inh2Pos            = HasColumn(row, "inh2_pos")  ? (int?)row.inh2_pos : null,
+        Inh3Pos            = HasColumn(row, "inh3_pos")  ? (int?)row.inh3_pos : null,
+        Inh4Pos            = HasColumn(row, "inh4_pos")  ? (int?)row.inh4_pos : null,
+        Muestras           = HasColumn(row, "muestras")  ? (int)row.muestras  : 10,
+        RetardoMs          = HasColumn(row, "retardo_ms") ? (int)row.retardo_ms : 20
     };
 
     private static ParametroEnsayo MapParametroEnsayo(dynamic row)
     {
-        bool[] salidas = new bool[48];
+        bool[] salidas = new bool[Pc7866Commands.OutputCount];
         string? json = (string?)row.n_salida_json;
         if (!string.IsNullOrEmpty(json))
             salidas = JsonSerializer.Deserialize<bool[]>(json) ?? salidas;
@@ -509,11 +568,12 @@ public class TestRepository : ITestRepository
             NSalida            = salidas,
             ResistenciaNominal = (float)row.resistencia_nominal,
             Tolerancia         = (float)row.tolerancia,
+            Pendiente          = HasColumn(row, "pendiente_val") ? (float)row.pendiente_val : 1f,
             Offset             = (float)row.offset_val,
             ResistenciaMinima  = HasColumn(row, "resistencia_minima") ? (float)row.resistencia_minima : 0f,
-            McpArribaChip      = HasColumn(row, "mcp_arriba_chip") ? (int)row.mcp_arriba_chip : 0,
+            McpArribaChip      = HasColumn(row, "mcp_arriba_chip") ? (int)row.mcp_arriba_chip : -1,
             McpArribaPin       = HasColumn(row, "mcp_arriba_pin") ? (int)row.mcp_arriba_pin : 0,
-            McpAbajoChip       = HasColumn(row, "mcp_abajo_chip") ? (int)row.mcp_abajo_chip : 0,
+            McpAbajoChip       = HasColumn(row, "mcp_abajo_chip") ? (int)row.mcp_abajo_chip : -1,
             McpAbajoPin        = HasColumn(row, "mcp_abajo_pin") ? (int)row.mcp_abajo_pin : 0,
             CanalMultiplexor   = HasColumn(row, "canal_multiplexor") ? (int)row.canal_multiplexor : 0,
             FechaCreacion      = (DateTime)row.fecha_creacion,

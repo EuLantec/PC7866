@@ -135,8 +135,8 @@ partial class ReportsPanel
         pnlBottom.Controls.AddRange(new Control[] { lblTotal, btnVerDetalle, btnExportCsv });
 
         // ── ReportsPanel ──────────────────────────────────────────────────────
-        AutoScaleDimensions = new SizeF(7f, 15f);
-        AutoScaleMode = AutoScaleMode.Font;
+        AutoScaleDimensions = new SizeF(96f, 96f);
+        AutoScaleMode = AutoScaleMode.Dpi;
         Controls.AddRange(new Control[] { grpFiltros, grpResultados, pnlBottom });
         Name = "ReportsPanel";
         Size = new Size(1260, 780);

@@ -14,6 +14,11 @@ namespace PC7866.Views;
 /// </summary>
 public partial class AutomaticTestPanel : UserControl
 {
+    // Poner en true para volcar al log los comandos TX/RX y las líneas CALC del ensayo automático
+    // (útil para depurar el protocolo). En false el ensayo va más rápido (no bloquea el hilo serie
+    // con escrituras al log por cada comando).
+    private const bool EnableAutoCommandLog = false;
+
     private readonly ISerialPortService _serialPort;
     private readonly bool _ownsSerialPort;
     private readonly CommandParser _parser;
@@ -306,7 +311,8 @@ public partial class AutomaticTestPanel : UserControl
                 progress,
                 OnStepCompleted,
                 AppSettings.Instance.DefaultTimeout,
-                _cts.Token);
+                _cts.Token,
+                EnableAutoCommandLog ? cmd => AddLog(cmd, LogLevel.Debug) : null);
         }
         catch (OperationCanceledException)
         {
@@ -352,9 +358,6 @@ public partial class AutomaticTestPanel : UserControl
         // Color de fila
         var row = gridResultados.Rows[gridResultados.Rows.Count - 1];
         row.DefaultCellStyle.BackColor = FilaColorForEstado(detalle.Estado);
-
-        AddLog($"  Paso {paso.NPasoEnsayo} {paso.NombreContacto}: " +
-               $"{FormatResistance(detalle.ResistenciaMedida)} Ω → {resultado}", LogLevel.Info);
     }
 
     private static Color DotColorForEstado(EstadoMedicion estado) => estado switch
