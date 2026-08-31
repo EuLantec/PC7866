@@ -10,7 +10,10 @@ public class SerialPortService : ISerialPortService
 {
     // Algunas respuestas (p.ej. F/R) no terminan en <CR><LF>; si no llegan más datos
     // durante este tiempo se considera que esa respuesta (sin terminador) está completa.
-    private const int IdleCompletionMs = 150;
+    // El temporizador se reinicia con cada byte recibido, así que basta con cubrir el hueco entre
+    // ráfagas del firmware (a 115200 baud una respuesta llega en <1 ms); 60 ms da margen de sobra
+    // y evita el tiempo muerto de 150 ms que ralentizaba mucho el ensayo automático.
+    private const int IdleCompletionMs = 60;
 
     private SerialPort? _serialPort;
     private readonly object _lock = new();

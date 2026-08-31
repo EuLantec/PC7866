@@ -23,9 +23,10 @@ public class RunningState : ITestState
     private const float CORTOCIRCUITO_VOLTAGE_THRESHOLD = 2.5f; // V
 
     // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S) antes de leer, para que el
-    // relé/mux y la carga del cableado se estabilicen (sin esto, la primera lectura tras la
-    // configuración global daba R≈0 y falso Cortocircuito).
-    private const int SETTLE_DELAY_MS = 300;
+    // relé/mux y la carga del cableado se estabilicen. Con el ensayo punto a punto solo conmuta
+    // 1-2 pines por paso (antes conmutaba todo el banco), así que 200 ms es suficiente. Si las
+    // lecturas salieran inestables (R≈0 / falso cortocircuito), subir este valor.
+    private const int SETTLE_DELAY_MS = 200;
 
     public TestState StateId => TestState.Running;
 
@@ -43,6 +44,8 @@ public class RunningState : ITestState
         }
 
         // 2. Punto a punto: por cada paso, medir resistencia y luego comprobar cortocircuito.
+        // F1/F2/F3 son fijos en automático: se leen una sola vez (primer paso) y se reutilizan.
+        var canalesFijos = new float?[3];
         for (int i = 0; i < total; i++)
         {
             if (context.CancellationToken.IsCancellationRequested)
@@ -60,11 +63,9 @@ public class RunningState : ITestState
                 State       = TestState.Running
             });
 
-            var detalle = await MedirPasoAsync(paso, context);
+            var detalle = await MedirPasoAsync(paso, context, canalesFijos);
             context.Resultado.Detalles.Add(detalle);
             context.RaiseStepCompleted(paso, detalle);
-
-            await Task.Delay(150, context.CancellationToken);
         }
 
         // 3. Desconectar mux y dejar la placa en reposo (0V).
@@ -100,7 +101,7 @@ public class RunningState : ITestState
     // Medición de un paso: resistencia + cortocircuito
     // ─────────────────────────────────────────────────────────────────────────
 
-    private static async Task<ResultadoDetalle> MedirPasoAsync(ParametroEnsayo paso, TestContext context)
+    private static async Task<ResultadoDetalle> MedirPasoAsync(ParametroEnsayo paso, TestContext context, float?[] canalesFijos)
     {
         var detalle = new ResultadoDetalle
         {
@@ -139,22 +140,35 @@ public class RunningState : ITestState
             }
             await Task.Delay(50, context.CancellationToken);
 
-            var analogicas = new float[4];
-            for (int ch = 0; ch < 4; ch++)
+            // F0 cambia con cada resistencia; F1/F2/F3 son fijos en automático, así que se leen una
+            // sola vez (primer paso) y se reutilizan en los siguientes para acelerar el ensayo.
+            string respF0 = await SendLoggedAsync(context, Pc7866Commands.ReadFiltered(0));
+            float? f0 = context.Parser.ParseFilteredValue(respF0);
+            if (f0 is null)
             {
-                string respF = await SendLoggedAsync(context, Pc7866Commands.ReadFiltered(ch));
-                float? valor = context.Parser.ParseFilteredValue(respF);
-                if (valor is null)
-                {
-                    detalle.Estado = EstadoMedicion.Nok;
-                    detalle.Resultado = false;
-                    return detalle;
-                }
-                analogicas[ch] = valor.Value;
+                detalle.Estado = EstadoMedicion.Nok;
+                detalle.Resultado = false;
+                return detalle;
             }
 
-            float vain = analogicas[0] - analogicas[1];  // Ch0 - Ch1
-            float ve   = analogicas[2] - analogicas[3];  // Ch2 - Ch3
+            if (canalesFijos[0] is null || canalesFijos[1] is null || canalesFijos[2] is null)
+            {
+                for (int ch = 1; ch <= 3; ch++)
+                {
+                    string respF = await SendLoggedAsync(context, Pc7866Commands.ReadFiltered(ch));
+                    float? valor = context.Parser.ParseFilteredValue(respF);
+                    if (valor is null)
+                    {
+                        detalle.Estado = EstadoMedicion.Nok;
+                        detalle.Resultado = false;
+                        return detalle;
+                    }
+                    canalesFijos[ch - 1] = valor.Value;
+                }
+            }
+
+            float vain = f0.Value - canalesFijos[0]!.Value;               // F0 - F1
+            float ve   = canalesFijos[1]!.Value - canalesFijos[2]!.Value; // F2 - F3
 
             // Detección abierto/cortocircuito sobre la resistencia BRUTA (igual que el modo manual),
             // y solo a lecturas válidas se aplica la calibración lineal R = Pendiente * R_bruta + Offset.
@@ -189,9 +203,9 @@ public class RunningState : ITestState
                 Pc7866Commands.BuildMcpModeCommand(chipAbajo, asOutput: false, (ushort)(1 << pinAbajo)));
             if (respMIn.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
             {
+                // La pista (P) ya está seleccionada de la fase de resistencia; solo cambió "abajo"
+                // a entrada, así que basta con esperar el asentamiento antes de leer (sin re-seleccionar).
                 await Task.Delay(SETTLE_DELAY_MS, context.CancellationToken);
-                await SendLoggedAsync(context, Pc7866Commands.SelectTrack(paso.CanalMultiplexor));
-                await Task.Delay(50, context.CancellationToken);
 
                 string respF = await SendLoggedAsync(context, Pc7866Commands.ReadFiltered(0));
                 float? voltaje = context.Parser.ParseFilteredValue(respF);
