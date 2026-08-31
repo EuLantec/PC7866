@@ -256,9 +256,9 @@ partial class ParametersPanel
         AddRow(lblPendiente,"Pendiente:",     nudPendiente, ref row);
         AddRow(lblOffset,   "Offset (Ω):",   nudOffset,  ref row);
         AddRow(lblMinima,   "R mín cortocircuito (Ω):", nudMinima, ref row);
-        AddRow(lblMcpArribaChip, "Chip arriba (0-5, -1=N/A):", nudMcpArribaChip, ref row);
+        AddRow(lblMcpArribaChip, "Chip arriba (0-5):", nudMcpArribaChip, ref row);
         AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  ref row);
-        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5, -1=N/A):",  nudMcpAbajoChip,  ref row);
+        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5):",  nudMcpAbajoChip,  ref row);
         AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   ref row);
         AddRow(lblCanalMux,      "Pista multiplexor (0-48):", nudCanalMux,      ref row);
         AddRow(lblPosX,     "Pos X:",         nudPosX,    ref row);
@@ -270,9 +270,9 @@ partial class ParametersPanel
         nudPendiente.DecimalPlaces = 4; nudPendiente.Minimum = -1000; nudPendiente.Maximum = 1000; nudPendiente.Value = 1;
         nudOffset.DecimalPlaces  = 2; nudOffset.Minimum  = -1000; nudOffset.Maximum = 1000;
         nudMinima.DecimalPlaces  = 2; nudMinima.Minimum  = 0; nudMinima.Maximum = 100000;
-        nudMcpArribaChip.Minimum = -1; nudMcpArribaChip.Maximum = PC7866.Models.Pc7866Commands.McpChipCount - 1;
+        nudMcpArribaChip.Minimum = 0; nudMcpArribaChip.Maximum = PC7866.Models.Pc7866Commands.McpChipCount - 1;
         nudMcpArribaPin.Minimum  = 1; nudMcpArribaPin.Maximum  = 16;
-        nudMcpAbajoChip.Minimum  = -1; nudMcpAbajoChip.Maximum  = PC7866.Models.Pc7866Commands.McpChipCount - 1;
+        nudMcpAbajoChip.Minimum  = 0; nudMcpAbajoChip.Maximum  = PC7866.Models.Pc7866Commands.McpChipCount - 1;
         nudMcpAbajoPin.Minimum   = 1; nudMcpAbajoPin.Maximum   = 16;
         nudCanalMux.Minimum      = 0; nudCanalMux.Maximum      = PC7866.Models.Pc7866Commands.MaxTrackNumber;
         nudPosX.Maximum = 4000; nudPosY.Maximum = 4000;

@@ -282,18 +282,18 @@ public partial class ParametersPanel : UserControl
         if (row.Tag is ParametroEnsayo p)
         {
             txtSalidas.Text        = FormatSalidas(p.NSalida);
-            nudMcpArribaChip.Value = p.McpArribaChip;
+            nudMcpArribaChip.Value = Math.Max(0, p.McpArribaChip);
             nudMcpArribaPin.Value  = p.McpArribaPin;
-            nudMcpAbajoChip.Value  = p.McpAbajoChip;
+            nudMcpAbajoChip.Value  = Math.Max(0, p.McpAbajoChip);
             nudMcpAbajoPin.Value   = p.McpAbajoPin;
             nudCanalMux.Value      = p.CanalMultiplexor;
         }
         else
         {
             txtSalidas.Text = string.Empty;
-            nudMcpArribaChip.Value = -1;
+            nudMcpArribaChip.Value = 0;
             nudMcpArribaPin.Value  = 1;
-            nudMcpAbajoChip.Value  = -1;
+            nudMcpAbajoChip.Value  = 0;
             nudMcpAbajoPin.Value   = 1;
             nudCanalMux.Value      = 0;
         }
@@ -353,9 +353,9 @@ public partial class ParametersPanel : UserControl
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
-        nudMcpArribaChip.Value = -1;
+        nudMcpArribaChip.Value = 0;
         nudMcpArribaPin.Value  = 1;
-        nudMcpAbajoChip.Value  = -1;
+        nudMcpAbajoChip.Value  = 0;
         nudMcpAbajoPin.Value   = 1;
         nudCanalMux.Value      = 0;
         _ignorarNudEvents = false;
@@ -793,9 +793,9 @@ public partial class ParametersPanel : UserControl
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
         txtSalidas.Text  = string.Empty;
-        nudMcpArribaChip.Value = -1;
+        nudMcpArribaChip.Value = 0;
         nudMcpArribaPin.Value  = 1;
-        nudMcpAbajoChip.Value  = -1;
+        nudMcpAbajoChip.Value  = 0;
         nudMcpAbajoPin.Value   = 1;
         nudCanalMux.Value      = 0;
         _modoNuevoParam  = false;
