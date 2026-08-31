@@ -15,7 +15,7 @@ Se accede desde el menú superior **Automático** (panel por defecto al abrir la
 
 Antes de ejecutar un ensayo automático debe existir en BD:
 
-1. Una **Referencia** (`Referencia`), que además de nombre/imagen guarda la **configuración de placa**: `NumMcps` (nº de MCP23017 activos, 0-6), `Inh1Pos`..`Inh4Pos` (posición de pin 0-15 de cada inhibición, o libre elección), `Muestras` (nº de muestras para el promedio analógico) y `RetardoMs` (retardo antes de leer tras F/R).
+1. Una **Referencia** (`Referencia`), que además de nombre/imagen guarda la **configuración de placa**: `ModeloPlaca` (modelo de 6 dígitos que se envía en el comando `I`; si está vacío se usa el nombre de la referencia), `NumMcps` (nº de MCP23017 activos, 0-6), `Inh1Pos`..`Inh4Pos` (posición de pin 0-15 de cada inhibición, o libre elección), `Muestras` (nº de muestras para el promedio analógico) y `RetardoMs` (retardo antes de leer tras F/R).
 2. Uno o varios **ParametroEnsayo** asociados a esa referencia — un registro por contacto/paso —, cada uno con: `NombreContacto`, `NPasoEnsayo` (orden), `McpArribaChip`/`McpArribaPin` y `McpAbajoChip`/`McpAbajoPin` (selectores de excitación 5V/masa usados por el algoritmo de medición, ver más abajo), `NSalida` (array de 96 bits, heredado, ya no se usa en el bucle de medición), `CanalMultiplexor` (nº de pista 0-48 para el comando `P`), `ResistenciaNominal`, `Tolerancia`, `Pendiente`, `Offset` y `ResistenciaMinima` (umbral de cortocircuito por software). `Pendiente` y `Offset` forman la función lineal de calibración aplicada a la resistencia bruta calculada (ver Paso 2); `Pendiente` por defecto es `1` (sin efecto sobre el cálculo anterior).
 
 Sin al menos un parámetro para la referencia seleccionada, el botón **Iniciar ensayo** queda deshabilitado (`UpdateStartButton`).
@@ -36,18 +36,18 @@ Clase [`InitializingState`](Services/StateMachine/States/InitializingState.cs):
    ```
    I <numMcps> <inh1> <inh2> <inh3> <inh4> <referencia:7> <muestras:2> <retardo:3>
    ```
-   generada por `Pc7866Commands.BuildBoardConfigCommand(referencia.NumMcps, referencia.Inh1Pos..Inh4Pos, referencia.ReferenciaNombre, referencia.Muestras, referencia.RetardoMs)`. Cada `InhX` se codifica como dígito hexadecimal (0-F) o `'N'` si no está configurado.
+   generada por `Pc7866Commands.BuildBoardConfigCommand(referencia.NumMcps, referencia.Inh1Pos..Inh4Pos, modelo, referencia.Muestras, referencia.RetardoMs)`, donde `modelo` es `referencia.ModeloPlaca` (o el nombre de la referencia si está vacío). Cada `InhX` se codifica como dígito hexadecimal (0-F) o `'N'` si no está configurado.
 3. Si la respuesta no empieza por `O` (OK), el ensayo pasa a `Error` y se aborta.
 4. Si es OK, limpia los detalles previos del resultado y pasa a `Running`.
 
-## Paso 2 — Estado `Running`: dos pasadas (resistencia + cortocircuito)
+## Paso 2 — Estado `Running`: ensayo punto a punto (resistencia + cortocircuito)
 
 Clase [`RunningState`](Services/StateMachine/States/RunningState.cs). Los parámetros se ordenan por `NPasoEnsayo`. **Al inicio** se ponen TODOS los MCP de la placa (se usen o no, `0..NumMcps-1`) como **salida** (`M...FFFF`) y a **0V** (`S...0000`). Después el ensayo es **punto a punto**: por cada paso se mide su resistencia y, a continuación, se comprueba su cortocircuito, restaurando el paso antes de pasar al siguiente.
 
 Por cada paso (comprobar cancelación → reportar progreso `"[i/total] NombreContacto"`):
 
-1. **Resistencia** — poner su "arriba" a **5V** (`S`), su "abajo" ya está a 0V → esperar asentamiento → `P<CanalMultiplexor>` para seleccionar la pista → esperar 50 ms → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` dejan el cálculo bruto). El abierto/cortocircuito se detecta sobre la resistencia **bruta** (igual que el modo manual) y solo a lecturas válidas se aplica la calibración. Se clasifica `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última si `R < ResistenciaMinima`).
-2. **Cortocircuito** — poner su "abajo" como **entrada** (`M`, alta impedancia) manteniendo "arriba" a 5V → esperar asentamiento → `P<CanalMultiplexor>` → leer `F0`; si la tensión cae por debajo de 2,5V (o falla la lectura) se marca `Cortocircuito` sobre el resultado del punto 1.
+1. **Resistencia** — poner su "arriba" a **5V** (`S`), su "abajo" ya está a 0V → `P<CanalMultiplexor>` para seleccionar la pista → esperar asentamiento (`SETTLE_DELAY_MS`) → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` dejan el cálculo bruto). `F0` cambia con cada resistencia, pero `F1`/`F2`/`F3` son fijos en automático, así que se leen **una sola vez** (en el primer paso) y se reutilizan en los demás para acelerar el ensayo. El abierto/cortocircuito se detecta sobre la resistencia **bruta** (igual que el modo manual) y solo a lecturas válidas se aplica la calibración. Se clasifica `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última si `R < ResistenciaMinima`).
+2. **Cortocircuito** — poner su "abajo" como **entrada** (`M`, alta impedancia) manteniendo "arriba" a 5V y la pista ya seleccionada → esperar asentamiento → leer `F0`; si la tensión cae por debajo de **4,5V** (o falla la lectura) se marca `Cortocircuito` sobre el resultado del punto 1.
 3. **Restaurar el paso** — "arriba" a **0V** (`S`), "abajo" de nuevo como **salida** (`M`) y a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
 4. Se dispara `StepCompleted` con el `ResultadoDetalle` final, que la UI usa para:
 - Pintar el punto (dot) de ese paso sobre la imagen: verde=Ok, rojo=Nok, naranja=Cortocircuito, azul=Abierto.
@@ -72,9 +72,8 @@ Al terminar todos los pasos, `RunningState`:
 > `ParametroEnsayo.McpAbajoChip`/`McpAbajoPin` de cada paso.
 >
 > **Decisiones tomadas por defecto (pendientes de validar con el hardware real):**
-> - Umbral de "caída de tensión" del cortocircuito: **2,5 V** (constante `CORTOCIRCUITO_VOLTAGE_THRESHOLD`
->   en `RunningState.cs`), asumido como la mitad de la excitación nominal de 5V a falta de un valor
->   confirmado. Ajustar esa constante si el hardware define otro valor.
+> - Umbral de "caída de tensión" del cortocircuito: **4,5 V** (constante `CORTOCIRCUITO_VOLTAGE_THRESHOLD`
+>   en `RunningState.cs`). Ajustar esa constante si el hardware define otro valor.
 > - Relación con la detección por software existente (`ResistenciaMinima`): **coexisten**. Si
 >   cualquiera de los dos criterios (resistencia medida por debajo de `ResistenciaMinima`, o caída
 >   de tensión detectada) indica cortocircuito, el paso se marca como `Cortocircuito`.
@@ -92,11 +91,11 @@ Todos los MCP de la placa (`0..NumMcps-1`, se usen o no en algún paso) se confi
 
 1. **Resistencia** — el pin "arriba" de ese paso se pone a **5V/HIGH** (`S`), manteniendo su "abajo"
    a 0V. Se selecciona la pista con `P<CanalMultiplexor>` y se lee/calcula la resistencia (`F0..F3` →
-   `Vain`, `Ve` → `R`). Abierto/cortocircuito se detectan sobre la resistencia **bruta**; solo a
-   lecturas válidas se aplica `R = Pendiente×R_bruta + Offset`.
+   `Vain`, `Ve` → `R`). `F1`/`F2`/`F3` se leen solo en el primer paso y se reutilizan. Abierto/cortocircuito
+   se detectan sobre la resistencia **bruta**; solo a lecturas válidas se aplica `R = Pendiente×R_bruta + Offset`.
 2. **Cortocircuito** — el pin "abajo" de ese paso se reconfigura como **entrada** (`M`, alta
-   impedancia), manteniendo su "arriba" a 5V. Se selecciona la pista (`P`) y se lee la tensión
-   (`F0`). Si la tensión cae por debajo del umbral (2,5V por defecto) o la lectura falla, se marca
+   impedancia), manteniendo su "arriba" a 5V y la pista ya seleccionada. Se lee la tensión
+   (`F0`). Si la tensión cae por debajo del umbral (4,5V por defecto) o la lectura falla, se marca
    `Cortocircuito` (prevalece sobre el resultado de resistencia).
 3. **Restaurar** — el pin "arriba" vuelve a **0V** (`S`), el "abajo" se reconfigura como **salida**
    (`M`) y se pone a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
@@ -144,7 +143,7 @@ flowchart TD
     B -->|OK| INIT[Poner TODOS los MCP de la placa a 0V]
     INIT --> P0[Por cada paso...]
     P0 --> R1[Resistencia: arriba=5V, P pista, F0..F3, calcular R, clasificar]
-    R1 --> C1[Cortocircuito: abajo=entrada, arriba=5V, P pista, leer tension]
+    R1 --> C1[Cortocircuito: abajo=entrada, arriba=5V, leer tension]
     C1 --> C2{Cae la tension?}
     C2 -->|si| CORTO[Marcar Cortocircuito]
     C2 -->|no| KEEP[Mantener estado de resistencia]

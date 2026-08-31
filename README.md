@@ -17,8 +17,8 @@ La aplicacion permite:
 
 El proyecto ya incluye funcionalidad operativa en:
 - Modo manual: diagnosis, activacion de salidas, lecturas analogicas y test completo.
-- Modo automatico: ejecucion por pasos con maquina de estados y progreso visual.
-- Parametros: gestion de referencias y parametros de ensayo.
+- Modo automatico: ejecucion punto a punto (resistencia + cortocircuito por contacto) con maquina de estados y progreso visual.
+- Parametros: gestion de referencias y parametros de ensayo, con import/export en CSV y JSON.
 - Informes: consulta de historico y detalle de resultados.
 - Configuracion: puerto serie, conexion BD y opciones generales mediante `appsettings.json`.
 
@@ -100,7 +100,7 @@ Comandos principales:
 - `P`: Seleccion de pista en los multiplexores analogicos (00-48)
 - `R`: Lectura analogica RAW de un canal ADS (0-3)
 - `F`: Lectura analogica filtrada de un canal ADS (0-3)
-- `I`: Configuracion de placa (num. MCP, posiciones INH1-4, referencia, muestras, retardo)
+- `I`: Configuracion de placa (modelo de placa, num. MCP, posiciones INH1-4, muestras, retardo)
 - `Q`: Reset del microcontrolador
 
 Respuestas:
