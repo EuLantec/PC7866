@@ -22,11 +22,11 @@ public class RunningState : ITestState
     // la tensión de excitación nominal. Ajustar aquí si se define un valor distinto.
     private const float CORTOCIRCUITO_VOLTAGE_THRESHOLD = 2.5f; // V
 
-    // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S) antes de leer, para que el
+    // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S/P) antes de leer, para que el
     // relé/mux y la carga del cableado se estabilicen. Con el ensayo punto a punto solo conmuta
-    // 1-2 pines por paso (antes conmutaba todo el banco), así que 200 ms es suficiente. Si las
+    // 1-2 pines por paso (antes conmutaba todo el banco), así que 150 ms es suficiente. Si las
     // lecturas salieran inestables (R≈0 / falso cortocircuito), subir este valor.
-    private const int SETTLE_DELAY_MS = 200;
+    private const int SETTLE_DELAY_MS = 120;
 
     public TestState StateId => TestState.Running;
 
@@ -127,9 +127,8 @@ public class RunningState : ITestState
 
         try
         {
-            // ── Resistencia: "arriba" a 5V ("abajo" ya está a 0V), seleccionar pista y leer F0..F3 ──
+            // ── Resistencia: "arriba" a 5V ("abajo" ya está a 0V) + seleccionar pista, luego leer F0..F3 ──
             await SendLoggedAsync(context, Pc7866Commands.BuildOutputCommand(chipArriba, (ushort)(1 << pinArriba)));
-            await Task.Delay(SETTLE_DELAY_MS, context.CancellationToken);
 
             string respP = await SendLoggedAsync(context, Pc7866Commands.SelectTrack(paso.CanalMultiplexor));
             if (!respP.Trim().StartsWith("O", StringComparison.OrdinalIgnoreCase))
@@ -138,7 +137,8 @@ public class RunningState : ITestState
                 detalle.Resultado = false;
                 return detalle;
             }
-            await Task.Delay(50, context.CancellationToken);
+            // Un único asentamiento cubre a la vez la excitación (S) y la conmutación del mux (P).
+            await Task.Delay(SETTLE_DELAY_MS, context.CancellationToken);
 
             // F0 cambia con cada resistencia; F1/F2/F3 son fijos en automático, así que se leen una
             // sola vez (primer paso) y se reutilizan en los siguientes para acelerar el ensayo.
