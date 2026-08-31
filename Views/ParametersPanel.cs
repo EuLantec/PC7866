@@ -39,6 +39,8 @@ public partial class ParametersPanel : UserControl
         btnNuevoParam.Click                  += BtnNuevoParam_Click;
         btnGuardarParam.Click                += BtnGuardarParam_Click;
         btnEliminarParam.Click               += BtnEliminarParam_Click;
+        btnExportarParam.Click               += BtnExportarParam_Click;
+        btnImportarParam.Click               += BtnImportarParam_Click;
         gridParametros.SelectionChanged      += GridParametros_SelectionChanged;
 
         // Punto sobre imagen
@@ -92,6 +94,7 @@ public partial class ParametersPanel : UserControl
         _referenciaActual = r;
         txtRefNombre.Text = r.ReferenciaNombre;
         txtRefDesc.Text   = r.Descripcion;
+        txtRefModelo.Text = r.ModeloPlaca;
         chkActiva.Checked = r.BActiva;
         nudRefNumMcps.Value  = Math.Clamp(r.NumMcps, (int)nudRefNumMcps.Minimum, (int)nudRefNumMcps.Maximum);
         nudRefMuestras.Value = Math.Clamp(r.Muestras, (int)nudRefMuestras.Minimum, (int)nudRefMuestras.Maximum);
@@ -148,6 +151,7 @@ public partial class ParametersPanel : UserControl
         _referenciaActual = null;
         txtRefNombre.Text = string.Empty;
         txtRefDesc.Text   = string.Empty;
+        txtRefModelo.Text = string.Empty;
         chkActiva.Checked = true;
         nudRefNumMcps.Value  = PC7866.Models.Pc7866Commands.McpChipCount;
         nudRefMuestras.Value = 10;
@@ -184,6 +188,7 @@ public partial class ParametersPanel : UserControl
             {
                 ReferenciaNombre  = txtRefNombre.Text.Trim(),
                 Descripcion       = txtRefDesc.Text.Trim(),
+                ModeloPlaca       = txtRefModelo.Text.Trim(),
                 BActiva           = chkActiva.Checked,
                 NumMcps           = (int)nudRefNumMcps.Value,
                 Muestras          = (int)nudRefMuestras.Value,
@@ -203,6 +208,7 @@ public partial class ParametersPanel : UserControl
         {
             _referenciaActual.ReferenciaNombre  = txtRefNombre.Text.Trim();
             _referenciaActual.Descripcion       = txtRefDesc.Text.Trim();
+            _referenciaActual.ModeloPlaca       = txtRefModelo.Text.Trim();
             _referenciaActual.BActiva           = chkActiva.Checked;
             _referenciaActual.NumMcps           = (int)nudRefNumMcps.Value;
             _referenciaActual.Muestras          = (int)nudRefMuestras.Value;
@@ -467,6 +473,132 @@ public partial class ParametersPanel : UserControl
         await _repository.DeleteParametroAsync(id);
         if (_referenciaActual is not null)
             await LoadParametrosAsync(_referenciaActual.Id);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Importar / exportar parámetros (CSV / JSON)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async void BtnExportarParam_Click(object? sender, EventArgs e)
+    {
+        if (_referenciaActual is null || _repository is null)
+        {
+            MessageBox.Show("Primero seleccione una referencia.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var parametros = (await _repository.GetParametrosByReferenciaAsync(_referenciaActual.Id)).ToList();
+        if (parametros.Count == 0)
+        {
+            MessageBox.Show("Esta referencia no tiene parámetros que exportar.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        using var dlg = new SaveFileDialog
+        {
+            Filter   = "CSV (*.csv)|*.csv|JSON (*.json)|*.json",
+            FileName = $"parametros_{_referenciaActual.ReferenciaNombre}",
+            Title    = "Exportar parámetros"
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        try
+        {
+            if (dlg.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                ParametroImportExport.ExportJson(dlg.FileName, parametros);
+            else
+                ParametroImportExport.ExportCsv(dlg.FileName, parametros);
+
+            MessageBox.Show($"Exportados {parametros.Count} parámetros.", "OK",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al exportar: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async void BtnImportarParam_Click(object? sender, EventArgs e)
+    {
+        if (_referenciaActual is null || _repository is null)
+        {
+            MessageBox.Show("Primero seleccione una referencia.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        using var dlg = new OpenFileDialog
+        {
+            Filter = "Parámetros (*.csv;*.json)|*.csv;*.json|CSV (*.csv)|*.csv|JSON (*.json)|*.json",
+            Title  = "Importar parámetros"
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        List<ParametroEnsayo> parametros;
+        try
+        {
+            parametros = dlg.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                ? ParametroImportExport.ImportJson(dlg.FileName)
+                : ParametroImportExport.ImportCsv(dlg.FileName);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al leer el archivo: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        if (parametros.Count == 0)
+        {
+            MessageBox.Show("El archivo no contiene parámetros.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var resp = MessageBox.Show(
+            $"Se importarán {parametros.Count} parámetros a la referencia '{_referenciaActual.ReferenciaNombre}'.\n\n" +
+            "Sí = reemplazar los existentes  |  No = añadir  |  Cancelar",
+            "Importar parámetros", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+        if (resp == DialogResult.Cancel) return;
+
+        try
+        {
+            if (resp == DialogResult.Yes)
+            {
+                var existentes = await _repository.GetParametrosByReferenciaAsync(_referenciaActual.Id);
+                foreach (var ex in existentes)
+                    await _repository.DeleteParametroAsync(ex.Id);
+            }
+
+            foreach (var p in parametros)
+            {
+                p.Id           = 0;
+                p.ReferenciaId = _referenciaActual.Id;
+
+                // Recalcular las salidas activas a partir de los selectores arriba/abajo.
+                p.NSalida = new bool[Pc7866Commands.OutputCount];
+                int bA = Pc7866Commands.McpBitIndex(p.McpArribaChip, p.McpArribaPin);
+                if (bA >= 0) p.NSalida[bA] = true;
+                int bB = Pc7866Commands.McpBitIndex(p.McpAbajoChip, p.McpAbajoPin);
+                if (bB >= 0) p.NSalida[bB] = true;
+
+                p.FechaCreacion     = DateTime.Now;
+                p.FechaModificacion = DateTime.Now;
+                await _repository.InsertParametroAsync(p);
+            }
+
+            await LoadParametrosAsync(_referenciaActual.Id);
+            MessageBox.Show($"Importados {parametros.Count} parámetros.", "OK",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al importar: {ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

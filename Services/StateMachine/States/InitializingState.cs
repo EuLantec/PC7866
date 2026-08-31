@@ -27,9 +27,12 @@ public class InitializingState : ITestState
         }
 
         var referencia = context.Referencia;
+        string modelo = string.IsNullOrWhiteSpace(referencia.ModeloPlaca)
+            ? referencia.ReferenciaNombre
+            : referencia.ModeloPlaca;
         string cmdConfig = Pc7866Commands.BuildBoardConfigCommand(
             referencia.NumMcps, referencia.Inh1Pos, referencia.Inh2Pos, referencia.Inh3Pos, referencia.Inh4Pos,
-            referencia.ReferenciaNombre, referencia.Muestras, referencia.RetardoMs);
+            modelo, referencia.Muestras, referencia.RetardoMs);
 
         context.CommandLogger?.Invoke($"TX: {cmdConfig}");
         string respI = await context.SerialPort.SendCommandAsync(cmdConfig, context.TimeoutMs, context.CancellationToken);

@@ -22,7 +22,9 @@ partial class ParametersPanel
         txtRefNombre = new TextBox();
         lblRefDesc   = new Label();
         txtRefDesc   = new TextBox();
-        chkActiva    = new CheckBox();        lblRefNumMcps  = new Label();
+        chkActiva    = new CheckBox();        lblRefModelo  = new Label();
+        txtRefModelo  = new TextBox();
+        lblRefNumMcps  = new Label();
         nudRefNumMcps  = new NumericUpDown();
         lblRefMuestras = new Label();
         nudRefMuestras = new NumericUpDown();
@@ -87,6 +89,8 @@ partial class ParametersPanel
         btnNuevoParam    = new Button();
         btnGuardarParam  = new Button();
         btnEliminarParam = new Button();
+        btnExportarParam = new Button();
+        btnImportarParam = new Button();
         pnlParamButtons  = new Panel();
 
         grpRefs.SuspendLayout();
@@ -135,23 +139,26 @@ partial class ParametersPanel
         txtRefDesc.Location = new Point(83, 38); txtRefDesc.Size = new Size(500, 80);
         txtRefDesc.Multiline = true; txtRefDesc.ScrollBars = ScrollBars.Vertical;
 
+        lblRefModelo.Text = "Modelo placa (6 díg):"; lblRefModelo.AutoSize = true; lblRefModelo.Location = new Point(8, 128);
+        txtRefModelo.Location = new Point(150, 124); txtRefModelo.Size = new Size(90, 23); txtRefModelo.MaxLength = 6;
+
         // Configuración de placa (comando "I")
-        lblRefNumMcps.Text = "Nº MCPs (0-6):"; lblRefNumMcps.AutoSize = true; lblRefNumMcps.Location = new Point(8, 128);
-        nudRefNumMcps.Location = new Point(120, 124); nudRefNumMcps.Size = new Size(60, 23);
+        lblRefNumMcps.Text = "Nº MCPs (0-6):"; lblRefNumMcps.AutoSize = true; lblRefNumMcps.Location = new Point(8, 158);
+        nudRefNumMcps.Location = new Point(120, 154); nudRefNumMcps.Size = new Size(60, 23);
         nudRefNumMcps.Minimum = 0; nudRefNumMcps.Maximum = PC7866.Models.Pc7866Commands.McpChipCount; nudRefNumMcps.Value = PC7866.Models.Pc7866Commands.McpChipCount;
 
-        lblRefMuestras.Text = "Muestras (0-99):"; lblRefMuestras.AutoSize = true; lblRefMuestras.Location = new Point(196, 128);
-        nudRefMuestras.Location = new Point(320, 124); nudRefMuestras.Size = new Size(60, 23);
+        lblRefMuestras.Text = "Muestras (0-99):"; lblRefMuestras.AutoSize = true; lblRefMuestras.Location = new Point(196, 158);
+        nudRefMuestras.Location = new Point(320, 154); nudRefMuestras.Size = new Size(60, 23);
         nudRefMuestras.Minimum = 0; nudRefMuestras.Maximum = 99; nudRefMuestras.Value = 10;
 
-        lblRefRetardo.Text = "Retardo ms (0-999):"; lblRefRetardo.AutoSize = true; lblRefRetardo.Location = new Point(396, 128);
-        nudRefRetardo.Location = new Point(540, 124); nudRefRetardo.Size = new Size(60, 23);
+        lblRefRetardo.Text = "Retardo ms (0-999):"; lblRefRetardo.AutoSize = true; lblRefRetardo.Location = new Point(396, 158);
+        nudRefRetardo.Location = new Point(540, 154); nudRefRetardo.Size = new Size(60, 23);
         nudRefRetardo.Minimum = 0; nudRefRetardo.Maximum = 999; nudRefRetardo.Value = 20;
 
-        lblRefInh.Text = "INH1-4 pos (hex/N):"; lblRefInh.AutoSize = true; lblRefInh.Location = new Point(8, 158);
+        lblRefInh.Text = "INH1-4 pos (hex/N):"; lblRefInh.AutoSize = true; lblRefInh.Location = new Point(8, 188);
         void InhRefBox(TextBox t, int x)
         {
-            t.Text = "N"; t.Location = new Point(x, 154); t.Size = new Size(36, 23);
+            t.Text = "N"; t.Location = new Point(x, 184); t.Size = new Size(36, 23);
             t.MaxLength = 1; t.CharacterCasing = CharacterCasing.Upper; t.TextAlign = HorizontalAlignment.Center;
         }
         InhRefBox(txtRefInh1, 150);
@@ -159,9 +166,9 @@ partial class ParametersPanel
         InhRefBox(txtRefInh3, 234);
         InhRefBox(txtRefInh4, 276);
 
-        btnCargarImagen.Text = "📂 Cargar imagen"; btnCargarImagen.Location = new Point(8, 190); btnCargarImagen.Size = new Size(140, 28);
+        btnCargarImagen.Text = "📂 Cargar imagen"; btnCargarImagen.Location = new Point(8, 220); btnCargarImagen.Size = new Size(140, 28);
 
-        picPreview.Location = new Point(8, 224); picPreview.Size = new Size(580, 276);
+        picPreview.Location = new Point(8, 254); picPreview.Size = new Size(580, 246);
         picPreview.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
         picPreview.SizeMode = PictureBoxSizeMode.Zoom;
         picPreview.BackColor = Color.FromArgb(240, 240, 240);
@@ -171,6 +178,7 @@ partial class ParametersPanel
         {
             lblRefNombre, txtRefNombre, chkActiva,
             lblRefDesc, txtRefDesc,
+            lblRefModelo, txtRefModelo,
             lblRefNumMcps, nudRefNumMcps, lblRefMuestras, nudRefMuestras, lblRefRetardo, nudRefRetardo,
             lblRefInh, txtRefInh1, txtRefInh2, txtRefInh3, txtRefInh4,
             btnCargarImagen, picPreview
@@ -268,12 +276,14 @@ partial class ParametersPanel
         nudCanalMux.Minimum      = 0; nudCanalMux.Maximum      = PC7866.Models.Pc7866Commands.MaxTrackNumber;
         nudPosX.Maximum = 4000; nudPosY.Maximum = 4000;
 
-        btnNuevoParam.Text    = "➕ Nuevo";   btnNuevoParam.Location    = new Point(8, 6); btnNuevoParam.Size = new Size(100, 28);
-        btnGuardarParam.Text  = "💾 Guardar"; btnGuardarParam.Location  = new Point(116, 6); btnGuardarParam.Size = new Size(110, 28);
-        btnEliminarParam.Text = "🗑 Eliminar"; btnEliminarParam.Location = new Point(234, 6); btnEliminarParam.Size = new Size(110, 28);
+        btnNuevoParam.Text    = "➕ Nuevo";   btnNuevoParam.Location    = new Point(8, 6); btnNuevoParam.Size = new Size(92, 28);
+        btnGuardarParam.Text  = "💾 Guardar"; btnGuardarParam.Location  = new Point(104, 6); btnGuardarParam.Size = new Size(100, 28);
+        btnEliminarParam.Text = "🗑 Eliminar"; btnEliminarParam.Location = new Point(208, 6); btnEliminarParam.Size = new Size(100, 28);
+        btnExportarParam.Text = "📤 Exportar"; btnExportarParam.Location = new Point(312, 6); btnExportarParam.Size = new Size(100, 28);
+        btnImportarParam.Text = "📥 Importar"; btnImportarParam.Location = new Point(416, 6); btnImportarParam.Size = new Size(100, 28);
         pnlParamButtons.Dock = DockStyle.Bottom;
         pnlParamButtons.Height = 42;
-        pnlParamButtons.Controls.AddRange(new Control[] { btnNuevoParam, btnGuardarParam, btnEliminarParam });
+        pnlParamButtons.Controls.AddRange(new Control[] { btnNuevoParam, btnGuardarParam, btnEliminarParam, btnExportarParam, btnImportarParam });
 
         grpParams.Controls.AddRange(new Control[] { pnlParamForm, gridParametros, pnlParamButtons });
 
@@ -321,6 +331,8 @@ partial class ParametersPanel
     private Label     lblRefDesc;
     private TextBox   txtRefDesc;
     private CheckBox  chkActiva;
+    private Label     lblRefModelo;
+    private TextBox   txtRefModelo;
     private Label     lblRefNumMcps;
     private NumericUpDown nudRefNumMcps;
     private Label     lblRefMuestras;
@@ -387,5 +399,7 @@ partial class ParametersPanel
     private Button   btnNuevoParam;
     private Button   btnGuardarParam;
     private Button   btnEliminarParam;
+    private Button   btnExportarParam;
+    private Button   btnImportarParam;
     private Panel    pnlParamButtons;
 }

@@ -48,10 +48,10 @@ public class TestRepository : ITestRepository
         const string sql = """
             INSERT INTO referencias
                 (b_activa, referencia, descripcion, fecha_creacion, fecha_modificacion, imagen,
-                 num_mcps, inh1_pos, inh2_pos, inh3_pos, inh4_pos, muestras, retardo_ms)
+                 modelo_placa, num_mcps, inh1_pos, inh2_pos, inh3_pos, inh4_pos, muestras, retardo_ms)
             VALUES
                 (@BActiva, @Referencia, @Descripcion, @FechaCreacion, @FechaModificacion, @Imagen,
-                 @NumMcps, @Inh1Pos, @Inh2Pos, @Inh3Pos, @Inh4Pos, @Muestras, @RetardoMs);
+                 @ModeloPlaca, @NumMcps, @Inh1Pos, @Inh2Pos, @Inh3Pos, @Inh4Pos, @Muestras, @RetardoMs);
             SELECT LAST_INSERT_ID();
             """;
 
@@ -64,6 +64,7 @@ public class TestRepository : ITestRepository
             r.FechaCreacion,
             r.FechaModificacion,
             r.Imagen,
+            r.ModeloPlaca,
             r.NumMcps,
             r.Inh1Pos,
             r.Inh2Pos,
@@ -83,6 +84,7 @@ public class TestRepository : ITestRepository
                 descripcion        = @Descripcion,
                 fecha_modificacion = @FechaModificacion,
                 imagen             = @Imagen,
+                modelo_placa       = @ModeloPlaca,
                 num_mcps           = @NumMcps,
                 inh1_pos           = @Inh1Pos,
                 inh2_pos           = @Inh2Pos,
@@ -102,6 +104,7 @@ public class TestRepository : ITestRepository
             r.Descripcion,
             r.FechaModificacion,
             r.Imagen,
+            r.ModeloPlaca,
             r.NumMcps,
             r.Inh1Pos,
             r.Inh2Pos,
@@ -424,6 +427,7 @@ public class TestRepository : ITestRepository
                 fecha_creacion      DATETIME NOT NULL,
                 fecha_modificacion  DATETIME NOT NULL,
                 imagen              LONGBLOB,
+                modelo_placa        VARCHAR(10) NOT NULL DEFAULT '',
                 num_mcps            INT NOT NULL DEFAULT 6,
                 inh1_pos            INT NULL,
                 inh2_pos            INT NULL,
@@ -513,6 +517,7 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS canal_multiplexor INT NOT NULL DEFAULT 0;");
 
         // Migraciones: configuracion de placa a nivel de Referencia (comando "I" del protocolo nuevo)
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS modelo_placa VARCHAR(10) NOT NULL DEFAULT '';");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS num_mcps INT NOT NULL DEFAULT 6;");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh1_pos INT NULL;");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh2_pos INT NULL;");
@@ -537,6 +542,7 @@ public class TestRepository : ITestRepository
         FechaCreacion      = (DateTime)row.fecha_creacion,
         FechaModificacion  = (DateTime)row.fecha_modificacion,
         Imagen             = (byte[]?)row.imagen,
+        ModeloPlaca        = HasColumn(row, "modelo_placa") ? (string?)row.modelo_placa ?? string.Empty : string.Empty,
         NumMcps            = HasColumn(row, "num_mcps")  ? (int)row.num_mcps  : Pc7866Commands.McpChipCount,
         Inh1Pos            = HasColumn(row, "inh1_pos")  ? (int?)row.inh1_pos : null,
         Inh2Pos            = HasColumn(row, "inh2_pos")  ? (int?)row.inh2_pos : null,
