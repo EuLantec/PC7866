@@ -26,7 +26,7 @@ public class RunningState : ITestState
     // relé/mux y la carga del cableado se estabilicen. Con el ensayo punto a punto solo conmuta
     // 1-2 pines por paso (antes conmutaba todo el banco), así que 150 ms es suficiente. Si las
     // lecturas salieran inestables (R≈0 / falso cortocircuito), subir este valor.
-    private const int SETTLE_DELAY_MS = 120;
+    private const int SETTLE_DELAY_MS = 200;
 
     public TestState StateId => TestState.Running;
 
