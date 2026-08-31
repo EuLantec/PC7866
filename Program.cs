@@ -4,8 +4,6 @@ namespace PC7866
 {
     internal static class Program
     {
-        //namespace PC7866;
-
         internal static class Programm
         {
             [STAThread]
@@ -18,3 +16,4 @@ namespace PC7866
         }
     }
 }
+

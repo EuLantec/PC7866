@@ -17,6 +17,9 @@ public class TestContext
     public CancellationToken     CancellationToken { get; set; }
     public IProgress<TestProgressReport>? Progress { get; set; }
 
+    /// <summary>Callback invocado con cada comando TX/RX enviado al microprocesador (para mostrarlo en el log de la UI).</summary>
+    public Action<string>? CommandLogger { get; set; }
+
     /// <summary>
     /// Evento disparado tras cada medición para actualizar la UI con el resultado del paso.
     /// </summary>

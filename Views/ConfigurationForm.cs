@@ -37,8 +37,10 @@ public sealed class ConfigurationForm : Form
 
     private void BuildUi()
     {
+        AutoScaleMode   = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(96F, 96F);
         Text            = "Configuración";
-        Size            = new Size(480, 440);
+        Size            = new Size(520, 470);
         StartPosition   = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
@@ -101,19 +103,31 @@ public sealed class ConfigurationForm : Form
         Controls.Add(tab);
 
         // ── Barra inferior de botones ────────────────────────────────────────
-        var pnlBtns = new Panel
+        var pnlBtns = new FlowLayoutPanel
         {
-            Dock      = DockStyle.Bottom,
-            Height    = 44,
-            BackColor = Color.FromArgb(235, 238, 245),
-            Padding   = new Padding(8, 8, 8, 8)
+            Dock          = DockStyle.Bottom,
+            AutoSize      = true,
+            FlowDirection = FlowDirection.RightToLeft,
+            BackColor     = Color.FromArgb(235, 238, 245),
+            Padding       = new Padding(8)
         };
+
+        btnCancelar = new Button
+        {
+            Text      = "Cancelar",
+            AutoSize  = true,
+            MinimumSize = new Size(90, 30),
+            Margin    = new Padding(4),
+            Font      = new Font("Segoe UI", 9f)
+        };
+        btnCancelar.Click += (_, _) => { DialogResult = DialogResult.Cancel; Close(); };
 
         btnGuardar = new Button
         {
             Text      = "💾 Guardar",
-            Size      = new Size(110, 28),
-            Location  = new Point(240, 8),
+            AutoSize  = true,
+            MinimumSize = new Size(110, 30),
+            Margin    = new Padding(4),
             Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
             BackColor = Color.FromArgb(0, 120, 212),
             ForeColor = Color.White,
@@ -121,16 +135,7 @@ public sealed class ConfigurationForm : Form
         };
         btnGuardar.Click += BtnGuardar_Click;
 
-        btnCancelar = new Button
-        {
-            Text     = "Cancelar",
-            Size     = new Size(90, 28),
-            Location = new Point(358, 8),
-            Font     = new Font("Segoe UI", 9f)
-        };
-        btnCancelar.Click += (_, _) => { DialogResult = DialogResult.Cancel; Close(); };
-
-        pnlBtns.Controls.AddRange(new Control[] { btnGuardar, btnCancelar });
+        pnlBtns.Controls.AddRange(new Control[] { btnCancelar, btnGuardar });
         Controls.Add(pnlBtns);
     }
 
@@ -147,10 +152,10 @@ public sealed class ConfigurationForm : Form
             RowCount    = rows,
             Padding     = new Padding(10)
         };
-        t.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170));
+        t.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 210));
         t.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         for (int i = 0; i < rows; i++)
-            t.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            t.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         return t;
     }
 
@@ -159,10 +164,14 @@ public sealed class ConfigurationForm : Form
         int row = t.RowCount - (t.RowStyles.Count - t.Controls.Count / 2);
         var lbl = new Label
         {
-            Text     = label,
-            AutoSize = true,
-            Anchor   = AnchorStyles.Left | AnchorStyles.Right
+            Text      = label,
+            AutoSize  = false,
+            Dock      = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin    = new Padding(3, 6, 6, 6)
         };
+        control.Margin = new Padding(3, 6, 3, 6);
+        control.Anchor = AnchorStyles.Left;
         t.Controls.Add(lbl);
         t.Controls.Add(control);
     }

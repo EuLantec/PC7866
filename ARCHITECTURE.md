@@ -4,33 +4,43 @@
 
 ```
 PC7866/
-├── Models/                          ✅ CREADO
-│   ├── TestParameters.cs            # Parámetros de configuración
-│   ├── TestResult.cs                # Resultados de tests
-│   ├── MeasurementCommand.cs        # Comandos individuales
-│   ├── MeasurementResult.cs         # Resultados de mediciones
-│   └── DeviceResponse.cs            # Respuestas del dispositivo
+├── Models/                          # Modelos de dominio, comandos y resultados
+│   ├── Referencia.cs                # Referencia/producto + configuración de placa
+│   ├── ParametroEnsayo.cs           # Paso de ensayo (contacto, selectores, calibración)
+│   ├── Resultado.cs                 # Cabecera de un ensayo
+│   ├── ResultadoDetalle.cs          # Resultado por paso + EstadoMedicion
+│   ├── Pc7866Commands.cs            # Builders de tramas del protocolo serie
+│   ├── FullTestRow.cs               # Fila del test completo (modo manual)
+│   └── ...                          # TestParameters, MeasurementResult, DeviceResponse, etc.
 │
-├── Services/                        ✅ CREADO
-│   └── SerialCommunication/
-│       ├── ISerialPortService.cs    # Interfaz de comunicación
-│       ├── SerialPortService.cs     # Implementación puerto serie
-│       └── CommandParser.cs         # Parser de comandos
+├── Services/
+│   ├── SerialCommunication/
+│   │   ├── ISerialPortService.cs    # Interfaz de comunicación
+│   │   ├── SerialPortService.cs     # Implementación puerto serie
+│   │   └── CommandParser.cs         # Parser de respuestas analógicas
+│   ├── Database/
+│   │   ├── ITestRepository.cs       # Interfaz del repositorio
+│   │   └── TestRepository.cs        # Acceso a MariaDB (Dapper) + creación/migración de esquema
+│   └── StateMachine/
+│       ├── ITestState.cs            # Interfaz de estado
+│       ├── TestContext.cs           # Contexto compartido del ensayo
+│       ├── TestStateMachine.cs      # Orquestador de estados
+│       └── States/                  # InitializingState, RunningState, CompletedState
 │
-├── Views/                           ✅ CREADO
-│   ├── ManualControlForm.cs         # Formulario modo manual
-│   └── ManualControlForm.Designer.cs
+├── Views/                           # Paneles WinForms
+│   ├── ManualControlPanel.cs        # Modo manual (diagnosis, salidas, analógica)
+│   ├── AutomaticTestPanel.cs        # Modo automático (ejecución de ensayo)
+│   ├── ParametersPanel.cs           # Referencias y parámetros de ensayo
+│   ├── ReportsPanel.cs              # Informes / histórico
+│   ├── ConfigurationForm.cs         # Configuración (puerto, BD, opciones)
+│   └── ...                          # FullTestReportForm, ResultadoDetalleForm
 │
-├── Utils/                           ✅ CREADO
-│   └── Logger.cs                    # Sistema de logging
+├── Utils/
+│   ├── Logger.cs                    # Sistema de logging
+│   └── ParametroImportExport.cs     # Import/export CSV y JSON de parámetros
 │
-├── Configuration/                   ✅ CREADO
-│   └── AppSettings.cs               # Configuración global
-│
-└── [PENDIENTE]
-    ├── Services/Database/           # Acceso a MariaDB (próximo paso)
-    ├── Services/StateMachine/       # Máquina de estados (próximo paso)
-    └── Views/AutomaticTestForm.cs   # Modo automático (próximo paso)
+└── Configuration/
+    └── AppSettings.cs               # Configuración global (persistida en appsettings.json)
 ```
 
 ---
@@ -118,12 +128,12 @@ Resultado completo:
 
 ---
 
-### 4️⃣ **ManualControlForm** - Interfaz Modo Manual
+### 4️⃣ **ManualControlPanel** - Interfaz Modo Manual
 
 **Funcionalidades:**
 - ✅ Selección de puerto y velocidad
 - ✅ Conexión/desconexión
-- ✅ Envío de comandos con Enter o botón
+- ✅ Diagnosis, configuración de MCP, matriz de 96 salidas y lectura analógica
 - ✅ Log en tiempo real con timestamps
 - ✅ Manejo de errores y timeouts
 - ✅ Indicador de estado en barra inferior
@@ -191,62 +201,46 @@ AutoSaveResults = true
 
 3. **Usar la interfaz:**
    - Seleccionar puerto COM
-   - Seleccionar velocidad (ej: 9600)
+   - Seleccionar velocidad (ej: 115200)
    - Clic en "Conectar"
-   - Escribir comando (ej: `*IDN?`)
-   - Presionar Enter o "Enviar"
-   - Ver respuesta en el log
+   - Lanzar una diagnosis (`DT`) o activar salidas desde la matriz
+   - Ver la trama y la respuesta (`O`/`N`) en el log
 
 ---
 
 ## 📦 Dependencias NuGet
 
 ```xml
-<PackageReference Include="System.IO.Ports" Version="8.0.0" />
+<PackageReference Include="System.IO.Ports" />
+<PackageReference Include="MySqlConnector" />
+<PackageReference Include="Dapper" />
+<PackageReference Include="PdfSharpCore" />
+<PackageReference Include="SixLabors.ImageSharp" />
 ```
 
-**Para próximas fases:**
-```xml
-<!-- Base de datos -->
-<PackageReference Include="MySqlConnector" Version="2.*" />
-<PackageReference Include="Dapper" Version="2.*" />
-
-<!-- Exportación Excel -->
-<PackageReference Include="ClosedXML" Version="0.102.*" />
-```
+(Ver versiones exactas en [`PC7866.csproj`](PC7866.csproj).)
 
 ---
 
-## 🎯 Próximos Pasos
+## 🎯 Estado del proyecto
 
-### Fase 3: Base de Datos MariaDB
-- [ ] Crear esquema de base de datos
-- [ ] Implementar `MariaDbContext`
-- [ ] Implementar repositorios (TestRepository, ParametersRepository)
-- [ ] Migraciones
+Los módulos principales están implementados y operativos:
 
-### Fase 4: Máquina de Estados
-- [ ] Diseñar estados del test
-- [ ] Implementar `TestStateMachine`
-- [ ] Implementar estados individuales (Idle, Running, Measuring, etc.)
-- [ ] Integrar con SerialPortService
-
-### Fase 5: Modo Automático
-- [ ] Crear `AutomaticTestForm`
-- [ ] Cargar secuencias desde BD
-- [ ] Ejecutar tests automáticos
-- [ ] Guardar resultados en BD
-- [ ] Exportar a CSV/Excel
+- **Base de datos MariaDB** — `TestRepository` crea/asegura el esquema (`CREATE DATABASE`/`CREATE TABLE IF NOT EXISTS`) y migra columnas nuevas con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
+- **Máquina de estados** — `TestStateMachine` + estados `Initializing` → `Running` → `Completed`.
+- **Modo automático** — `AutomaticTestPanel` ejecuta el ensayo punto a punto y guarda resultados en BD.
+- **Import/export** — parámetros de ensayo en CSV y JSON (`ParametroImportExport`).
+- **Informes** — histórico y detalle por paso (`ReportsPanel`, `ResultadoDetalleForm`), con exportación PDF.
 
 ---
 
 ## 🔍 Patrones de Diseño Utilizados
 
 1. **Singleton**: `Logger`, `AppSettings`
-2. **Repository Pattern**: (pendiente para BD)
-3. **State Machine**: (pendiente)
-4. **Dependency Injection**: Uso de interfaces (`ISerialPortService`)
-5. **Event-Driven**: Eventos para comunicación asíncrona
+2. **Repository Pattern**: `ITestRepository` / `TestRepository` (Dapper sobre MariaDB)
+3. **State Machine**: `TestStateMachine` + `ITestState` (Initializing/Running/Completed)
+4. **Dependency Injection**: Uso de interfaces (`ISerialPortService`, `ITestRepository`)
+5. **Event-Driven**: Eventos para comunicación asíncrona y `StepCompleted` por paso
 6. **Async/Await**: Todas las operaciones I/O son asíncronas
 
 ---

@@ -39,14 +39,21 @@ public partial class ManualControlPanel : UserControl
         LoadAvailablePorts();
         cmbBaudRate.Items.AddRange(new object[] { 9600, 19200, 38400, 57600, 115200 });
         cmbBaudRate.SelectedItem = AppSettings.Instance.DefaultBaudRate;
-        
+
         // Solo buscar DefaultPortName si el puerto no está ya abierto
         if (!_serialPort.IsOpen)
         {
             int com4idx = cmbPort.FindStringExact(AppSettings.Instance.DefaultPortName);
             cmbPort.SelectedIndex = com4idx >= 0 ? com4idx : (cmbPort.Items.Count > 0 ? 0 : -1);
         }
-        
+
+        for (int i = 0; i < Pc7866Commands.McpChipCount; i++)
+            cmbMcpModeAddr.Items.Add($"{i} (0x{Pc7866Commands.McpI2cAddress(i):X2})");
+        cmbMcpModeAddr.SelectedIndex = 0;
+
+        cmbChannel.Items.AddRange(new object[] { 0, 1, 2, 3 });
+        cmbChannel.SelectedIndex = 0;
+
         BuildOutputMatrix();
         SetConnectedState(_serialPort.IsOpen);
     }
@@ -112,7 +119,8 @@ public partial class ManualControlPanel : UserControl
     }
 
     private void LoadAvailablePorts()
-    {        cmbPort.Items.Clear();
+    {
+        cmbPort.Items.Clear();
         string[] ports = _serialPort.GetAvailablePorts();
         if (ports.Length > 0)
         {
@@ -134,7 +142,8 @@ public partial class ManualControlPanel : UserControl
     }
 
     /// <summary>
-    /// Crea la cuadrícula 8 × 6 de 48 checkboxes dentro de pnlOutputMatrix.
+    /// Crea la cuadrícula de <see cref="Pc7866Commands.OutputCount"/> checkboxes (8 × 12)
+    /// dentro de pnlOutputMatrix, uno por cada pin de los 6 MCP23017 posibles.
     /// </summary>
     private void BuildOutputMatrix()
     {
@@ -143,16 +152,18 @@ public partial class ManualControlPanel : UserControl
 
         for (int i = 0; i < Pc7866Commands.OutputCount; i++)
         {
+            int chip = i / Pc7866Commands.McpPinCount;
+            int pin  = i % Pc7866Commands.McpPinCount;
             int col = i % cols, row = i / cols;
             var chk = new CheckBox
             {
-                Text     = $"S{i + 1:D2}",
+                Text     = $"{chip}.{(pin + 1):D2}",
                 Tag      = i,
                 Size     = new Size(cw, ch),
                 Location = new Point(padX + col * (cw + gapX), padY + row * (ch + gapY)),
                 Font     = new Font("Segoe UI", 8.5f)
             };
-            tip.SetToolTip(chk, $"Salida {i + 1}  –  bit {i}");
+            tip.SetToolTip(chk, $"MCP {chip} (0x{Pc7866Commands.McpI2cAddress(chip):X2})  pin {pin + 1}  –  bit {i}");
             chk.CheckedChanged += OutputCheck_Changed;
             _outputChecks[i]    = chk;
             pnlOutputMatrix.Controls.Add(chk);
@@ -174,11 +185,24 @@ public partial class ManualControlPanel : UserControl
         btnRefreshPorts.Click += (_, _) => LoadAvailablePorts();
 
         // Diagnosis
-        btnDiagTotal.Click += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisTotal());
-        btnDiag1.Click     += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.Diag1));
-        btnDiag2.Click     += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.Diag2));
-        btnDiag3.Click     += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.Diag3));
-        btnDiag4.Click     += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.Diag4));
+        btnDiagTotal.Click      += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisTotal());
+        btnDiagAds.Click        += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagAds));
+        btnDiagVersion.Click    += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagVersion));
+        btnDiagReadConfig.Click += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagReadConfig));
+        btnDiagTemperature.Click += async (_, _) => await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagTemperature));
+        for (int _mi = 0; _mi < Pc7866Commands.McpChipCount; _mi++)
+        {
+            int idx = _mi; // captura
+            _btnDiagMcp[idx].Click += async (_, _) =>
+                await SendAsync(Pc7866Commands.DiagnosisSingle(Pc7866Commands.DiagMcpSubCmd(idx)));
+        }
+
+        // M – configuración de dirección
+        btnSendMcpMode.Click += async (_, _) => await SendMcpModeAsync();
+
+        // P – selección de pista
+        btnSelectTrack.Click += async (_, _) =>
+            await SendAsync(Pc7866Commands.SelectTrack((int)nudTrack.Value));
 
         // Salidas
         btnOutputsAllOn.Click  += (_, _) => SetAllOutputs(true);
@@ -186,23 +210,12 @@ public partial class ManualControlPanel : UserControl
         btnFullTest.Click      += async (_, _) => await RunFullTestAsync();
 
         // Lectura analógica
-        btnReadRaw.Click      += async (_, _) => await SendAsync(Pc7866Commands.ReadRaw());
-        btnReadFiltered.Click += BtnReadFiltered_Click;
+        btnReadRaw.Click         += BtnReadRaw_Click;
+        btnReadFiltered.Click    += BtnReadFilteredSingle_Click;
+        btnReadAllFiltered.Click += BtnReadAllFiltered_Click;
 
-        // Filtros
-        btnFilterFlags.Click += async (_, _) =>
-            await SendAsync(Pc7866Commands.SetFilter(Pc7866Commands.FilterFlags, txtFilterFlags.Text.Trim().ToUpper()));
-        for (int _fi = 0; _fi < Pc7866Commands.CoefCount; _fi++)
-        {
-            int idx = _fi; // captura
-            _btnCoef[idx].Click += async (_, _) =>
-                await SendAsync(Pc7866Commands.SetFilter(Pc7866Commands.CoefSubCmd(idx + 1), CoefInputToHex(_txtCoef[idx].Text)));
-        }
-
-        // Guardar – tras cada operación ejecutar GV y rellenar campos
-        btnSaveWrite.Click += async (_, _) => { await SendAsync(Pc7866Commands.SaveCommand(Pc7866Commands.SaveWrite)); await SendGvAndPopulateAsync(); };
-        btnSaveRead.Click  += async (_, _) => { await SendAsync(Pc7866Commands.SaveCommand(Pc7866Commands.SaveRead));  await SendGvAndPopulateAsync(); };
-        btnSaveView.Click  += async (_, _) => await SendGvAndPopulateAsync();
+        // I – configuración de placa
+        btnSendBoardConfig.Click += async (_, _) => await SendBoardConfigAsync();
 
         // Reset
         btnReset.Click += async (_, _) =>
@@ -250,64 +263,116 @@ public partial class ManualControlPanel : UserControl
         cmbBaudRate.Enabled   = !connected;
 
         // Habilitar/deshabilitar secciones de comandos
-        grpDiagnosis.Enabled  = connected;
-        grpOutputs.Enabled    = connected;
-        btnFullTest.Enabled   = connected;
-        grpAnalog.Enabled     = connected;
+        grpDiagnosis.Enabled    = connected;
+        grpMcpMode.Enabled      = connected;
+        grpTrack.Enabled        = connected;
+        grpOutputs.Enabled      = connected;
+        grpAnalog.Enabled       = connected;
+        grpBoardConfig.Enabled  = connected;
+        grpReset.Enabled        = connected;
+        btnFullTest.Enabled     = connected;
 
         if (connected) AddLog($"✅ Conectado: {_serialPort.CurrentPort}", LogLevel.Info);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // M – Configuración de dirección (E/S)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task SendMcpModeAsync()
+    {
+        int mcpChip = cmbMcpModeAddr.SelectedIndex;
+        if (mcpChip < 0) return;
+
+        if (!ushort.TryParse(txtMcpModeMask.Text.Trim(), NumberStyles.HexNumber,
+            CultureInfo.InvariantCulture, out ushort mask))
+        {
+            AddLog("⚠️ Máscara inválida (se esperan 4 dígitos hex)", LogLevel.Warning);
+            return;
+        }
+
+        string cmd = Pc7866Commands.BuildMcpModeCommand(mcpChip, rbModeOutput.Checked, mask);
+        await SendAsync(cmd);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Salidas (S)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private async void OutputCheck_Changed(object? sender, EventArgs e) => await SendOutputsAsync();
+    private async void OutputCheck_Changed(object? sender, EventArgs e)
+    {
+        if (sender is not CheckBox chk || chk.Tag is not int bitIndex) return;
+        await SendChipOutputsAsync(bitIndex / Pc7866Commands.McpPinCount);
+    }
 
     private void SetAllOutputs(bool value)
     {
         foreach (var chk in _outputChecks) chk.CheckedChanged -= OutputCheck_Changed;
         foreach (var chk in _outputChecks) chk.Checked = value;
         foreach (var chk in _outputChecks) chk.CheckedChanged += OutputCheck_Changed;
-        _ = SendOutputsAsync();
+        _ = SendAllChipsOutputsAsync();
     }
 
-    private async Task SendOutputsAsync()
+    private async Task SendAllChipsOutputsAsync()
     {
-        bool[] states = _outputChecks.Select(c => c.Checked).ToArray();
-        string cmd    = Pc7866Commands.BuildOutputsCommand(states);
-        lblOutputMask.Text = $"Trama:  {cmd}";
+        for (int chip = 0; chip < Pc7866Commands.McpChipCount; chip++)
+            await SendChipOutputsAsync(chip);
+    }
+
+    private async Task SendChipOutputsAsync(int chip)
+    {
+        ushort word = 0;
+        int baseIdx = chip * Pc7866Commands.McpPinCount;
+        for (int pin = 0; pin < Pc7866Commands.McpPinCount; pin++)
+            if (_outputChecks[baseIdx + pin].Checked) word |= (ushort)(1 << pin);
+
+        string cmd = Pc7866Commands.BuildOutputCommand(chip, word);
+        lblOutputMask.Text = $"Última trama:  {cmd}";
         await SendAsync(cmd);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Lectura analógica filtrada (F) con cálculo de R
+    // Lectura analógica (R / F) de un único canal
     // ─────────────────────────────────────────────────────────────────────────
 
-    private async void BtnReadFiltered_Click(object? sender, EventArgs e)
+    private async void BtnReadRaw_Click(object? sender, EventArgs e)
     {
-        string response = await SendAsyncWithResult(Pc7866Commands.ReadFiltered());
-        if (string.IsNullOrWhiteSpace(response)) return;
+        int channel = (int)(cmbChannel.SelectedItem ?? 0);
+        string response = await SendAsyncWithResult(Pc7866Commands.ReadRaw(channel));
+        int? raw = _parser.ParseRawValue(response);
+        lblRawValue.Text = $"RAW(canal {channel}): {(raw?.ToString() ?? "—")}";
+    }
 
-        // Respuesta esperada: "v1 v2 v3 v4"  (4 voltajes separados por espacio)
-        double[] v = ParseAnalogResponse(response);
-        if (v.Length < 4)
+    private async void BtnReadFilteredSingle_Click(object? sender, EventArgs e)
+    {
+        int channel = (int)(cmbChannel.SelectedItem ?? 0);
+        string response = await SendAsyncWithResult(Pc7866Commands.ReadFiltered(channel));
+        float? filt = _parser.ParseFilteredValue(response);
+        lblRawValue.Text = $"Filtrado(canal {channel}): {(filt?.ToString("F4", CultureInfo.InvariantCulture) ?? "—")} V";
+    }
+
+    /// <summary>Lee secuencialmente F0..F3 y calcula la resistencia (Vain=Ch0-Ch1, Ve=Ch2-Ch3).</summary>
+    private async void BtnReadAllFiltered_Click(object? sender, EventArgs e)
+    {
+        var v = new double[4];
+        for (int ch = 0; ch < 4; ch++)
         {
-            AddLog("⚠️ Respuesta F: formato inesperado (se esperan 4 valores)", LogLevel.Warning);
-            return;
+            string response = await SendAsyncWithResult(Pc7866Commands.ReadFiltered(ch));
+            float? val = _parser.ParseFilteredValue(response);
+            if (val is null)
+            {
+                AddLog($"⚠️ F{ch}: respuesta inesperada \u201c{response}\u201d", LogLevel.Warning);
+                return;
+            }
+            v[ch] = val.Value;
         }
 
-        // Vain = señal diferencial canal 1 – canal 2
-        double vain = v[0] - v[1];
-        // Ve   = señal diferencial canal 3 – canal 4
-        double ve   = v[2] - v[3];
-
-        // R = Vain / (Ve – Vain) × 390 Ω
+        double vain  = v[0] - v[1];
+        double ve    = v[2] - v[3];
         double denom = ve - vain;
-        double r = CalcResistance(vain, denom);
-        string rStr = FormatResistance(r);
+        double r     = CalcResistance(vain, denom);
+        string rStr  = FormatResistance(r);
 
-        // Actualizar panel de resultado
         lblVain.Text       = $"{vain:F4} V";
         lblVe.Text         = $"{ve:F4} V";
         lblDenom.Text      = $"{denom:F4} V";
@@ -316,16 +381,30 @@ public partial class ManualControlPanel : UserControl
         AddLog($"   Vain={vain:F4}V  Ve={ve:F4}V  R={rStr} Ω", LogLevel.Info);
     }
 
-    /// <summary>
-    /// Parsea "32767 49439 43245 63567" o "1.234 2.345 3.456 4.567" → double[]
-    /// </summary>
-    private static double[] ParseAnalogResponse(string response)
+    // ─────────────────────────────────────────────────────────────────────────
+    // I – Configuración de placa
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task SendBoardConfigAsync()
     {
-        return response.Trim()
-            .Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : double.NaN)
-            .Where(d => !double.IsNaN(d))
-            .ToArray();
+        int numMcps = (int)nudNumMcps.Value;
+        int? inh1 = ParseInhBox(txtInh1.Text);
+        int? inh2 = ParseInhBox(txtInh2.Text);
+        int? inh3 = ParseInhBox(txtInh3.Text);
+        int? inh4 = ParseInhBox(txtInh4.Text);
+        int muestras = (int)nudMuestras.Value;
+        int retardo  = (int)nudRetardo.Value;
+
+        string cmd = Pc7866Commands.BuildBoardConfigCommand(
+            numMcps, inh1, inh2, inh3, inh4, txtBoardRef.Text, muestras, retardo);
+        await SendAsync(cmd);
+    }
+
+    private static int? ParseInhBox(string text)
+    {
+        text = text.Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(text) || text == "N") return null;
+        return int.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int v) ? v : null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -377,10 +456,6 @@ public partial class ManualControlPanel : UserControl
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Helper coeficientes
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // ─────────────────────────────────────────────────────────────────────────
     // Helpers de resistencia
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -396,59 +471,8 @@ public partial class ManualControlPanel : UserControl
         => double.IsInfinity(r) ? "∞" : $"{r:F2}";
 
     // ─────────────────────────────────────────────────────────────────────────
-    // GV – leer parámetros RAM y rellenar campos
+    // Test completo manual (todas las salidas configuradas)
     // ─────────────────────────────────────────────────────────────────────────
-
-    private async Task SendGvAndPopulateAsync()
-    {
-        string resp = await SendAsyncWithResult(Pc7866Commands.SaveCommand(Pc7866Commands.SaveView));
-        if (string.IsNullOrWhiteSpace(resp)) return;
-
-        // Respuesta esperada: 4 tokens hex de 4 dígitos (FLAGS Coef1 Coef2 Coef3)
-        // Puede venir como "I0XXXX I1XXXX I2XXXX I3XXXX" o como "XXXX XXXX XXXX XXXX"
-        string[] tokens = resp.Trim()
-            .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-        string[] hexValues = tokens
-            .Select(t => t.Length > 4 ? t[^4..].ToUpper() : t.ToUpper().PadLeft(4, '0'))
-            .ToArray();
-
-        if (hexValues.Length < 4)
-        {
-            AddLog($"⚠️ GV: respuesta inesperada: '{resp}'", LogLevel.Warning);
-            return;
-        }
-
-        // Rellenar campos (en hilo UI)
-        Invoke(() =>
-        {
-            txtFilterFlags.Text = hexValues[0];
-            for (int _gi = 0; _gi < Pc7866Commands.CoefCount && _gi + 1 < hexValues.Length; _gi++)
-                _txtCoef[_gi].Text = Pc7866Commands.HexToCoef(hexValues[_gi + 1])
-                                         .ToString("F5", CultureInfo.InvariantCulture);
-        });
-        string coefLog = string.Join("  ",
-            Enumerable.Range(0, Math.Min(Pc7866Commands.CoefCount, hexValues.Length - 1))
-                      .Select(i => $"C{i + 1}={_txtCoef[i].Text}"));
-        AddLog($"   FLAGS={hexValues[0]}  {coefLog}", LogLevel.Info);
-    }
-
-    private static string CoefInputToHex(string input)
-    {
-        input = input.Trim();
-        if (input.Contains('.') || input.Contains(','))
-        {
-            if (double.TryParse(input.Replace(',', '.'),
-                NumberStyles.Float, CultureInfo.InvariantCulture, out double d))
-                return Pc7866Commands.CoefToHex(d);
-        }
-        if (input.Length <= 4) return input.ToUpper().PadLeft(4, '0');
-        return input.ToUpper();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Test completo manual (48 salidas)
-    // ─────────────────────────────────────────────────────────────────────────────
 
     private async Task RunFullTestAsync()
     {
@@ -459,59 +483,69 @@ public partial class ManualControlPanel : UserControl
         }
 
         btnFullTest.Enabled = false;
-        AddLog("🔍 Iniciando test completo…", LogLevel.Info);
+        int numMcps = (int)nudNumMcps.Value;
+        int totalOutputs = numMcps * Pc7866Commands.McpPinCount;
+        AddLog($"🔍 Iniciando test completo ({totalOutputs} salidas, {numMcps} MCP)…", LogLevel.Info);
 
-        var results = new List<Models.FullTestRow>(Pc7866Commands.OutputCount);
+        var results = new List<FullTestRow>(totalOutputs);
 
-        for (int i = 0; i < Pc7866Commands.OutputCount; i++)
+        for (int i = 0; i < totalOutputs; i++)
         {
-            // Activar única salida i
-            bool[] states = new bool[Pc7866Commands.OutputCount];
-            states[i] = true;
+            int chip = i / Pc7866Commands.McpPinCount;
+            int pin  = i % Pc7866Commands.McpPinCount;
+            ushort word = (ushort)(1 << pin);
 
-            string outCmd = Pc7866Commands.BuildOutputsCommand(states);
-            AddLog($"▶️  Salida {i + 1:D2} → {outCmd}", LogLevel.Info);
+            string outCmd = Pc7866Commands.BuildOutputCommand(chip, word);
+            AddLog($"▶️  Salida {i + 1:D2} (MCP {chip}, pin {pin}) → {outCmd}", LogLevel.Info);
             await _serialPort.SendCommandAsync(outCmd, AppSettings.Instance.DefaultTimeout);
 
             await Task.Delay(3);
 
-            var row = new Models.FullTestRow { Output = i + 1 };
+            var row = new FullTestRow { Output = i + 1 };
 
-            // Leer RAW
-            string rawResp = await _serialPort.SendCommandAsync(
-                Pc7866Commands.ReadRaw(), AppSettings.Instance.DefaultTimeout);
-            int[] rawVals = ParseIntAnalogResponse(rawResp);
-            if (rawVals.Length >= 4)
+            // Leer RAW (4 canales)
+            int?[] rawVals = new int?[4];
+            for (int ch = 0; ch < 4; ch++)
             {
-                row.Ain1Raw = rawVals[0];
-                row.Ain2Raw = rawVals[1];
-                row.Ain3Raw = rawVals[2];
-                row.Ain4Raw = rawVals[3];
+                string rawResp = await _serialPort.SendCommandAsync(
+                    Pc7866Commands.ReadRaw(ch), AppSettings.Instance.DefaultTimeout);
+                rawVals[ch] = _parser.ParseRawValue(rawResp);
+            }
+            if (rawVals.All(v => v is not null))
+            {
+                row.Ain1Raw = rawVals[0]!.Value;
+                row.Ain2Raw = rawVals[1]!.Value;
+                row.Ain3Raw = rawVals[2]!.Value;
+                row.Ain4Raw = rawVals[3]!.Value;
             }
             else
             {
-                row.Error = $"RAW: respuesta inesperada \u201c{rawResp}\u201d";
+                row.Error = "RAW: respuesta inesperada en alguno de los canales";
             }
 
-            // Leer Filtrado
-            string filtResp = await _serialPort.SendCommandAsync(
-                Pc7866Commands.ReadFiltered(), AppSettings.Instance.DefaultTimeout);
-            double[] filtVals = ParseAnalogResponse(filtResp);
-            if (filtVals.Length >= 4)
+            // Leer Filtrado (4 canales)
+            float?[] filtVals = new float?[4];
+            for (int ch = 0; ch < 4; ch++)
             {
-                row.Ain1Filt = (int)filtVals[0];
-                row.Ain2Filt = (int)filtVals[1];
-                row.Ain3Filt = (int)filtVals[2];
-                row.Ain4Filt = (int)filtVals[3];
+                string filtResp = await _serialPort.SendCommandAsync(
+                    Pc7866Commands.ReadFiltered(ch), AppSettings.Instance.DefaultTimeout);
+                filtVals[ch] = _parser.ParseFilteredValue(filtResp);
+            }
+            if (filtVals.All(v => v is not null))
+            {
+                row.Ain1Filt = (int)filtVals[0]!.Value;
+                row.Ain2Filt = (int)filtVals[1]!.Value;
+                row.Ain3Filt = (int)filtVals[2]!.Value;
+                row.Ain4Filt = (int)filtVals[3]!.Value;
 
-                row.Vain = filtVals[0] - filtVals[1];
-                row.Ve   = filtVals[2] - filtVals[3];
+                row.Vain = filtVals[0]!.Value - filtVals[1]!.Value;
+                row.Ve   = filtVals[2]!.Value - filtVals[3]!.Value;
                 double denom = row.Ve - row.Vain;
                 row.Resistance = CalcResistance(row.Vain, denom);
             }
             else if (string.IsNullOrEmpty(row.Error))
             {
-                row.Error = $"FILT: respuesta inesperada \u201c{filtResp}\u201d";
+                row.Error = "FILT: respuesta inesperada en alguno de los canales";
             }
 
             results.Add(row);
@@ -519,11 +553,10 @@ public partial class ManualControlPanel : UserControl
         }
 
         // Apagar todas las salidas al terminar
-        await _serialPort.SendCommandAsync(
-            Pc7866Commands.BuildOutputsCommand(new bool[Pc7866Commands.OutputCount]),
-            AppSettings.Instance.DefaultTimeout);
+        for (int chip = 0; chip < numMcps; chip++)
+            await _serialPort.SendCommandAsync(Pc7866Commands.BuildOutputCommand(chip, 0), AppSettings.Instance.DefaultTimeout);
         foreach (var chk in _outputChecks) { chk.CheckedChanged -= OutputCheck_Changed; chk.Checked = false; chk.CheckedChanged += OutputCheck_Changed; }
-        lblOutputMask.Text = "Trama:  S000000000000";
+        lblOutputMask.Text = "Trama:  —";
 
         AddLog($"✅ Test completo finalizado. {results.Count} salidas medidas.", LogLevel.Info);
         await SaveFullTestResultsAsync(results);
@@ -532,16 +565,6 @@ public partial class ManualControlPanel : UserControl
         // Mostrar informe
         using var form = new FullTestReportForm(results);
         form.ShowDialog(ParentForm as Form ?? (IWin32Window)this);
-    }
-
-    /// <summary>Parsea respuesta RAW como enteros (ej. "32767 49439 43245 63567").</summary>
-    private static int[] ParseIntAnalogResponse(string response)
-    {
-        return response.Trim()
-            .Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => int.TryParse(s, out int v) ? v : -1)
-            .Where(v => v >= 0)
-            .ToArray();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

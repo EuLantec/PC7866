@@ -14,6 +14,11 @@ namespace PC7866.Views;
 /// </summary>
 public partial class AutomaticTestPanel : UserControl
 {
+    // Poner en true para volcar al log los comandos TX/RX y las líneas CALC del ensayo automático
+    // (útil para depurar el protocolo). En false el ensayo va más rápido (no bloquea el hilo serie
+    // con escrituras al log por cada comando).
+    private const bool EnableAutoCommandLog = false;
+
     private readonly ISerialPortService _serialPort;
     private readonly bool _ownsSerialPort;
     private readonly CommandParser _parser;
@@ -306,7 +311,8 @@ public partial class AutomaticTestPanel : UserControl
                 progress,
                 OnStepCompleted,
                 AppSettings.Instance.DefaultTimeout,
-                _cts.Token);
+                _cts.Token,
+                EnableAutoCommandLog ? cmd => AddLog(cmd, LogLevel.Debug) : null);
         }
         catch (OperationCanceledException)
         {
@@ -336,12 +342,12 @@ public partial class AutomaticTestPanel : UserControl
     {
         if (InvokeRequired) { Invoke(() => OnStepCompleted(paso, detalle)); return; }
 
-        // Actualizar dot
-        _dotColors[paso.Id] = detalle.Resultado ? Color.Green : Color.Red;
+        // Actualizar dot (verde=OK, rojo=NOK, naranja=cortocircuito, azul=abierto)
+        _dotColors[paso.Id] = DotColorForEstado(detalle.Estado);
         picReferencia.Invalidate();
 
         // Añadir fila al grid
-        string resultado = detalle.Resultado ? "✅ OK" : "❌ NOK";
+        string resultado = EtiquetaEstado(detalle.Estado);
         gridResultados.Rows.Add(
             paso.NPasoEnsayo,
             paso.NombreContacto,
@@ -351,13 +357,32 @@ public partial class AutomaticTestPanel : UserControl
 
         // Color de fila
         var row = gridResultados.Rows[gridResultados.Rows.Count - 1];
-        row.DefaultCellStyle.BackColor = detalle.Resultado
-            ? Color.FromArgb(220, 255, 220)
-            : Color.FromArgb(255, 220, 220);
-
-        AddLog($"  Paso {paso.NPasoEnsayo} {paso.NombreContacto}: " +
-               $"{FormatResistance(detalle.ResistenciaMedida)} Ω → {resultado}", LogLevel.Info);
+        row.DefaultCellStyle.BackColor = FilaColorForEstado(detalle.Estado);
     }
+
+    private static Color DotColorForEstado(EstadoMedicion estado) => estado switch
+    {
+        EstadoMedicion.Ok            => Color.Green,
+        EstadoMedicion.Cortocircuito => Color.Orange,
+        EstadoMedicion.Abierto       => Color.RoyalBlue,
+        _                             => Color.Red
+    };
+
+    private static Color FilaColorForEstado(EstadoMedicion estado) => estado switch
+    {
+        EstadoMedicion.Ok            => Color.FromArgb(220, 255, 220),
+        EstadoMedicion.Cortocircuito => Color.FromArgb(255, 235, 200),
+        EstadoMedicion.Abierto       => Color.FromArgb(215, 230, 255),
+        _                             => Color.FromArgb(255, 220, 220)
+    };
+
+    private static string EtiquetaEstado(EstadoMedicion estado) => estado switch
+    {
+        EstadoMedicion.Ok            => "✅ OK",
+        EstadoMedicion.Cortocircuito => "⚡ CORTOCIRCUITO",
+        EstadoMedicion.Abierto       => "🔵 ABIERTO",
+        _                             => "❌ NOK"
+    };
 
     private void ShowFinalResult(Resultado resultado)
     {
