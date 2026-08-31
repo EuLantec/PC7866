@@ -18,7 +18,7 @@ public class Referencia
 
     // ── Configuración de placa (comando "I", ver definicion.md) ────────────────
 
-    /// <summary>Modelo de la placa (6 dígitos) enviado en el comando "I" al configurar. Si está vacío se usa el nombre de la referencia.</summary>
+    /// <summary>Modelo de la placa (7 dígitos) enviado en el comando "I" al configurar el microprocesador.</summary>
     public string ModeloPlaca { get; set; } = string.Empty;
 
     /// <summary>Número de MCP23017 participantes, consecutivos desde 0x20 (0-6).</summary>
