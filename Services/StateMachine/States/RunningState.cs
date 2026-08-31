@@ -20,13 +20,13 @@ public class RunningState : ITestState
     // Umbral de tensión (V) por debajo del cual se considera "caída" (cortocircuito real) en la
     // Fase B, al leer con "arriba" excitado a 5V. Asunción (sin confirmar por hardware): mitad de
     // la tensión de excitación nominal. Ajustar aquí si se define un valor distinto.
-    private const float CORTOCIRCUITO_VOLTAGE_THRESHOLD = 2.5f; // V
+    private const float CORTOCIRCUITO_VOLTAGE_THRESHOLD = 4.5f; // V
 
     // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S/P) antes de leer, para que el
     // relé/mux y la carga del cableado se estabilicen. Con el ensayo punto a punto solo conmuta
     // 1-2 pines por paso (antes conmutaba todo el banco), así que 150 ms es suficiente. Si las
     // lecturas salieran inestables (R≈0 / falso cortocircuito), subir este valor.
-    private const int SETTLE_DELAY_MS = 200;
+    private const int SETTLE_DELAY_MS = 0;
 
     public TestState StateId => TestState.Running;
 

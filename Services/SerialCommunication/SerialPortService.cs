@@ -13,7 +13,7 @@ public class SerialPortService : ISerialPortService
     // El temporizador se reinicia con cada byte recibido, así que basta con cubrir el hueco entre
     // ráfagas del firmware (a 115200 baud una respuesta llega en <1 ms); 60 ms da margen de sobra
     // y evita el tiempo muerto de 150 ms que ralentizaba mucho el ensayo automático.
-    private const int IdleCompletionMs = 60;
+    private const int IdleCompletionMs = 0;
 
     private SerialPort? _serialPort;
     private readonly object _lock = new();
