@@ -149,12 +149,12 @@ public class TestRepository : ITestRepository
         const string sql = """
             INSERT INTO parametros_ensayo
                 (referencia_id, nombre_contacto, n_paso_ensayo, n_salida_json,
-                 resistencia_nominal, tolerancia, offset_val, resistencia_minima,
+                 resistencia_nominal, tolerancia, pendiente_val, offset_val, resistencia_minima,
                  mcp_arriba_chip, mcp_arriba_pin, mcp_abajo_chip, mcp_abajo_pin, canal_multiplexor,
                  fecha_creacion, fecha_modificacion, pos_x, pos_y)
             VALUES
                 (@ReferenciaId, @NombreContacto, @NPasoEnsayo, @NSalidaJson,
-                 @ResistenciaNominal, @Tolerancia, @Offset, @ResistenciaMinima,
+                 @ResistenciaNominal, @Tolerancia, @Pendiente, @Offset, @ResistenciaMinima,
                  @McpArribaChip, @McpArribaPin, @McpAbajoChip, @McpAbajoPin, @CanalMultiplexor,
                  @FechaCreacion, @FechaModificacion, @PosX, @PosY);
             SELECT LAST_INSERT_ID();
@@ -169,6 +169,7 @@ public class TestRepository : ITestRepository
             NSalidaJson        = JsonSerializer.Serialize(p.NSalida),
             p.ResistenciaNominal,
             p.Tolerancia,
+            p.Pendiente,
             p.Offset,
             p.ResistenciaMinima,
             p.McpArribaChip,
@@ -192,6 +193,7 @@ public class TestRepository : ITestRepository
                 n_salida_json      = @NSalidaJson,
                 resistencia_nominal= @ResistenciaNominal,
                 tolerancia         = @Tolerancia,
+                pendiente_val      = @Pendiente,
                 offset_val         = @Offset,
                 resistencia_minima = @ResistenciaMinima,
                 mcp_arriba_chip    = @McpArribaChip,
@@ -214,6 +216,7 @@ public class TestRepository : ITestRepository
             NSalidaJson        = JsonSerializer.Serialize(p.NSalida),
             p.ResistenciaNominal,
             p.Tolerancia,
+            p.Pendiente,
             p.Offset,
             p.ResistenciaMinima,
             p.McpArribaChip,
@@ -440,6 +443,7 @@ public class TestRepository : ITestRepository
                 n_salida_json       LONGTEXT,
                 resistencia_nominal FLOAT NOT NULL DEFAULT 0,
                 tolerancia          FLOAT NOT NULL DEFAULT 0,
+                pendiente_val       FLOAT NOT NULL DEFAULT 1,
                 offset_val          FLOAT NOT NULL DEFAULT 0,
                 resistencia_minima  FLOAT NOT NULL DEFAULT 0,
                 mcp_arriba_chip     INT NOT NULL DEFAULT 0,
@@ -498,6 +502,9 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS resistencia_minima FLOAT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE resultados_detalle ADD COLUMN IF NOT EXISTS estado_medicion VARCHAR(20) NOT NULL DEFAULT 'Nok';");
 
+        // Migracion: pendiente de la funcion lineal de calculo de resistencia (R = Pendiente * R_bruta - Offset)
+        await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS pendiente_val FLOAT NOT NULL DEFAULT 1;");
+
         // Migraciones: configuracion de placa (chip/pin MCP23017 arriba/abajo y canal de multiplexor)
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_arriba_chip INT NOT NULL DEFAULT 0;");
         await conn.ExecuteAsync("ALTER TABLE parametros_ensayo ADD COLUMN IF NOT EXISTS mcp_arriba_pin INT NOT NULL DEFAULT 0;");
@@ -555,6 +562,7 @@ public class TestRepository : ITestRepository
             NSalida            = salidas,
             ResistenciaNominal = (float)row.resistencia_nominal,
             Tolerancia         = (float)row.tolerancia,
+            Pendiente          = HasColumn(row, "pendiente_val") ? (float)row.pendiente_val : 1f,
             Offset             = (float)row.offset_val,
             ResistenciaMinima  = HasColumn(row, "resistencia_minima") ? (float)row.resistencia_minima : 0f,
             McpArribaChip      = HasColumn(row, "mcp_arriba_chip") ? (int)row.mcp_arriba_chip : -1,

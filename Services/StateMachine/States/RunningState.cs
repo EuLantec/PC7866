@@ -10,7 +10,7 @@ namespace PC7866.Services.StateMachine.States;
 /// Fase B (cortocircuito): todo arriba+abajo a salida 0V (masa); por cada paso, su "arriba" pasa
 /// a 5V y su "abajo" a entrada (alta impedancia), se selecciona la pista y se comprueba si hay
 /// caída de tensión (fuga → cortocircuito real), restaurando el pin antes de continuar.
-/// Fórmula de resistencia: R = Vain / (Ve - Vain) * 390 - Offset
+/// Fórmula de resistencia (función lineal): R = Pendiente * (Vain / (Ve - Vain) * 390) + Offset
 /// </summary>
 public class RunningState : ITestState
 {
@@ -186,17 +186,24 @@ public class RunningState : ITestState
             float vain = analogicas[0] - analogicas[1];  // Ch0 - Ch1
             float ve   = analogicas[2] - analogicas[3];  // Ch2 - Ch3
 
-            // 3. Calcular resistencia: R = Vain / (Ve - Vain) * 390 - Offset
-            // Guardar -1 como indicador de abierta (infinito)
+            // 3. Calcular resistencia. Detección abierto/cortocircuito sobre la resistencia BRUTA
+            // (igual que el modo manual), y solo sobre lecturas válidas se aplica la calibración
+            // lineal R = Pendiente * R_bruta + Offset. Así una pendiente grande no dispara falsos
+            // "abierto" por superar el umbral de 1000 Ω (bug: manual daba bien, auto daba infinito).
+            // Pendiente=0 no es válida (anularía la medida): filas antiguas se tratan como Pendiente=1.
+            float pendiente = paso.Pendiente == 0f ? 1f : paso.Pendiente;
             float resistencia = -1f;
             float denom = ve - vain;
+            float rBruta = 0f;
             if (Math.Abs(denom) > 1e-6f)
             {
-                float rCalculada = (vain / denom) * R_REF - paso.Offset;
-                resistencia = (rCalculada <= 0f || rCalculada > R_OPEN_THRESHOLD)
-                    ? -1f
-                    : rCalculada;
+                rBruta = (vain / denom) * R_REF;
+                if (rBruta > 0f && rBruta <= R_OPEN_THRESHOLD)
+                    resistencia = pendiente * rBruta + paso.Offset;
             }
+            context.CommandLogger?.Invoke(
+                $"CALC {paso.NombreContacto}: Vain={vain:F4} Ve={ve:F4} denom={denom:F4} " +
+                $"rBruta={rBruta:F4} Pendiente={pendiente} Offset={paso.Offset} R={resistencia:F4}");
 
             detalle.ResistenciaMedida = resistencia;
 

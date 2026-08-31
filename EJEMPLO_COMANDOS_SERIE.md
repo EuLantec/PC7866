@@ -35,7 +35,7 @@ P04  F0  F1  F2  F3    // paso 4 (Pin4)
 P05  F0  F1  F2  F3    // paso 5 (Pin5)
 ```
 
-Con cada `F0..F3` se calcula `Vain = F0-F1`, `Ve = F2-F3`, `R = Vain/(Ve-Vain)×390 - Offset`.
+Con cada `F0..F3` se calcula `Vain = F0-F1`, `Ve = F2-F3`, `R = Pendiente×(Vain/(Ve-Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` por defecto equivale al cálculo anterior sin calibración).
 
 ## Fase B — Cortocircuito
 

@@ -47,6 +47,7 @@ partial class ParametersPanel
         colP_Contacto  = new DataGridViewTextBoxColumn();
         colP_Nominal   = new DataGridViewTextBoxColumn();
         colP_Tol       = new DataGridViewTextBoxColumn();
+        colP_Pendiente = new DataGridViewTextBoxColumn();
         colP_Offset    = new DataGridViewTextBoxColumn();
         colP_Minima    = new DataGridViewTextBoxColumn();
         colP_PosX      = new DataGridViewTextBoxColumn();
@@ -61,6 +62,8 @@ partial class ParametersPanel
         nudNominal     = new NumericUpDown();
         lblTol         = new Label();
         nudTol         = new NumericUpDown();
+        lblPendiente   = new Label();
+        nudPendiente   = new NumericUpDown();
         lblOffset      = new Label();
         nudOffset      = new NumericUpDown();
         lblMinima      = new Label();
@@ -98,6 +101,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudPaso).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudTol).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudPendiente).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudOffset).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudMinima).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudMcpArribaChip).BeginInit();
@@ -205,6 +209,7 @@ partial class ParametersPanel
         colP_Contacto.HeaderText = "Contacto"; colP_Contacto.FillWeight = 18;
         colP_Nominal.HeaderText = "Nominal Ω"; colP_Nominal.FillWeight = 14;
         colP_Tol.HeaderText = "Tol Ω";   colP_Tol.FillWeight = 12;
+        colP_Pendiente.HeaderText = "Pendiente"; colP_Pendiente.FillWeight = 12;
         colP_Offset.HeaderText = "Offset"; colP_Offset.FillWeight = 12;
         colP_Minima.HeaderText = "R mín (corto)"; colP_Minima.FillWeight = 14;
         colP_PosX.HeaderText = "PosX";   colP_PosX.FillWeight = 10;
@@ -214,9 +219,10 @@ partial class ParametersPanel
         colP_Nominal.Name = "colP_Nominal"; colP_Tol.Name = "colP_Tol"; colP_Offset.Name = "colP_Offset";
         colP_Minima.Name = "colP_Minima";
         colP_PosX.Name = "colP_PosX"; colP_PosY.Name = "colP_PosY";
+        colP_Pendiente.Name = "colP_Pendiente";
 
         gridParametros.Columns.AddRange(colP_Id, colP_Paso, colP_Contacto,
-            colP_Nominal, colP_Tol, colP_Offset, colP_Minima, colP_PosX, colP_PosY);
+            colP_Nominal, colP_Tol, colP_Pendiente, colP_Offset, colP_Minima, colP_PosX, colP_PosY);
 
         // Form edición de parámetro
         pnlParamForm.Location = new Point(8, 368);
@@ -238,6 +244,7 @@ partial class ParametersPanel
         AddRow(lblContacto, "Contacto:",     txtContacto, ref row);
         AddRow(lblNominal,  "R nominal (Ω):",nudNominal,  ref row);
         AddRow(lblTol,      "Tolerancia (Ω):",nudTol,     ref row);
+        AddRow(lblPendiente,"Pendiente:",     nudPendiente, ref row);
         AddRow(lblOffset,   "Offset (Ω):",   nudOffset,  ref row);
         AddRow(lblMinima,   "R mín cortocircuito (Ω):", nudMinima, ref row);
         AddRow(lblMcpArribaChip, "MCP arriba – chip (0-5, -1=N/A):", nudMcpArribaChip, ref row);
@@ -251,6 +258,7 @@ partial class ParametersPanel
 
         nudNominal.DecimalPlaces = 2; nudNominal.Maximum = 100000;
         nudTol.DecimalPlaces     = 2; nudTol.Maximum     = 10000;
+        nudPendiente.DecimalPlaces = 4; nudPendiente.Minimum = -1000; nudPendiente.Maximum = 1000; nudPendiente.Value = 1;
         nudOffset.DecimalPlaces  = 2; nudOffset.Minimum  = -1000; nudOffset.Maximum = 1000;
         nudMinima.DecimalPlaces  = 2; nudMinima.Minimum  = 0; nudMinima.Maximum = 100000;
         nudMcpArribaChip.Minimum = -1; nudMcpArribaChip.Maximum = PC7866.Models.Pc7866Commands.McpChipCount - 1;
@@ -289,6 +297,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudPaso).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudTol).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudPendiente).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudOffset).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudMinima).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudMcpArribaChip).EndInit();
@@ -338,6 +347,7 @@ partial class ParametersPanel
     private DataGridViewTextBoxColumn colP_Contacto;
     private DataGridViewTextBoxColumn colP_Nominal;
     private DataGridViewTextBoxColumn colP_Tol;
+    private DataGridViewTextBoxColumn colP_Pendiente;
     private DataGridViewTextBoxColumn colP_Offset;
     private DataGridViewTextBoxColumn colP_Minima;
     private DataGridViewTextBoxColumn colP_PosX;
@@ -352,6 +362,8 @@ partial class ParametersPanel
     private NumericUpDown nudNominal;
     private Label    lblTol;
     private NumericUpDown nudTol;
+    private Label    lblPendiente;
+    private NumericUpDown nudPendiente;
     private Label    lblOffset;
     private NumericUpDown nudOffset;
     private Label    lblMinima;

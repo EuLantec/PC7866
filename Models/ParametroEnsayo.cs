@@ -23,7 +23,10 @@ public class ParametroEnsayo
     /// <summary>Tolerancia aceptada en Ohmios.</summary>
     public float    Tolerancia       { get; set; }
 
-    /// <summary>Offset a restar a la resistencia medida.</summary>
+    /// <summary>Pendiente de la función lineal aplicada a la resistencia medida (R = Pendiente * R_bruta - Offset). Por defecto 1.</summary>
+    public float    Pendiente        { get; set; } = 1f;
+
+    /// <summary>Offset (término independiente) a sumar en la función lineal de calibración R = Pendiente * R_bruta + Offset.</summary>
     public float    Offset           { get; set; }
 
     /// <summary>Umbral mínimo de resistencia (Ω); por debajo se considera cortocircuito.</summary>
