@@ -201,8 +201,10 @@ partial class ParametersPanel
 
         gridParametros.Location = new Point(8, 20);
         gridParametros.Size = new Size(610, 340);
-        gridParametros.Dock = DockStyle.Top;
-        gridParametros.Height = 340;
+        gridParametros.Dock = DockStyle.Fill;
+        gridParametros.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        gridParametros.DefaultCellStyle.Font = new Font("Segoe UI", 10F);
+        gridParametros.RowTemplate.Height = 26;
         gridParametros.AllowUserToAddRows = false;
         gridParametros.AllowUserToDeleteRows = false;
         gridParametros.ReadOnly = true;
@@ -230,37 +232,41 @@ partial class ParametersPanel
         gridParametros.Columns.AddRange(colP_Id, colP_Paso, colP_Contacto,
             colP_Nominal, colP_Tol, colP_Pendiente, colP_Offset, colP_Minima, colP_PosX, colP_PosY);
 
-        // Form edición de parámetro
+        // Form edición de parámetro (dos columnas)
         pnlParamForm.Location = new Point(8, 368);
         pnlParamForm.Size = new Size(610, 400);
-        pnlParamForm.Dock = DockStyle.Fill;
+        pnlParamForm.Dock = DockStyle.Bottom;
+        pnlParamForm.Height = 268;
         pnlParamForm.AutoScroll = true;
+        pnlParamForm.Font = new Font("Segoe UI", 10F);
 
-        int lx = 0, fx = 210, fh = 28;
-        void AddRow(Label l, string lt, Control c, ref int y)
+        const int labelW = 140, inputW = 150, colW = 310, fh = 30, rowGap = 6;
+        void AddRow(Label l, string lt, Control c, int idx)
         {
-            l.Text = lt; l.AutoSize = true; l.Location = new Point(lx, y + 4);
-            l.MaximumSize = new Size(fx - 6, 0);
-            c.Location = new Point(fx, y); c.Size = new Size(180, fh);
+            int col = idx % 2;
+            int r   = idx / 2;
+            int x   = col * colW;
+            int y   = r * (fh + rowGap);
+            l.Text = lt; l.AutoSize = true; l.Location = new Point(x, y + 6);
+            l.MaximumSize = new Size(labelW - 4, 0);
+            c.Location = new Point(x + labelW, y); c.Size = new Size(inputW, fh);
             pnlParamForm.Controls.AddRange(new Control[] { l, c });
-            y += fh + 6;
         }
 
-        int row = 0;
-        AddRow(lblPaso,     "Paso nº:",      nudPaso,    ref row);
-        AddRow(lblContacto, "Contacto:",     txtContacto, ref row);
-        AddRow(lblNominal,  "R nominal (Ω):",nudNominal,  ref row);
-        AddRow(lblTol,      "Tolerancia (Ω):",nudTol,     ref row);
-        AddRow(lblPendiente,"Pendiente:",     nudPendiente, ref row);
-        AddRow(lblOffset,   "Offset (Ω):",   nudOffset,  ref row);
-        AddRow(lblMinima,   "R mín cortocircuito (Ω):", nudMinima, ref row);
-        AddRow(lblMcpArribaChip, "Chip arriba (0-5):", nudMcpArribaChip, ref row);
-        AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  ref row);
-        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5):",  nudMcpAbajoChip,  ref row);
-        AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   ref row);
-        AddRow(lblCanalMux,      "Pista multiplexor (0-48):", nudCanalMux,      ref row);
-        AddRow(lblPosX,     "Pos X:",         nudPosX,    ref row);
-        AddRow(lblPosY,     "Pos Y:",         nudPosY,    ref row);
+        AddRow(lblPaso,     "Paso nº:",       nudPaso,      0);
+        AddRow(lblContacto, "Contacto:",      txtContacto,  1);
+        AddRow(lblNominal,  "R nominal (Ω):", nudNominal,   2);
+        AddRow(lblTol,      "Tolerancia (Ω):",nudTol,       3);
+        AddRow(lblPendiente,"Pendiente:",     nudPendiente, 4);
+        AddRow(lblOffset,   "Offset (Ω):",    nudOffset,    5);
+        AddRow(lblMinima,   "R mín corto (Ω):",nudMinima,   6);
+        AddRow(lblMcpArribaChip, "Chip arriba (0-5):", nudMcpArribaChip, 7);
+        AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  8);
+        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5):",  nudMcpAbajoChip,  9);
+        AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   10);
+        AddRow(lblCanalMux,      "Pista mux (0-48):",  nudCanalMux,      11);
+        AddRow(lblPosX,     "Pos X:",         nudPosX,      12);
+        AddRow(lblPosY,     "Pos Y:",         nudPosY,      13);
 
         nudNominal.DecimalPlaces = 2; nudNominal.Maximum = 100000;
         nudTol.DecimalPlaces     = 2; nudTol.Maximum     = 10000;
@@ -283,7 +289,7 @@ partial class ParametersPanel
         pnlParamButtons.Height = 42;
         pnlParamButtons.Controls.AddRange(new Control[] { btnNuevoParam, btnGuardarParam, btnEliminarParam, btnExportarParam, btnImportarParam });
 
-        grpParams.Controls.AddRange(new Control[] { pnlParamForm, gridParametros, pnlParamButtons });
+        grpParams.Controls.AddRange(new Control[] { gridParametros, pnlParamForm, pnlParamButtons });
 
         // ── ParametersPanel ──────────────────────────────────────────────────
         AutoScaleDimensions = new SizeF(96f, 96f);
