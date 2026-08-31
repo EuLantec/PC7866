@@ -281,7 +281,6 @@ public partial class ParametersPanel : UserControl
 
         if (row.Tag is ParametroEnsayo p)
         {
-            txtSalidas.Text        = FormatSalidas(p.NSalida);
             nudMcpArribaChip.Value = Math.Max(0, p.McpArribaChip);
             nudMcpArribaPin.Value  = p.McpArribaPin;
             nudMcpAbajoChip.Value  = Math.Max(0, p.McpAbajoChip);
@@ -290,7 +289,6 @@ public partial class ParametersPanel : UserControl
         }
         else
         {
-            txtSalidas.Text = string.Empty;
             nudMcpArribaChip.Value = 0;
             nudMcpArribaPin.Value  = 1;
             nudMcpAbajoChip.Value  = 0;
@@ -352,7 +350,6 @@ public partial class ParametersPanel : UserControl
         nudMinima.Value  = 0;
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
-        txtSalidas.Text  = string.Empty;
         nudMcpArribaChip.Value = 0;
         nudMcpArribaPin.Value  = 1;
         nudMcpAbajoChip.Value  = 0;
@@ -393,19 +390,11 @@ public partial class ParametersPanel : UserControl
             return;
         }
 
-        bool[] salidas = ParseSalidas(txtSalidas.Text);
         int mcpArribaChip = (int)nudMcpArribaChip.Value;
         int mcpArribaPin  = (int)nudMcpArribaPin.Value; // NUD y modelo usan el mismo pin 1-16
         int mcpAbajoChip  = (int)nudMcpAbajoChip.Value;
         int mcpAbajoPin   = (int)nudMcpAbajoPin.Value;
         int canalMux      = (int)nudCanalMux.Value;
-
-        // Los selectores arriba/abajo activan directamente el bit de salida del MCP23017
-        // correspondiente (mismo mapeo que usa Pc7866Commands.BuildOutputsCommand).
-        int bitArriba = Pc7866Commands.McpBitIndex(mcpArribaChip, mcpArribaPin);
-        if (bitArriba >= 0) salidas[bitArriba] = true;
-        int bitAbajo = Pc7866Commands.McpBitIndex(mcpAbajoChip, mcpAbajoPin);
-        if (bitAbajo >= 0) salidas[bitAbajo] = true;
 
         if (existingId > 0)
         {
@@ -415,7 +404,6 @@ public partial class ParametersPanel : UserControl
                 ReferenciaId       = _referenciaActual.Id,
                 NPasoEnsayo        = numeroPaso,
                 NombreContacto     = txtContacto.Text.Trim(),
-                NSalida            = salidas,
                 ResistenciaNominal = (float)nudNominal.Value,
                 Tolerancia         = (float)nudTol.Value,
                 Pendiente          = (float)nudPendiente.Value,
@@ -439,7 +427,6 @@ public partial class ParametersPanel : UserControl
                 ReferenciaId       = _referenciaActual.Id,
                 NPasoEnsayo        = numeroPaso,
                 NombreContacto     = txtContacto.Text.Trim(),
-                NSalida            = salidas,
                 ResistenciaNominal = (float)nudNominal.Value,
                 Tolerancia         = (float)nudTol.Value,
                 Pendiente          = (float)nudPendiente.Value,
@@ -577,13 +564,6 @@ public partial class ParametersPanel : UserControl
             {
                 p.Id           = 0;
                 p.ReferenciaId = _referenciaActual.Id;
-
-                // Recalcular las salidas activas a partir de los selectores arriba/abajo.
-                p.NSalida = new bool[Pc7866Commands.OutputCount];
-                int bA = Pc7866Commands.McpBitIndex(p.McpArribaChip, p.McpArribaPin);
-                if (bA >= 0) p.NSalida[bA] = true;
-                int bB = Pc7866Commands.McpBitIndex(p.McpAbajoChip, p.McpAbajoPin);
-                if (bB >= 0) p.NSalida[bB] = true;
 
                 p.FechaCreacion     = DateTime.Now;
                 p.FechaModificacion = DateTime.Now;
@@ -792,7 +772,6 @@ public partial class ParametersPanel : UserControl
         nudMinima.Value  = 0;
         nudPosX.Value    = 0;
         nudPosY.Value    = 0;
-        txtSalidas.Text  = string.Empty;
         nudMcpArribaChip.Value = 0;
         nudMcpArribaPin.Value  = 1;
         nudMcpAbajoChip.Value  = 0;
@@ -814,35 +793,6 @@ public partial class ParametersPanel : UserControl
         if (string.IsNullOrEmpty(texto) || texto == "N") return null;
         return int.TryParse(texto, System.Globalization.NumberStyles.HexNumber,
             System.Globalization.CultureInfo.InvariantCulture, out int v) ? v : null;
-    }
-
-    /// <summary>
-    /// Formatea un array de salidas activas como lista de números separados por coma (base 1).
-    /// </summary>
-    private static string FormatSalidas(bool[] salidas)
-    {
-        var nums = new List<int>();
-        for (int i = 0; i < salidas.Length; i++)
-            if (salidas[i]) nums.Add(i + 1);
-        return string.Join(",", nums);
-    }
-
-    /// <summary>
-    /// Parsea el campo de salidas activas.
-    /// Acepta números separados por comas o espacios (base 1).
-    /// Ejemplo: "1,3,17" activa las salidas 1, 3 y 17.
-    /// </summary>
-    private static bool[] ParseSalidas(string texto)
-    {
-        var salidas = new bool[Pc7866Commands.OutputCount];
-        if (string.IsNullOrWhiteSpace(texto)) return salidas;
-
-        foreach (var tok in texto.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (int.TryParse(tok.Trim(), out int n) && n >= 1 && n <= Pc7866Commands.OutputCount)
-                salidas[n - 1] = true;
-        }
-        return salidas;
     }
 
     protected override void OnHandleDestroyed(EventArgs e)

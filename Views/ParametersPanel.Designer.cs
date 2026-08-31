@@ -84,8 +84,6 @@ partial class ParametersPanel
         nudPosX        = new NumericUpDown();
         lblPosY        = new Label();
         nudPosY        = new NumericUpDown();
-        lblSalidas     = new Label();
-        txtSalidas     = new TextBox();
         btnNuevoParam    = new Button();
         btnGuardarParam  = new Button();
         btnEliminarParam = new Button();
@@ -263,7 +261,6 @@ partial class ParametersPanel
         AddRow(lblCanalMux,      "Pista multiplexor (0-48):", nudCanalMux,      ref row);
         AddRow(lblPosX,     "Pos X:",         nudPosX,    ref row);
         AddRow(lblPosY,     "Pos Y:",         nudPosY,    ref row);
-        AddRow(lblSalidas,  "Salidas activas\n(1-96, coma):", txtSalidas, ref row);
 
         nudNominal.DecimalPlaces = 2; nudNominal.Maximum = 100000;
         nudTol.DecimalPlaces     = 2; nudTol.Maximum     = 10000;
@@ -395,8 +392,6 @@ partial class ParametersPanel
     private NumericUpDown nudPosX;
     private Label    lblPosY;
     private NumericUpDown nudPosY;
-    private Label    lblSalidas;
-    private TextBox  txtSalidas;
     private Button   btnNuevoParam;
     private Button   btnGuardarParam;
     private Button   btnEliminarParam;
