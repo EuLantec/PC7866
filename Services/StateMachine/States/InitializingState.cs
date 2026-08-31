@@ -27,9 +27,7 @@ public class InitializingState : ITestState
         }
 
         var referencia = context.Referencia;
-        string modelo = string.IsNullOrWhiteSpace(referencia.ModeloPlaca)
-            ? referencia.ReferenciaNombre
-            : referencia.ModeloPlaca;
+        string modelo = referencia.ModeloPlaca.Trim();
         string cmdConfig = Pc7866Commands.BuildBoardConfigCommand(
             referencia.NumMcps, referencia.Inh1Pos, referencia.Inh2Pos, referencia.Inh3Pos, referencia.Inh4Pos,
             modelo, referencia.Muestras, referencia.RetardoMs);

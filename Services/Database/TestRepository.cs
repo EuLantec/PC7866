@@ -422,7 +422,7 @@ public class TestRepository : ITestRepository
             CREATE TABLE IF NOT EXISTS referencias (
                 id                  INT AUTO_INCREMENT PRIMARY KEY,
                 b_activa            BOOLEAN  NOT NULL DEFAULT TRUE,
-                referencia          VARCHAR(255) NOT NULL UNIQUE,
+                referencia          VARCHAR(255) NOT NULL,
                 descripcion         TEXT,
                 fecha_creacion      DATETIME NOT NULL,
                 fecha_modificacion  DATETIME NOT NULL,
@@ -525,6 +525,9 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh4_pos INT NULL;");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS muestras INT NOT NULL DEFAULT 10;");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS retardo_ms INT NOT NULL DEFAULT 20;");
+
+        // Migracion: el nombre de la referencia ya no es unico (el identificador real es modelo_placa)
+        await conn.ExecuteAsync("ALTER TABLE referencias DROP INDEX IF EXISTS referencia;");
     }
 
     public void Dispose() { }

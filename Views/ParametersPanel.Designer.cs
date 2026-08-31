@@ -139,8 +139,8 @@ partial class ParametersPanel
         txtRefDesc.Location = new Point(83, 38); txtRefDesc.Size = new Size(500, 80);
         txtRefDesc.Multiline = true; txtRefDesc.ScrollBars = ScrollBars.Vertical;
 
-        lblRefModelo.Text = "Modelo placa (6 díg):"; lblRefModelo.AutoSize = true; lblRefModelo.Location = new Point(8, 128);
-        txtRefModelo.Location = new Point(150, 124); txtRefModelo.Size = new Size(90, 23); txtRefModelo.MaxLength = 6;
+        lblRefModelo.Text = "Modelo placa (7 díg):"; lblRefModelo.AutoSize = true; lblRefModelo.Location = new Point(8, 128);
+        txtRefModelo.Location = new Point(150, 124); txtRefModelo.Size = new Size(90, 23); txtRefModelo.MaxLength = 7;
 
         // Configuración de placa (comando "I")
         lblRefNumMcps.Text = "Nº MCPs (0-6):"; lblRefNumMcps.AutoSize = true; lblRefNumMcps.Location = new Point(8, 158);
@@ -238,11 +238,12 @@ partial class ParametersPanel
         pnlParamForm.Dock = DockStyle.Fill;
         pnlParamForm.AutoScroll = true;
 
-        int lx = 0, fx = 100, fy = 0, fh = 28;
+        int lx = 0, fx = 210, fh = 28;
         void AddRow(Label l, string lt, Control c, ref int y)
         {
             l.Text = lt; l.AutoSize = true; l.Location = new Point(lx, y + 4);
-            c.Location = new Point(fx, y); c.Size = new Size(200, fh);
+            l.MaximumSize = new Size(fx - 6, 0);
+            c.Location = new Point(fx, y); c.Size = new Size(180, fh);
             pnlParamForm.Controls.AddRange(new Control[] { l, c });
             y += fh + 6;
         }
@@ -255,10 +256,10 @@ partial class ParametersPanel
         AddRow(lblPendiente,"Pendiente:",     nudPendiente, ref row);
         AddRow(lblOffset,   "Offset (Ω):",   nudOffset,  ref row);
         AddRow(lblMinima,   "R mín cortocircuito (Ω):", nudMinima, ref row);
-        AddRow(lblMcpArribaChip, "MCP arriba – chip (0-5, -1=N/A):", nudMcpArribaChip, ref row);
-        AddRow(lblMcpArribaPin,  "MCP arriba – pin (1-16):", nudMcpArribaPin,  ref row);
-        AddRow(lblMcpAbajoChip,  "MCP abajo – chip (0-5, -1=N/A):",  nudMcpAbajoChip,  ref row);
-        AddRow(lblMcpAbajoPin,   "MCP abajo – pin (1-16):",  nudMcpAbajoPin,   ref row);
+        AddRow(lblMcpArribaChip, "Chip arriba (0-5, -1=N/A):", nudMcpArribaChip, ref row);
+        AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  ref row);
+        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5, -1=N/A):",  nudMcpAbajoChip,  ref row);
+        AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   ref row);
         AddRow(lblCanalMux,      "Pista multiplexor (0-48):", nudCanalMux,      ref row);
         AddRow(lblPosX,     "Pos X:",         nudPosX,    ref row);
         AddRow(lblPosY,     "Pos Y:",         nudPosY,    ref row);
