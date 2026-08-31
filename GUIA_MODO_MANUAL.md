@@ -38,7 +38,7 @@ Grupo **Pista**: número de pista (0-48) a conectar en los multiplexores analóg
 
 ## 5. Salidas (matriz de 96 checkboxes)
 
-Grupo **Salidas**: representa hasta 96 salidas (6 × MCP23017 de 16 bits cada uno). Cada checkbox se etiqueta `chip.pin` (p.ej. `2.07` = chip 2, pin 7) y equivale al bit `chip*16 + pin`.
+Grupo **Salidas**: representa hasta 96 salidas (6 × MCP23017 de 16 bits cada uno, chip 0-5 = direcciones I2C 0x20-0x25). Cada checkbox se etiqueta `chip.pin` con el pin mostrado 1-16 (p.ej. `2.07` = chip 2, pin 7) y equivale al bit `chip*16 + (pin-1)`.
 
 - Marca o desmarca cualquier checkbox para activar/desactivar esa salida individual. Cada cambio envía automáticamente una trama `S<chip><estados:4hex>` solo para el chip afectado (no hace falta reenviar los demás chips).
 - **Todas ON** / **Todas OFF**: activan o desactivan las 96 salidas de una vez (una trama `S` por cada uno de los 6 chips).

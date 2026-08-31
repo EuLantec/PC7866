@@ -32,13 +32,13 @@ public class ParametroEnsayo
     /// <summary>Chip MCP23017 (0-5, equivale a 0x20-0x25) del selector "aguas arriba". -1 = no configurado.</summary>
     public int      McpArribaChip    { get; set; } = -1;
 
-    /// <summary>Pin (0-15) dentro del chip MCP23017 del selector "aguas arriba".</summary>
+    /// <summary>Pin (1-16) dentro del chip MCP23017 del selector "aguas arriba".</summary>
     public int      McpArribaPin     { get; set; }
 
     /// <summary>Chip MCP23017 (0-5) del selector "aguas abajo". -1 = no configurado.</summary>
     public int      McpAbajoChip     { get; set; } = -1;
 
-    /// <summary>Pin (0-15) dentro del chip MCP23017 del selector "aguas abajo".</summary>
+    /// <summary>Pin (1-16) dentro del chip MCP23017 del selector "aguas abajo".</summary>
     public int      McpAbajoPin      { get; set; }
 
     /// <summary>
