@@ -1,5 +1,6 @@
 using PC7866.Views;
 using PC7866.Services.SerialCommunication;
+using PC7866.Utils;
 
 namespace PC7866
 {
@@ -11,14 +12,25 @@ namespace PC7866
         private ParametersPanel?    _parametersPanel;
         private ReportsPanel?       _reportsPanel;
 
+        private readonly ToolStripStatusLabel _statusSection = new("—") { ForeColor = UiTheme.TextPrimary };
+        private readonly ToolStripStatusLabel _statusSpring  = new() { Spring = true };
+        private readonly ToolStripStatusLabel _statusBrand   = new("PC7866 · Embega") { ForeColor = UiTheme.TextMuted };
+
         public Form1()
         {
             InitializeComponent();
             _serialPort = new SerialPortService();
             WindowState = FormWindowState.Maximized;
+            ApplyTheme();
             AttachMenuHandlers();
             // Arranca en modo automático por defecto
             ShowAutomaticPanel();
+        }
+
+        private void ApplyTheme()
+        {
+            UiTheme.ApplyShell(this, menuStrip1, statusStrip1, panelContent);
+            statusStrip1.Items.AddRange(new ToolStripItem[] { _statusSection, _statusSpring, _statusBrand });
         }
 
         private void AttachMenuHandlers()
@@ -42,6 +54,7 @@ namespace PC7866
             {
                 _manualPanel = new ManualControlPanel(_serialPort) { Dock = DockStyle.Fill };
                 panelContent.Controls.Add(_manualPanel);
+                UiTheme.ApplyPanel(_manualPanel);
             }
             _manualPanel.Show();
             SetTitle("Modo Manual");
@@ -55,6 +68,7 @@ namespace PC7866
             {
                 _automaticPanel = new AutomaticTestPanel(_serialPort) { Dock = DockStyle.Fill };
                 panelContent.Controls.Add(_automaticPanel);
+                UiTheme.ApplyPanel(_automaticPanel);
             }
             _automaticPanel.Show();
             _ = _automaticPanel.RefreshAsync();
@@ -69,6 +83,7 @@ namespace PC7866
             {
                 _parametersPanel = new ParametersPanel { Dock = DockStyle.Fill };
                 panelContent.Controls.Add(_parametersPanel);
+                UiTheme.ApplyPanel(_parametersPanel);
             }
             _parametersPanel.Show();
             SetTitle("Parámetros");
@@ -82,6 +97,7 @@ namespace PC7866
             {
                 _reportsPanel = new ReportsPanel { Dock = DockStyle.Fill };
                 panelContent.Controls.Add(_reportsPanel);
+                UiTheme.ApplyPanel(_reportsPanel);
             }
             _reportsPanel.Show();
             _ = Task.Run(() => _reportsPanel.Invoke(_reportsPanel.RefreshData));
@@ -92,6 +108,7 @@ namespace PC7866
         private void ShowConfiguration()
         {
             using var form = new ConfigurationForm();
+            UiTheme.ApplyPanel(form);
             form.ShowDialog(this);
         }
 
@@ -109,7 +126,10 @@ namespace PC7866
         }
 
         private void SetTitle(string section)
-            => Text = $"PC7866 – Test Resistivo Embega  |  {section}";
+        {
+            Text = $"PC7866 – Test Resistivo Embega  |  {section}";
+            _statusSection.Text = section;
+        }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
