@@ -61,7 +61,7 @@ partial class ReportsPanel
         {
             l.Text = lt; l.AutoSize = true; l.Location = new Point(fx, 24);
             grpFiltros.Controls.Add(l);
-            fx += l.PreferredWidth + 4;
+            fx += l.PreferredWidth + 9;
             c.Location = new Point(fx, 20); c.Size = new Size(w, 24);
             grpFiltros.Controls.Add(c);
             fx += w + 12;
@@ -69,8 +69,8 @@ partial class ReportsPanel
 
         AddFiltro(lblFiltroRef,  "Referencia:",  cmbFiltroRef,       160);
         AddFiltro(lblFiltroRes,  "Resultado:",   cmbFiltroResultado,  90);
-        AddFiltro(lblDesde,      "Desde:",       dtpDesde,           125);
-        AddFiltro(lblHasta,      "Hasta:",       dtpHasta,           125);
+        AddFiltro(lblDesde,      "Desde:",       dtpDesde,           200);
+        AddFiltro(lblHasta,      "Hasta:",       dtpHasta,           200);
         AddFiltro(lblFiltroOp,   "Operario:",    txtFiltroOperario,  110);
         AddFiltro(lblFiltroLote, "Lote:",        txtFiltroLote,       90);
 
