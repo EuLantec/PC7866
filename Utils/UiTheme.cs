@@ -83,6 +83,9 @@ public static class UiTheme
 
     public static void StyleButton(Button b)
     {
+        // Tag "native" = dejar el botón con el aspecto estándar de Windows, sin temar.
+        if (b.Tag as string == "native") return;
+
         b.FlatStyle = FlatStyle.Flat;
         b.FlatAppearance.BorderSize = 0;
         b.Cursor = Cursors.Hand;

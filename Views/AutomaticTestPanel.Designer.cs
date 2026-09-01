@@ -113,12 +113,13 @@ partial class AutomaticTestPanel
         // 
         // btnRefreshPorts
         // 
-        btnRefreshPorts.FlatStyle = FlatStyle.Flat;
         btnRefreshPorts.Location = new Point(178, 10);
         btnRefreshPorts.Name = "btnRefreshPorts";
         btnRefreshPorts.Size = new Size(28, 26);
         btnRefreshPorts.TabIndex = 4;
         btnRefreshPorts.Text = "🔄";
+        btnRefreshPorts.UseVisualStyleBackColor = true;
+        btnRefreshPorts.Tag = "native";
         // 
         // btnConnect
         // 
@@ -199,6 +200,8 @@ partial class AutomaticTestPanel
         btnRefreshRefs.Size = new Size(30, 25);
         btnRefreshRefs.TabIndex = 2;
         btnRefreshRefs.Text = "🔄";
+        btnRefreshRefs.UseVisualStyleBackColor = true;
+        btnRefreshRefs.Tag = "native";
         // 
         // lblOperario
         // 

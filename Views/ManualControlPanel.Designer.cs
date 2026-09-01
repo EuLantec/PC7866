@@ -144,7 +144,8 @@ partial class ManualControlPanel
         btnRefreshPorts.Text     = "🔄";
         btnRefreshPorts.Location = new System.Drawing.Point(178, 10);
         btnRefreshPorts.Size     = new System.Drawing.Size(28, 26);
-        btnRefreshPorts.FlatStyle= System.Windows.Forms.FlatStyle.Flat;
+        btnRefreshPorts.UseVisualStyleBackColor = true;
+        btnRefreshPorts.Tag      = "native";
 
         lblBaudRate.Text     = "Baudios:";
         lblBaudRate.AutoSize = true;
