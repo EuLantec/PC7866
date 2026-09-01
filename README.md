@@ -16,7 +16,7 @@ La aplicacion permite:
 ## Estado actual
 
 El proyecto ya incluye funcionalidad operativa en:
-- Modo manual: diagnosis, activacion de salidas, lecturas analogicas y test completo.
+- Modo manual: diagnosis, activacion de salidas y lecturas analogicas.
 - Modo automatico: ejecucion punto a punto (resistencia + cortocircuito por contacto) con maquina de estados y progreso visual.
 - Parametros: gestion de referencias y parametros de ensayo, con import/export en CSV y JSON.
 - Informes: consulta de historico y detalle de resultados.
