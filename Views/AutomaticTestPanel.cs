@@ -84,7 +84,8 @@ public partial class AutomaticTestPanel : UserControl
             }
             else
             {
-                cmbPort.SelectedIndex = 0;
+                int defaultIdx = cmbPort.FindStringExact(AppSettings.Instance.DefaultPortName);
+                cmbPort.SelectedIndex = defaultIdx >= 0 ? defaultIdx : 0;
             }
         }
         else
