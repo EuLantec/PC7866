@@ -539,13 +539,13 @@ partial class ManualControlPanel
         nudMuestras.Size    = new System.Drawing.Size(bw, bh);
         nudMuestras.Minimum = 0;
         nudMuestras.Maximum = 99;
-        nudMuestras.Value   = 10;
+        nudMuestras.Value   = 1;
         BoardRow(lblMuestras, "Muestras (0-99):", nudMuestras, 112);
 
         nudRetardo.Size    = new System.Drawing.Size(bw, bh);
         nudRetardo.Minimum = 0;
         nudRetardo.Maximum = 999;
-        nudRetardo.Value   = 20;
+        nudRetardo.Value   = 0;
         BoardRow(lblRetardo, "Retardo ms (0-999):", nudRetardo, 142);
 
         StyleBtn(btnSendBoardConfig, "Enviar I", 6, 178, 160);
