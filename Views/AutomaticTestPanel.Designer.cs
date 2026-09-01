@@ -14,7 +14,7 @@ partial class AutomaticTestPanel
 
     private void InitializeComponent()
     {
-        grpConnection = new GroupBox();
+        pnlTopBar = new Panel();
         lblPort = new Label();
         cmbPort = new ComboBox();
         lblBaudRate = new Label();
@@ -48,7 +48,7 @@ partial class AutomaticTestPanel
         lblMachineState = new Label();
         grpLog = new GroupBox();
         txtLog = new TextBox();
-        grpConnection.SuspendLayout();
+        pnlTopBar.SuspendLayout();
         grpEnsayo.SuspendLayout();
         grpImagen.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)picReferencia).BeginInit();
@@ -58,27 +58,28 @@ partial class AutomaticTestPanel
         grpLog.SuspendLayout();
         SuspendLayout();
         // 
-        // grpConnection
+        // pnlTopBar
         // 
-        grpConnection.Controls.Add(lblPort);
-        grpConnection.Controls.Add(cmbPort);
-        grpConnection.Controls.Add(lblBaudRate);
-        grpConnection.Controls.Add(cmbBaudRate);
-        grpConnection.Controls.Add(btnRefreshPorts);
-        grpConnection.Controls.Add(btnConnect);
-        grpConnection.Controls.Add(btnDisconnect);
-        grpConnection.Controls.Add(lblConnectionStatus);
-        grpConnection.Location = new Point(3, 3);
-        grpConnection.Name = "grpConnection";
-        grpConnection.Size = new Size(1250, 60);
-        grpConnection.TabIndex = 0;
-        grpConnection.TabStop = false;
-        grpConnection.Text = "Conexión serie";
+        pnlTopBar.BackColor = Color.FromArgb(235, 238, 245);
+        pnlTopBar.Controls.Add(lblPort);
+        pnlTopBar.Controls.Add(cmbPort);
+        pnlTopBar.Controls.Add(lblBaudRate);
+        pnlTopBar.Controls.Add(cmbBaudRate);
+        pnlTopBar.Controls.Add(btnRefreshPorts);
+        pnlTopBar.Controls.Add(btnConnect);
+        pnlTopBar.Controls.Add(btnDisconnect);
+        pnlTopBar.Controls.Add(lblConnectionStatus);
+        pnlTopBar.Dock = DockStyle.Top;
+        pnlTopBar.Location = new Point(0, 0);
+        pnlTopBar.Name = "pnlTopBar";
+        pnlTopBar.Size = new Size(1260, 46);
+        pnlTopBar.TabIndex = 0;
         // 
         // lblPort
         // 
         lblPort.AutoSize = true;
-        lblPort.Location = new Point(8, 26);
+        lblPort.Font = new Font("Segoe UI", 9F);
+        lblPort.Location = new Point(10, 14);
         lblPort.Name = "lblPort";
         lblPort.Size = new Size(45, 15);
         lblPort.TabIndex = 0;
@@ -87,15 +88,16 @@ partial class AutomaticTestPanel
         // cmbPort
         // 
         cmbPort.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbPort.Location = new Point(62, 22);
+        cmbPort.Location = new Point(67, 11);
         cmbPort.Name = "cmbPort";
-        cmbPort.Size = new Size(130, 23);
+        cmbPort.Size = new Size(105, 23);
         cmbPort.TabIndex = 1;
         // 
         // lblBaudRate
         // 
         lblBaudRate.AutoSize = true;
-        lblBaudRate.Location = new Point(238, 26);
+        lblBaudRate.Font = new Font("Segoe UI", 9F);
+        lblBaudRate.Location = new Point(216, 14);
         lblBaudRate.Name = "lblBaudRate";
         lblBaudRate.Size = new Size(52, 15);
         lblBaudRate.TabIndex = 2;
@@ -104,46 +106,56 @@ partial class AutomaticTestPanel
         // cmbBaudRate
         // 
         cmbBaudRate.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbBaudRate.Location = new Point(298, 22);
+        cmbBaudRate.Location = new Point(279, 11);
         cmbBaudRate.Name = "cmbBaudRate";
-        cmbBaudRate.Size = new Size(110, 23);
+        cmbBaudRate.Size = new Size(95, 23);
         cmbBaudRate.TabIndex = 3;
         // 
         // btnRefreshPorts
         // 
-        btnRefreshPorts.Location = new Point(198, 21);
+        btnRefreshPorts.Location = new Point(178, 10);
         btnRefreshPorts.Name = "btnRefreshPorts";
-        btnRefreshPorts.Size = new Size(30, 25);
+        btnRefreshPorts.Size = new Size(28, 26);
         btnRefreshPorts.TabIndex = 4;
         btnRefreshPorts.Text = "🔄";
+        btnRefreshPorts.UseVisualStyleBackColor = true;
+        btnRefreshPorts.Tag = "native";
         // 
         // btnConnect
         // 
-        btnConnect.Location = new Point(420, 21);
+        btnConnect.BackColor = Color.FromArgb(0, 153, 76);
+        btnConnect.FlatStyle = FlatStyle.Flat;
+        btnConnect.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        btnConnect.ForeColor = Color.White;
+        btnConnect.Location = new Point(388, 10);
         btnConnect.Name = "btnConnect";
-        btnConnect.Size = new Size(85, 25);
+        btnConnect.Size = new Size(90, 26);
         btnConnect.TabIndex = 5;
         btnConnect.Text = "Conectar";
         // 
         // btnDisconnect
         // 
+        btnDisconnect.BackColor = Color.FromArgb(180, 50, 50);
         btnDisconnect.Enabled = false;
-        btnDisconnect.Location = new Point(511, 21);
+        btnDisconnect.FlatStyle = FlatStyle.Flat;
+        btnDisconnect.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        btnDisconnect.ForeColor = Color.White;
+        btnDisconnect.Location = new Point(484, 10);
         btnDisconnect.Name = "btnDisconnect";
-        btnDisconnect.Size = new Size(95, 25);
+        btnDisconnect.Size = new Size(100, 26);
         btnDisconnect.TabIndex = 6;
         btnDisconnect.Text = "Desconectar";
         // 
         // lblConnectionStatus
         // 
         lblConnectionStatus.AutoSize = true;
-        lblConnectionStatus.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        lblConnectionStatus.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
         lblConnectionStatus.ForeColor = Color.Red;
-        lblConnectionStatus.Location = new Point(620, 25);
+        lblConnectionStatus.Location = new Point(600, 13);
         lblConnectionStatus.Name = "lblConnectionStatus";
         lblConnectionStatus.Size = new Size(78, 15);
         lblConnectionStatus.TabIndex = 7;
-        lblConnectionStatus.Text = "Sin conexión";
+        lblConnectionStatus.Text = "○ Desconectado";
         lblConnectionStatus.Click += lblConnectionStatus_Click;
         // 
         // grpEnsayo
@@ -157,7 +169,7 @@ partial class AutomaticTestPanel
         grpEnsayo.Controls.Add(txtLote);
         grpEnsayo.Controls.Add(btnStartTest);
         grpEnsayo.Controls.Add(btnAbortTest);
-        grpEnsayo.Location = new Point(3, 69);
+        grpEnsayo.Location = new Point(3, 52);
         grpEnsayo.Name = "grpEnsayo";
         grpEnsayo.Size = new Size(1250, 62);
         grpEnsayo.TabIndex = 1;
@@ -176,9 +188,9 @@ partial class AutomaticTestPanel
         // cmbReferencia
         // 
         cmbReferencia.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbReferencia.Location = new Point(82, 20);
+        cmbReferencia.Location = new Point(87, 20);
         cmbReferencia.Name = "cmbReferencia";
-        cmbReferencia.Size = new Size(260, 23);
+        cmbReferencia.Size = new Size(255, 23);
         cmbReferencia.TabIndex = 1;
         // 
         // btnRefreshRefs
@@ -188,6 +200,8 @@ partial class AutomaticTestPanel
         btnRefreshRefs.Size = new Size(30, 25);
         btnRefreshRefs.TabIndex = 2;
         btnRefreshRefs.Text = "🔄";
+        btnRefreshRefs.UseVisualStyleBackColor = true;
+        btnRefreshRefs.Tag = "native";
         // 
         // lblOperario
         // 
@@ -200,9 +214,9 @@ partial class AutomaticTestPanel
         // 
         // txtOperario
         // 
-        txtOperario.Location = new Point(455, 20);
+        txtOperario.Location = new Point(460, 20);
         txtOperario.Name = "txtOperario";
-        txtOperario.Size = new Size(150, 23);
+        txtOperario.Size = new Size(145, 23);
         txtOperario.TabIndex = 4;
         // 
         // lblLote
@@ -216,26 +230,26 @@ partial class AutomaticTestPanel
         // 
         // txtLote
         // 
-        txtLote.Location = new Point(655, 20);
+        txtLote.Location = new Point(660, 20);
         txtLote.Name = "txtLote";
-        txtLote.Size = new Size(130, 23);
+        txtLote.Size = new Size(125, 23);
         txtLote.TabIndex = 6;
         // 
         // btnStartTest
         // 
         btnStartTest.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        btnStartTest.Location = new Point(1000, 18);
+        btnStartTest.Location = new Point(1000, 16);
         btnStartTest.Name = "btnStartTest";
-        btnStartTest.Size = new Size(115, 28);
+        btnStartTest.Size = new Size(120, 32);
         btnStartTest.TabIndex = 7;
         btnStartTest.Text = "▶ Iniciar";
         // 
         // btnAbortTest
         // 
         btnAbortTest.Enabled = false;
-        btnAbortTest.Location = new Point(1121, 18);
+        btnAbortTest.Location = new Point(1125, 16);
         btnAbortTest.Name = "btnAbortTest";
-        btnAbortTest.Size = new Size(115, 28);
+        btnAbortTest.Size = new Size(120, 32);
         btnAbortTest.TabIndex = 8;
         btnAbortTest.Text = "⛔ Abortar";
         // 
@@ -243,7 +257,7 @@ partial class AutomaticTestPanel
         // 
         grpImagen.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
         grpImagen.Controls.Add(picReferencia);
-        grpImagen.Location = new Point(3, 195);
+        grpImagen.Location = new Point(3, 178);
         grpImagen.Name = "grpImagen";
         grpImagen.Size = new Size(520, 450);
         grpImagen.TabIndex = 3;
@@ -265,7 +279,7 @@ partial class AutomaticTestPanel
         // 
         grpResultados.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         grpResultados.Controls.Add(gridResultados);
-        grpResultados.Location = new Point(529, 195);
+        grpResultados.Location = new Point(529, 178);
         grpResultados.Name = "grpResultados";
         grpResultados.Size = new Size(724, 450);
         grpResultados.TabIndex = 4;
@@ -328,7 +342,7 @@ partial class AutomaticTestPanel
         grpProgress.Controls.Add(progressBar);
         grpProgress.Controls.Add(lblCurrentStep);
         grpProgress.Controls.Add(lblMachineState);
-        grpProgress.Location = new Point(3, 137);
+        grpProgress.Location = new Point(3, 120);
         grpProgress.Name = "grpProgress";
         grpProgress.Size = new Size(1250, 52);
         grpProgress.TabIndex = 2;
@@ -365,7 +379,7 @@ partial class AutomaticTestPanel
         // 
         grpLog.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         grpLog.Controls.Add(txtLog);
-        grpLog.Location = new Point(3, 651);
+        grpLog.Location = new Point(3, 634);
         grpLog.Name = "grpLog";
         grpLog.Size = new Size(1250, 200);
         grpLog.TabIndex = 5;
@@ -390,17 +404,17 @@ partial class AutomaticTestPanel
         // 
         AutoScaleDimensions = new SizeF(96F, 96F);
         AutoScaleMode = AutoScaleMode.Dpi;
-        Controls.Add(grpConnection);
         Controls.Add(grpEnsayo);
         Controls.Add(grpProgress);
         Controls.Add(grpImagen);
         Controls.Add(grpResultados);
         Controls.Add(grpLog);
+        Controls.Add(pnlTopBar);
         MinimumSize = new Size(900, 600);
         Name = "AutomaticTestPanel";
-        Size = new Size(1260, 860);
-        grpConnection.ResumeLayout(false);
-        grpConnection.PerformLayout();
+        Size = new Size(1260, 843);
+        pnlTopBar.ResumeLayout(false);
+        pnlTopBar.PerformLayout();
         grpEnsayo.ResumeLayout(false);
         grpEnsayo.PerformLayout();
         grpImagen.ResumeLayout(false);
@@ -417,7 +431,7 @@ partial class AutomaticTestPanel
     #endregion
 
     // Conexión
-    private GroupBox   grpConnection;
+    private Panel      pnlTopBar;
     private Label      lblPort;
     private ComboBox   cmbPort;
     private Label      lblBaudRate;
