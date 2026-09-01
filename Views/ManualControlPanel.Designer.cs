@@ -144,7 +144,8 @@ partial class ManualControlPanel
         btnRefreshPorts.Text     = "🔄";
         btnRefreshPorts.Location = new System.Drawing.Point(178, 10);
         btnRefreshPorts.Size     = new System.Drawing.Size(28, 26);
-        btnRefreshPorts.FlatStyle= System.Windows.Forms.FlatStyle.Flat;
+        btnRefreshPorts.UseVisualStyleBackColor = true;
+        btnRefreshPorts.Tag      = "native";
 
         lblBaudRate.Text     = "Baudios:";
         lblBaudRate.AutoSize = true;
@@ -233,20 +234,24 @@ partial class ManualControlPanel
         grpDiagnosis.Enabled = false;
         grpDiagnosis.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
-        StyleBtn(btnDiagTotal, "DT – Total", 6, 22, 130);
-        btnDiagTotal.BackColor = System.Drawing.Color.FromArgb(0, 120, 215);
-        btnDiagTotal.ForeColor = System.Drawing.Color.White;
-        btnDiagTotal.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+        void StyleDiagBtn(System.Windows.Forms.Button b, string text, int x, int y, int w = 130)
+        {
+            StyleBtn(b, text, x, y, w);
+            b.BackColor = System.Drawing.Color.FromArgb(0, 120, 215);
+            b.ForeColor = System.Drawing.Color.White;
+            b.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+        }
 
-        StyleBtn(btnDiagAds,        "D1 – ADS 0x48", 142, 22, 130);
-        StyleBtn(btnDiagVersion,    "DV – Versión",  278, 22, 110);
-        StyleBtn(btnDiagReadConfig, "DG – Ver config", 394, 22, 130);
-        StyleBtn(btnDiagTemperature, "DC – Temperatura", 534, 22, 130);
+        StyleDiagBtn(btnDiagTotal, "DT – Total", 6, 22, 130);
+        StyleDiagBtn(btnDiagAds,        "D1 – ADS 0x48", 142, 22, 130);
+        StyleDiagBtn(btnDiagVersion,    "DV – Versión",  278, 22, 110);
+        StyleDiagBtn(btnDiagReadConfig, "DG – Ver config", 394, 22, 130);
+        StyleDiagBtn(btnDiagTemperature, "DC – Temperatura", 534, 22, 130);
 
         for (int _di = 0; _di < Pc7866Commands.McpChipCount; _di++)
         {
             int addr = 0x20 + _di;
-            StyleBtn(_btnDiagMcp[_di], $"D{_di + 2} – MCP 0x{addr:X2}", 6 + _di * 116, 58, 110);
+            StyleDiagBtn(_btnDiagMcp[_di], $"D{_di + 2} – MCP 0x{addr:X2}", 6 + _di * 116, 58, 110);
         }
 
         var diagControls = new System.Windows.Forms.Control[5 + Pc7866Commands.McpChipCount];

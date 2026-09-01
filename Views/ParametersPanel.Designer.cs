@@ -134,7 +134,7 @@ partial class ParametersPanel
         chkActiva.Text = "Activa"; chkActiva.Location = new Point(398, 10); chkActiva.AutoSize = true;
 
         lblRefDesc.Text = "Descripción:"; lblRefDesc.AutoSize = true; lblRefDesc.Location = new Point(8, 42);
-        txtRefDesc.Location = new Point(83, 38); txtRefDesc.Size = new Size(500, 80);
+        txtRefDesc.Location = new Point(90, 38); txtRefDesc.Size = new Size(493, 80);
         txtRefDesc.Multiline = true; txtRefDesc.ScrollBars = ScrollBars.Vertical;
 
         lblRefModelo.Text = "Modelo placa (7 díg):"; lblRefModelo.AutoSize = true; lblRefModelo.Location = new Point(8, 128);
