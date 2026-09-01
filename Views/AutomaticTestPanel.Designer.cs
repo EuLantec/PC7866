@@ -88,9 +88,9 @@ partial class AutomaticTestPanel
         // cmbPort
         // 
         cmbPort.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbPort.Location = new Point(62, 11);
+        cmbPort.Location = new Point(67, 11);
         cmbPort.Name = "cmbPort";
-        cmbPort.Size = new Size(110, 23);
+        cmbPort.Size = new Size(105, 23);
         cmbPort.TabIndex = 1;
         // 
         // lblBaudRate
@@ -106,9 +106,9 @@ partial class AutomaticTestPanel
         // cmbBaudRate
         // 
         cmbBaudRate.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbBaudRate.Location = new Point(274, 11);
+        cmbBaudRate.Location = new Point(279, 11);
         cmbBaudRate.Name = "cmbBaudRate";
-        cmbBaudRate.Size = new Size(100, 23);
+        cmbBaudRate.Size = new Size(95, 23);
         cmbBaudRate.TabIndex = 3;
         // 
         // btnRefreshPorts
@@ -187,9 +187,9 @@ partial class AutomaticTestPanel
         // cmbReferencia
         // 
         cmbReferencia.DropDownStyle = ComboBoxStyle.DropDownList;
-        cmbReferencia.Location = new Point(82, 20);
+        cmbReferencia.Location = new Point(87, 20);
         cmbReferencia.Name = "cmbReferencia";
-        cmbReferencia.Size = new Size(260, 23);
+        cmbReferencia.Size = new Size(255, 23);
         cmbReferencia.TabIndex = 1;
         // 
         // btnRefreshRefs
@@ -211,9 +211,9 @@ partial class AutomaticTestPanel
         // 
         // txtOperario
         // 
-        txtOperario.Location = new Point(455, 20);
+        txtOperario.Location = new Point(460, 20);
         txtOperario.Name = "txtOperario";
-        txtOperario.Size = new Size(150, 23);
+        txtOperario.Size = new Size(145, 23);
         txtOperario.TabIndex = 4;
         // 
         // lblLote
@@ -227,26 +227,26 @@ partial class AutomaticTestPanel
         // 
         // txtLote
         // 
-        txtLote.Location = new Point(655, 20);
+        txtLote.Location = new Point(660, 20);
         txtLote.Name = "txtLote";
-        txtLote.Size = new Size(130, 23);
+        txtLote.Size = new Size(125, 23);
         txtLote.TabIndex = 6;
         // 
         // btnStartTest
         // 
         btnStartTest.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        btnStartTest.Location = new Point(1000, 18);
+        btnStartTest.Location = new Point(1000, 16);
         btnStartTest.Name = "btnStartTest";
-        btnStartTest.Size = new Size(115, 28);
+        btnStartTest.Size = new Size(120, 32);
         btnStartTest.TabIndex = 7;
         btnStartTest.Text = "▶ Iniciar";
         // 
         // btnAbortTest
         // 
         btnAbortTest.Enabled = false;
-        btnAbortTest.Location = new Point(1121, 18);
+        btnAbortTest.Location = new Point(1125, 16);
         btnAbortTest.Name = "btnAbortTest";
-        btnAbortTest.Size = new Size(115, 28);
+        btnAbortTest.Size = new Size(120, 32);
         btnAbortTest.TabIndex = 8;
         btnAbortTest.Text = "⛔ Abortar";
         // 

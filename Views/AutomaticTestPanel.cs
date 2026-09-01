@@ -54,6 +54,9 @@ public partial class AutomaticTestPanel : UserControl
 
     private void InitializeControls()
     {
+        UiTheme.RoundButton(btnStartTest, 16);
+        UiTheme.RoundButton(btnAbortTest, 16);
+
         LoadAvailablePorts();
 
         cmbBaudRate.Items.AddRange(new object[] { 9600, 19200, 38400, 57600, 115200 });

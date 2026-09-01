@@ -103,6 +103,28 @@ public static class UiTheme
         b.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(b.BackColor, 0.05f);
     }
 
+    // Da forma de píldora a un botón de acción destacado (p.ej. Iniciar/Abortar).
+    public static void RoundButton(Button b, int radius = 14)
+    {
+        void Apply()
+        {
+            var rect = b.ClientRectangle;
+            if (rect.Width <= 0 || rect.Height <= 0) return;
+            int d = Math.Min(radius * 2, Math.Min(rect.Width, rect.Height));
+            using var path = new GraphicsPath();
+            path.StartFigure();
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            b.Region = new Region(path);
+        }
+
+        Apply();
+        b.Resize += (_, _) => Apply();
+    }
+
     private static void StyleGrid(DataGridView dg)
     {
         dg.BackgroundColor        = Surface;
