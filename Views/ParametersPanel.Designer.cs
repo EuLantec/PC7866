@@ -147,11 +147,11 @@ partial class ParametersPanel
 
         lblRefMuestras.Text = "Muestras (0-99):"; lblRefMuestras.AutoSize = true; lblRefMuestras.Location = new Point(196, 158);
         nudRefMuestras.Location = new Point(320, 154); nudRefMuestras.Size = new Size(60, 23);
-        nudRefMuestras.Minimum = 0; nudRefMuestras.Maximum = 99; nudRefMuestras.Value = 10;
+        nudRefMuestras.Minimum = 0; nudRefMuestras.Maximum = 99; nudRefMuestras.Value = 1;
 
         lblRefRetardo.Text = "Retardo ms (0-999):"; lblRefRetardo.AutoSize = true; lblRefRetardo.Location = new Point(396, 158);
         nudRefRetardo.Location = new Point(540, 154); nudRefRetardo.Size = new Size(60, 23);
-        nudRefRetardo.Minimum = 0; nudRefRetardo.Maximum = 999; nudRefRetardo.Value = 20;
+        nudRefRetardo.Minimum = 0; nudRefRetardo.Maximum = 999; nudRefRetardo.Value = 0;
 
         lblRefInh.Text = "INH1-4 pos (hex/N):"; lblRefInh.AutoSize = true; lblRefInh.Location = new Point(8, 188);
         void InhRefBox(TextBox t, int x)

@@ -10,7 +10,6 @@ PC7866/
 │   ├── Resultado.cs                 # Cabecera de un ensayo
 │   ├── ResultadoDetalle.cs          # Resultado por paso + EstadoMedicion
 │   ├── Pc7866Commands.cs            # Builders de tramas del protocolo serie
-│   ├── FullTestRow.cs               # Fila del test completo (modo manual)
 │   └── ...                          # TestParameters, MeasurementResult, DeviceResponse, etc.
 │
 ├── Services/
@@ -33,7 +32,7 @@ PC7866/
 │   ├── ParametersPanel.cs           # Referencias y parámetros de ensayo
 │   ├── ReportsPanel.cs              # Informes / histórico
 │   ├── ConfigurationForm.cs         # Configuración (puerto, BD, opciones)
-│   └── ...                          # FullTestReportForm, ResultadoDetalleForm
+│   └── ...                          # ResultadoDetalleForm
 │
 ├── Utils/
 │   ├── Logger.cs                    # Sistema de logging

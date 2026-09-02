@@ -60,7 +60,6 @@ partial class ManualControlPanel
         lblOutputMask   = new System.Windows.Forms.Label();
         btnOutputsAllOn = new System.Windows.Forms.Button();
         btnOutputsAllOff= new System.Windows.Forms.Button();
-        btnFullTest     = new System.Windows.Forms.Button();
 
         // ── Col derecha: Analógica + Config placa + Reset ──────────────────
         grpAnalog       = new System.Windows.Forms.GroupBox();
@@ -367,20 +366,11 @@ partial class ManualControlPanel
         btnOutputsAllOff.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         btnOutputsAllOff.Font      = new System.Drawing.Font("Segoe UI", 8.5f);
 
-        btnFullTest.Text      = "▶  Test completo (todas las salidas)";
-        btnFullTest.Location  = new System.Drawing.Point(438, 18);
-        btnFullTest.Size      = new System.Drawing.Size(240, 28);
-        btnFullTest.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-        btnFullTest.BackColor = System.Drawing.Color.FromArgb(180, 100, 0);
-        btnFullTest.ForeColor = System.Drawing.Color.White;
-        btnFullTest.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
-        btnFullTest.Enabled   = false;
-
         pnlOutputMatrix.Location  = new System.Drawing.Point(6, 48);
         pnlOutputMatrix.AutoSize  = true;
 
         grpOutputs.Controls.AddRange(new System.Windows.Forms.Control[]
-            { lblOutputMask, btnOutputsAllOn, btnOutputsAllOff, btnFullTest, pnlOutputMatrix });
+            { lblOutputMask, btnOutputsAllOn, btnOutputsAllOff, pnlOutputMatrix });
 
         // Apilar izquierda: Dock=Top se añade después → queda encima
         pnlLeft.Controls.Add(grpOutputs);
@@ -549,13 +539,13 @@ partial class ManualControlPanel
         nudMuestras.Size    = new System.Drawing.Size(bw, bh);
         nudMuestras.Minimum = 0;
         nudMuestras.Maximum = 99;
-        nudMuestras.Value   = 10;
+        nudMuestras.Value   = 1;
         BoardRow(lblMuestras, "Muestras (0-99):", nudMuestras, 112);
 
         nudRetardo.Size    = new System.Drawing.Size(bw, bh);
         nudRetardo.Minimum = 0;
         nudRetardo.Maximum = 999;
-        nudRetardo.Value   = 20;
+        nudRetardo.Value   = 0;
         BoardRow(lblRetardo, "Retardo ms (0-999):", nudRetardo, 142);
 
         StyleBtn(btnSendBoardConfig, "Enviar I", 6, 178, 160);
@@ -701,7 +691,6 @@ partial class ManualControlPanel
     private System.Windows.Forms.Label      lblOutputMask;
     private System.Windows.Forms.Button     btnOutputsAllOn;
     private System.Windows.Forms.Button     btnOutputsAllOff;
-    private System.Windows.Forms.Button     btnFullTest;
 
     // ── Analog ────────────────────────────────────────────────────────────────
     private System.Windows.Forms.GroupBox         grpAnalog;

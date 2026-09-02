@@ -154,8 +154,8 @@ public partial class ParametersPanel : UserControl
         txtRefModelo.Text = string.Empty;
         chkActiva.Checked = true;
         nudRefNumMcps.Value  = PC7866.Models.Pc7866Commands.McpChipCount;
-        nudRefMuestras.Value = 10;
-        nudRefRetardo.Value  = 20;
+        nudRefMuestras.Value = 1;
+        nudRefRetardo.Value  = 0;
         txtRefInh1.Text = "N"; txtRefInh2.Text = "N"; txtRefInh3.Text = "N"; txtRefInh4.Text = "N";
         picPreview.Image  = null;
         gridParametros.Rows.Clear();

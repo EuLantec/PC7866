@@ -430,8 +430,8 @@ public class TestRepository : ITestRepository
                 inh2_pos            INT NULL,
                 inh3_pos            INT NULL,
                 inh4_pos            INT NULL,
-                muestras            INT NOT NULL DEFAULT 10,
-                retardo_ms          INT NOT NULL DEFAULT 20
+                muestras            INT NOT NULL DEFAULT 1,
+                retardo_ms          INT NOT NULL DEFAULT 0
             );
             """;
 
@@ -523,8 +523,8 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh2_pos INT NULL;");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh3_pos INT NULL;");
         await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS inh4_pos INT NULL;");
-        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS muestras INT NOT NULL DEFAULT 10;");
-        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS retardo_ms INT NOT NULL DEFAULT 20;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS muestras INT NOT NULL DEFAULT 1;");
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS retardo_ms INT NOT NULL DEFAULT 0;");
 
         // Migracion: el nombre de la referencia ya no es unico (el identificador real es modelo_placa)
         await conn.ExecuteAsync("ALTER TABLE referencias DROP INDEX IF EXISTS referencia;");
@@ -551,8 +551,8 @@ public class TestRepository : ITestRepository
         Inh2Pos            = HasColumn(row, "inh2_pos")  ? (int?)row.inh2_pos : null,
         Inh3Pos            = HasColumn(row, "inh3_pos")  ? (int?)row.inh3_pos : null,
         Inh4Pos            = HasColumn(row, "inh4_pos")  ? (int?)row.inh4_pos : null,
-        Muestras           = HasColumn(row, "muestras")  ? (int)row.muestras  : 10,
-        RetardoMs          = HasColumn(row, "retardo_ms") ? (int)row.retardo_ms : 20
+        Muestras           = HasColumn(row, "muestras")  ? (int)row.muestras  : 1,
+        RetardoMs          = HasColumn(row, "retardo_ms") ? (int)row.retardo_ms : 0
     };
 
     private static ParametroEnsayo MapParametroEnsayo(dynamic row)
