@@ -19,6 +19,7 @@ El proyecto ya incluye funcionalidad operativa en:
 - Modo manual: diagnosis, activacion de salidas y lecturas analogicas.
 - Modo automatico: ejecucion punto a punto (resistencia + cortocircuito por contacto) con maquina de estados y progreso visual.
 - Parametros: gestion de referencias y parametros de ensayo, con import/export en CSV y JSON.
+- Mapa de contactos: la imagen de cada referencia muestra una bola por contacto, con su nombre dentro y colores de estado durante el ensayo.
 - Informes: consulta de historico y detalle de resultados.
 - Configuracion: puerto serie, conexion BD y opciones generales mediante `appsettings.json`.
 
@@ -139,6 +140,8 @@ Detalles relevantes:
 3. Ejecutar test automatico con operario y lote (ver [guia de modo automatico](GUIA_MODO_AUTOMATICO.md)).
 4. Revisar resultado global y detalle por paso.
 5. Consultar historico en informes.
+
+Al configurar los parametros de una referencia, asigna la posicion X/Y de cada contacto sobre la imagen. El mapa muestra el nombre del contacto dentro de la bola; durante el ensayo, el color indica el estado: gris sin medir, verde OK, rojo NOK, naranja cortocircuito y azul abierto.
 
 Para diagnostico de hardware, calibracion o pruebas puntuales sin referencia asociada, usa el [modo manual](GUIA_MODO_MANUAL.md).
 
