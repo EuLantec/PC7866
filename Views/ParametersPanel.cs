@@ -661,7 +661,7 @@ public partial class ParametersPanel : UserControl
             int py = Convert.ToInt32(row.Cells["colP_PosY"].Value);
             if (px == 0 && py == 0) continue;
 
-            int paso = Convert.ToInt32(row.Cells["colP_Paso"].Value);
+            string contacto = row.Cells["colP_Contacto"].Value?.ToString() ?? string.Empty;
             var cp   = ImageToControl(px, py);
 
             using var brushGris = new SolidBrush(Color.FromArgb(180, Color.DimGray));
@@ -671,9 +671,11 @@ public partial class ParametersPanel : UserControl
 
             using var fnt  = new Font("Segoe UI", 7f, FontStyle.Bold);
             using var brushTxt = new SolidBrush(Color.White);
-            var label = paso.ToString();
+            var label = contacto;
             var sz    = g.MeasureString(label, fnt);
-            g.DrawString(label, fnt, brushTxt, cp.X - sz.Width / 2, cp.Y - sz.Height / 2);
+            g.FillRectangle(Brushes.DimGray, cp.X + R_otros + 2, cp.Y - sz.Height / 2 - 1,
+                sz.Width + 4, sz.Height + 2);
+            g.DrawString(label, fnt, brushTxt, cp.X + R_otros + 4, cp.Y - sz.Height / 2);
         }
 
         // ── Dibujar el punto seleccionado en rojo ─────────────────────────
@@ -694,13 +696,12 @@ public partial class ParametersPanel : UserControl
         g.DrawLine(penCruz, selPt.X - R + 3, selPt.Y, selPt.X + R - 3, selPt.Y);
         g.DrawLine(penCruz, selPt.X, selPt.Y - R + 3, selPt.X, selPt.Y + R - 3);
 
-        // Número de paso
-        int selPaso = (int)nudPaso.Value;
+        // Nombre del contacto
         using var fntSel    = new Font("Segoe UI", 8f, FontStyle.Bold);
-        using var brushNeg  = new SolidBrush(Color.Black);
-        var labelSel = selPaso.ToString();
+        var labelSel = txtContacto.Text.Trim();
+        if (labelSel.Length == 0) return;
         var szSel    = g.MeasureString(labelSel, fntSel);
-        // Fondo negro semitransparente detrás del número
+        // Fondo negro semitransparente detrás del nombre
         g.FillRectangle(new SolidBrush(Color.FromArgb(140, Color.Black)),
             selPt.X + R, selPt.Y - szSel.Height / 2 - 1, szSel.Width + 2, szSel.Height + 2);
         g.DrawString(labelSel, fntSel, Brushes.White,

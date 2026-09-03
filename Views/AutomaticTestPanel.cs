@@ -427,12 +427,14 @@ public partial class AutomaticTestPanel : UserControl
             g.FillEllipse(brush, cx - R, cy - R, R * 2, R * 2);
             g.DrawEllipse(pen,   cx - R, cy - R, R * 2, R * 2);
 
-            // Número de paso dentro del dot
+            // Nombre del contacto junto al dot
             using var fnt      = new Font("Segoe UI", 7f, FontStyle.Bold);
             using var brushTxt = new SolidBrush(Color.White);
-            var label = p.NPasoEnsayo.ToString();
+            var label = p.NombreContacto;
             var sz    = g.MeasureString(label, fnt);
-            g.DrawString(label, fnt, brushTxt, cx - sz.Width / 2, cy - sz.Height / 2);
+            g.FillRectangle(Brushes.DimGray, cx + R + 2, cy - sz.Height / 2 - 1,
+                sz.Width + 4, sz.Height + 2);
+            g.DrawString(label, fnt, brushTxt, cx + R + 4, cy - sz.Height / 2);
         }
     }
 
