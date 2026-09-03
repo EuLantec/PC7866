@@ -122,6 +122,39 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync(sql, new { Id = id, Activa = activa });
     }
 
+    public async Task DeleteReferenciaAsync(int id)
+    {
+        using var conn = CreateConnection();
+        await conn.OpenAsync();
+        using var transaction = await conn.BeginTransactionAsync();
+
+        try
+        {
+            await conn.ExecuteAsync("""
+                UPDATE resultados_detalle rd
+                INNER JOIN parametros_ensayo p ON p.id = rd.parametro_ensayo_id
+                SET rd.parametro_ensayo_id = NULL
+                WHERE p.referencia_id = @Id
+                """, new { Id = id }, transaction);
+            await conn.ExecuteAsync(
+                "UPDATE resultados SET referencia_id = NULL WHERE referencia_id = @Id",
+                new { Id = id }, transaction);
+            await conn.ExecuteAsync(
+                "DELETE FROM parametros_ensayo WHERE referencia_id = @Id",
+                new { Id = id }, transaction);
+            await conn.ExecuteAsync(
+                "DELETE FROM referencias WHERE id = @Id",
+                new { Id = id }, transaction);
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // ParametrosEnsayo
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

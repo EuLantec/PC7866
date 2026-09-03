@@ -184,7 +184,7 @@ partial class ParametersPanel
 
         btnNuevaRef.Text = "➕ Nueva"; btnNuevaRef.Location = new Point(8, 6); btnNuevaRef.Size = new Size(100, 28);
         btnGuardarRef.Text = "💾 Guardar"; btnGuardarRef.Location = new Point(116, 6); btnGuardarRef.Size = new Size(110, 28);
-        btnEliminarRef.Text = "🗑 Desactivar"; btnEliminarRef.Location = new Point(234, 6); btnEliminarRef.Size = new Size(120, 28);
+        btnEliminarRef.Text = "🗑 Borrar"; btnEliminarRef.Location = new Point(234, 6); btnEliminarRef.Size = new Size(100, 28);
         pnlRefButtons.Dock = DockStyle.Bottom;
         pnlRefButtons.Height = 42;
         pnlRefButtons.Controls.AddRange(new Control[] { btnNuevaRef, btnGuardarRef, btnEliminarRef });

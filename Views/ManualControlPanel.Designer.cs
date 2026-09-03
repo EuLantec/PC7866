@@ -99,6 +99,16 @@ partial class ManualControlPanel
         nudRetardo        = new System.Windows.Forms.NumericUpDown();
         btnSendBoardConfig= new System.Windows.Forms.Button();
 
+        // ── Semiautomático ───────────────────────────────────────────
+        grpSemiAuto           = new System.Windows.Forms.GroupBox();
+        lblRefManual          = new System.Windows.Forms.Label();
+        cmbReferenciaManual   = new System.Windows.Forms.ComboBox();
+        btnRefreshRefsManual  = new System.Windows.Forms.Button();
+        lblContactoManual     = new System.Windows.Forms.Label();
+        cmbContactoManual     = new System.Windows.Forms.ComboBox();
+        btnProbarContacto     = new System.Windows.Forms.Button();
+        lblSemiAutoResult     = new System.Windows.Forms.Label();
+
         grpReset        = new System.Windows.Forms.GroupBox();
         btnReset        = new System.Windows.Forms.Button();
 
@@ -557,8 +567,56 @@ partial class ManualControlPanel
               lblBoardRef, txtBoardRef, lblMuestras, nudMuestras, lblRetardo, nudRetardo,
               btnSendBoardConfig });
 
-        // ═══════════════════════════════════════════════════════════════════
-        // grpReset
+        // ═══════════════════════════════════════════════════════════════════        // grpSemiAuto  (elegir modelo → envía config "I"  +  probar un solo contacto)
+        // ═════════════════════════════════════════════════════════════════════════
+        grpSemiAuto.Text    = "Semiautomático – probar un contacto";
+        grpSemiAuto.Dock    = System.Windows.Forms.DockStyle.Top;
+        grpSemiAuto.Height  = 172;
+        grpSemiAuto.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
+        lblRefManual.Text     = "Modelo:";
+        lblRefManual.AutoSize = true;
+        lblRefManual.Location = new System.Drawing.Point(6, 26);
+        lblRefManual.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        cmbReferenciaManual.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+        cmbReferenciaManual.Location      = new System.Drawing.Point(90, 22);
+        cmbReferenciaManual.Size          = new System.Drawing.Size(280, 24);
+
+        btnRefreshRefsManual.Text     = "🔄";
+        btnRefreshRefsManual.Location = new System.Drawing.Point(378, 21);
+        btnRefreshRefsManual.Size     = new System.Drawing.Size(28, 26);
+        btnRefreshRefsManual.UseVisualStyleBackColor = true;
+        btnRefreshRefsManual.Tag      = "native";
+
+        lblContactoManual.Text     = "Contacto:";
+        lblContactoManual.AutoSize = true;
+        lblContactoManual.Location = new System.Drawing.Point(6, 58);
+        lblContactoManual.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
+
+        cmbContactoManual.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+        cmbContactoManual.Location      = new System.Drawing.Point(90, 54);
+        cmbContactoManual.Size          = new System.Drawing.Size(180, 24);
+
+        btnProbarContacto.Text      = "▶ Probar contacto (R + Cortocircuito)";
+        btnProbarContacto.Location  = new System.Drawing.Point(6, 90);
+        btnProbarContacto.Size      = new System.Drawing.Size(300, 30);
+        btnProbarContacto.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+        btnProbarContacto.BackColor = System.Drawing.Color.FromArgb(0, 153, 76);
+        btnProbarContacto.ForeColor = System.Drawing.Color.White;
+        btnProbarContacto.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
+        lblSemiAutoResult.Text      = "Resultado: —";
+        lblSemiAutoResult.AutoSize  = true;
+        lblSemiAutoResult.Location  = new System.Drawing.Point(6, 130);
+        lblSemiAutoResult.Font      = new System.Drawing.Font("Consolas", 10f, System.Drawing.FontStyle.Bold);
+        lblSemiAutoResult.ForeColor = System.Drawing.Color.FromArgb(80, 80, 80);
+
+        grpSemiAuto.Controls.AddRange(new System.Windows.Forms.Control[]
+            { lblRefManual, cmbReferenciaManual, btnRefreshRefsManual,
+              lblContactoManual, cmbContactoManual, btnProbarContacto, lblSemiAutoResult });
+
+        // ═════════════════════════════════════════════════════════════════════════        // grpReset
         // ═══════════════════════════════════════════════════════════════════
         grpReset.Text    = "Q – Reset";
         grpReset.Dock    = System.Windows.Forms.DockStyle.Top;
@@ -579,6 +637,7 @@ partial class ManualControlPanel
         pnlRight.Controls.Add(grpReset);
         pnlRight.Controls.Add(grpBoardConfig);
         pnlRight.Controls.Add(grpAnalog);
+        pnlRight.Controls.Add(grpSemiAuto);
 
         // ═══════════════════════════════════════════════════════════════════
         // grpLog
@@ -729,6 +788,16 @@ partial class ManualControlPanel
     private System.Windows.Forms.Label           lblRetardo;
     private System.Windows.Forms.NumericUpDown   nudRetardo;
     private System.Windows.Forms.Button          btnSendBoardConfig;
+
+    // ── Semiautomático ────────────────────────────────────────────────────────
+    private System.Windows.Forms.GroupBox   grpSemiAuto;
+    private System.Windows.Forms.Label      lblRefManual;
+    private System.Windows.Forms.ComboBox   cmbReferenciaManual;
+    private System.Windows.Forms.Button     btnRefreshRefsManual;
+    private System.Windows.Forms.Label      lblContactoManual;
+    private System.Windows.Forms.ComboBox   cmbContactoManual;
+    private System.Windows.Forms.Button     btnProbarContacto;
+    private System.Windows.Forms.Label      lblSemiAutoResult;
 
     // ── Reset ─────────────────────────────────────────────────────────────────
     private System.Windows.Forms.GroupBox   grpReset;

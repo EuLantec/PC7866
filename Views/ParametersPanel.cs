@@ -233,12 +233,15 @@ public partial class ParametersPanel : UserControl
         if (MessageBox.Show($"¿Eliminar referencia '{_referenciaActual.ReferenciaNombre}'?",
             "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
-        await _repository.SetReferenciaActivaAsync(_referenciaActual.Id, false);
+        await _repository.DeleteReferenciaAsync(_referenciaActual.Id);
         _referenciaActual = null;
         await LoadReferenciasAsync();
         gridParametros.Rows.Clear();
         ClearParamForm();
         picPreview.Invalidate();
+
+        MessageBox.Show("Referencia borrada correctamente.", "OK",
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void BtnCargarImagen_Click(object? sender, EventArgs e)
