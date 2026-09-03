@@ -14,6 +14,7 @@ public interface ITestRepository : IDisposable
     Task<int>  InsertReferenciaAsync(Referencia referencia);
     Task       UpdateReferenciaAsync(Referencia referencia);
     Task       SetReferenciaActivaAsync(int id, bool activa);
+    Task       DeleteReferenciaAsync(int id);
 
     // ── ParametrosEnsayo ─────────────────────────────────────────────────────
     Task<IEnumerable<ParametroEnsayo>> GetParametrosByReferenciaAsync(int referenciaId);
