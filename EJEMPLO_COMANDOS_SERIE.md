@@ -2,6 +2,8 @@
 
 Ejemplo con una referencia de solo **5 pasos** (`NPasoEnsayo` 1-5), `NumMcps = 2` (chips `0` y `1`, direcciones I2C 0x20/0x21), para ver exactamente qué comandos manda `RunningState` en cada paso.
 
+En el mapa de la referencia, las cinco bolas se colocan con `PosX`/`PosY` y muestran dentro el valor de `Contacto` (`Pin1` ... `Pin5`). El texto del mapa es independiente del número de paso y admite nombres de hasta cuatro caracteres, como `X-XX`.
+
 El ensayo automático es **punto a punto**: primero se pone toda la placa a 0V y luego, por cada paso, se mide su resistencia, se comprueba su cortocircuito y se restaura ese paso antes de continuar con el siguiente (no hay dos pasadas globales).
 
 ## Datos de partida (ParametroEnsayo)

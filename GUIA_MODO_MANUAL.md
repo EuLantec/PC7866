@@ -57,6 +57,8 @@ Grupo **Analógica**: el canal (0-3) se elige en el desplegable **Canal**.
 
 Esta es la misma fórmula (y la misma secuencia F0-F3) que usa el modo automático para evaluar cada paso del ensayo.
 
+El mapa de imagen y las bolas con el nombre de cada contacto pertenecen a la configuración de referencias y al modo automático; el modo manual trabaja directamente con comandos y no carga mapas.
+
 ## 7. Configuración de placa (I)
 
 Grupo **Config. placa**: envía la trama `I` con la configuración que luego usará el modo automático para cada referencia: **nº de MCP** activos (0-6), posición de pin (0-15, o vacío/libre) de **INH1-INH4**, **referencia** de placa (texto, informativo), **muestras** para el promedio analógico y **retardo** (ms) antes de leer tras un `F`/`R`. El botón **Enviar** construye y envía `I<numMcps><inh1><inh2><inh3><inh4><referencia:7><muestras:2><retardo:3>`.
