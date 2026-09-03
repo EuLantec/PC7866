@@ -407,7 +407,7 @@ public partial class AutomaticTestPanel : UserControl
         var g = e.Graphics;
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-        const int   R    = 10;
+        const int   R    = 18;
         const float MaxC = 4000f;
 
         RectangleF imgRect = GetImageRect(picReferencia);
@@ -432,9 +432,7 @@ public partial class AutomaticTestPanel : UserControl
             using var brushTxt = new SolidBrush(Color.White);
             var label = p.NombreContacto;
             var sz    = g.MeasureString(label, fnt);
-            g.FillRectangle(Brushes.DimGray, cx + R + 2, cy - sz.Height / 2 - 1,
-                sz.Width + 4, sz.Height + 2);
-            g.DrawString(label, fnt, brushTxt, cx + R + 4, cy - sz.Height / 2);
+            g.DrawString(label, fnt, brushTxt, cx - sz.Width / 2, cy - sz.Height / 2);
         }
     }
 

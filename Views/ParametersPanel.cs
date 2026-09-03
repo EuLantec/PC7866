@@ -644,8 +644,8 @@ public partial class ParametersPanel : UserControl
         var g = e.Graphics;
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-        const int R       = 7;   // radio del punto seleccionado
-        const int R_otros = 5;   // radio de puntos del resto de pasos
+        const int R       = 16;  // radio del punto seleccionado
+        const int R_otros = 14;  // radio de puntos del resto de pasos
 
         // ── Dibujar todos los puntos en gris ─────────────────────────────
         int selectedId = 0;
@@ -673,9 +673,7 @@ public partial class ParametersPanel : UserControl
             using var brushTxt = new SolidBrush(Color.White);
             var label = contacto;
             var sz    = g.MeasureString(label, fnt);
-            g.FillRectangle(Brushes.DimGray, cp.X + R_otros + 2, cp.Y - sz.Height / 2 - 1,
-                sz.Width + 4, sz.Height + 2);
-            g.DrawString(label, fnt, brushTxt, cp.X + R_otros + 4, cp.Y - sz.Height / 2);
+            g.DrawString(label, fnt, brushTxt, cp.X - sz.Width / 2, cp.Y - sz.Height / 2);
         }
 
         // ── Dibujar el punto seleccionado en rojo ─────────────────────────
@@ -702,10 +700,8 @@ public partial class ParametersPanel : UserControl
         if (labelSel.Length == 0) return;
         var szSel    = g.MeasureString(labelSel, fntSel);
         // Fondo negro semitransparente detrás del nombre
-        g.FillRectangle(new SolidBrush(Color.FromArgb(140, Color.Black)),
-            selPt.X + R, selPt.Y - szSel.Height / 2 - 1, szSel.Width + 2, szSel.Height + 2);
         g.DrawString(labelSel, fntSel, Brushes.White,
-            selPt.X + R + 1, selPt.Y - szSel.Height / 2);
+            selPt.X - szSel.Width / 2, selPt.Y - szSel.Height / 2);
     }
 
     private void PicPreview_MouseDown(object? sender, MouseEventArgs e)
