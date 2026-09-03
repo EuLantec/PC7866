@@ -2,6 +2,7 @@ using PC7866.Configuration;
 using PC7866.Models;
 using PC7866.Services.Database;
 using PC7866.Services.SerialCommunication;
+using PC7866.Services.StateMachine;
 using PC7866.Utils;
 using System.Globalization;
 
@@ -17,7 +18,13 @@ public partial class ManualControlPanel : UserControl
     private readonly bool               _ownsSerialPort;
     private readonly CommandParser      _parser;
     private readonly CheckBox[]         _outputChecks = new CheckBox[Pc7866Commands.OutputCount];
-    private ITestRepository?            _repository;
+
+    // ── Semiautomático (probar un solo contacto, sin informe) ─────────────────
+    private readonly TestStateMachine    _stateMachine = new();
+    private ITestRepository?             _repository;
+    private Referencia?                  _referenciaActual;
+    private List<ParametroEnsayo>        _parametrosManual = new();
+    private CancellationTokenSource?     _semiAutoCts;
 
     public ManualControlPanel(ISerialPortService? serialPort = null)
     {
@@ -27,7 +34,6 @@ public partial class ManualControlPanel : UserControl
         _parser     = new CommandParser();
         InitializeControls();
         AttachEventHandlers();
-        _ = TryInitRepositoryAsync();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -56,66 +62,7 @@ public partial class ManualControlPanel : UserControl
 
         BuildOutputMatrix();
         SetConnectedState(_serialPort.IsOpen);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Base de datos
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private async Task TryInitRepositoryAsync()
-    {
-        try
-        {
-            _repository = new TestRepository(AppSettings.Instance.GetConnectionString());
-            await _repository.TestConnectionAsync();
-        }
-        catch
-        {
-            _repository = null;
-        }
-    }
-
-    private async Task SaveFullTestResultsAsync(List<FullTestRow> rows)
-    {
-        if (_repository is null) return;
-        try
-        {
-            var resultado = new Resultado
-            {
-                ReferenciaId    = null,
-                FechaPrueba     = DateTime.Now,
-                ResultadoGlobal = true,
-                Operario        = string.Empty,
-                Lote            = string.Empty
-            };
-            int resultadoId = await _repository.InsertResultadoAsync(resultado);
-
-            foreach (var row in rows)
-            {
-                float rMedida = double.IsInfinity(row.Resistance) || double.IsNaN(row.Resistance)
-                    ? -1f
-                    : (float)row.Resistance;
-
-                var detalle = new ResultadoDetalle
-                {
-                    ResultadoId       = resultadoId,
-                    ParametroEnsayoId = null,
-                    NombreContacto    = $"S{row.Output:D2}",
-                    NPasoEnsayo       = row.Output,
-                    ResistenciaMedida = rMedida,
-                    ValorRawVain      = row.Ain1Raw,
-                    ValorRawVe        = row.Ain3Raw,
-                    Resultado         = true,
-                    Timestamp         = DateTime.Now
-                };
-                await _repository.InsertDetalleAsync(detalle);
-            }
-            AddLog($"💾 Test guardado en BD (id={resultadoId})", LogLevel.Info);
-        }
-        catch (Exception ex)
-        {
-            AddLog($"⚠️ No se pudo guardar en BD: {ex.Message}", LogLevel.Warning);
-        }
+        _ = TryInitDatabaseAsync();
     }
 
     private void LoadAvailablePorts()
@@ -207,7 +154,6 @@ public partial class ManualControlPanel : UserControl
         // Salidas
         btnOutputsAllOn.Click  += (_, _) => SetAllOutputs(true);
         btnOutputsAllOff.Click += (_, _) => SetAllOutputs(false);
-        btnFullTest.Click      += async (_, _) => await RunFullTestAsync();
 
         // Lectura analógica
         btnReadRaw.Click         += BtnReadRaw_Click;
@@ -216,6 +162,11 @@ public partial class ManualControlPanel : UserControl
 
         // I – configuración de placa
         btnSendBoardConfig.Click += async (_, _) => await SendBoardConfigAsync();
+
+        // Semiautomático – elegir modelo (envía la config) + probar un solo contacto
+        btnRefreshRefsManual.Click += async (_, _) => await LoadReferenciasAsync();
+        cmbReferenciaManual.SelectedIndexChanged += async (_, _) => await OnReferenciaManualChangedAsync();
+        btnProbarContacto.Click += BtnProbarContacto_Click;
 
         // Reset
         btnReset.Click += async (_, _) =>
@@ -270,7 +221,6 @@ public partial class ManualControlPanel : UserControl
         grpAnalog.Enabled       = connected;
         grpBoardConfig.Enabled  = connected;
         grpReset.Enabled        = connected;
-        btnFullTest.Enabled     = connected;
 
         if (connected) AddLog($"✅ Conectado: {_serialPort.CurrentPort}", LogLevel.Info);
     }
@@ -407,6 +357,142 @@ public partial class ManualControlPanel : UserControl
         return int.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int v) ? v : null;
     }
 
+    private static string FormatInhBox(int? pos) => pos.HasValue ? pos.Value.ToString("X1") : "N";
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Semiautomático – elegir modelo (Referencia) + probar un solo contacto
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async Task TryInitDatabaseAsync()
+    {
+        try
+        {
+            _repository = new TestRepository(AppSettings.Instance.GetConnectionString());
+            await _repository.TestConnectionAsync();
+            await _repository.InitializeDatabaseAsync();
+            await LoadReferenciasAsync();
+        }
+        catch (Exception ex)
+        {
+            AddLog($"⚠️ Error BD: {ex.Message}", LogLevel.Warning);
+        }
+    }
+
+    private async Task LoadReferenciasAsync()
+    {
+        if (_repository is null) return;
+        try
+        {
+            var refs = await _repository.GetAllReferenciasAsync();
+            cmbReferenciaManual.Items.Clear();
+            foreach (var r in refs) cmbReferenciaManual.Items.Add(r);
+            cmbReferenciaManual.DisplayMember = "ReferenciaNombre";
+            if (cmbReferenciaManual.Items.Count > 0) cmbReferenciaManual.SelectedIndex = 0;
+            AddLog($"📋 {cmbReferenciaManual.Items.Count} modelos cargados", LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            AddLog($"❌ Error cargando modelos: {ex.Message}", LogLevel.Error);
+        }
+    }
+
+    /// <summary>Al elegir el modelo: carga sus contactos y envía la configuración de placa (comando I).</summary>
+    private async Task OnReferenciaManualChangedAsync()
+    {
+        if (cmbReferenciaManual.SelectedItem is not Referencia ref_ || _repository is null) return;
+        _referenciaActual = ref_;
+        _parametrosManual = (await _repository.GetParametrosByReferenciaAsync(ref_.Id))
+            .OrderBy(p => p.NPasoEnsayo).ToList();
+
+        cmbContactoManual.Items.Clear();
+        foreach (var p in _parametrosManual) cmbContactoManual.Items.Add(p);
+        cmbContactoManual.DisplayMember = "NombreContacto";
+        if (cmbContactoManual.Items.Count > 0) cmbContactoManual.SelectedIndex = 0;
+
+        nudNumMcps.Value  = Math.Clamp(ref_.NumMcps, nudNumMcps.Minimum, nudNumMcps.Maximum);
+        txtInh1.Text      = FormatInhBox(ref_.Inh1Pos);
+        txtInh2.Text      = FormatInhBox(ref_.Inh2Pos);
+        txtInh3.Text      = FormatInhBox(ref_.Inh3Pos);
+        txtInh4.Text      = FormatInhBox(ref_.Inh4Pos);
+        txtBoardRef.Text  = ref_.ModeloPlaca;
+        nudMuestras.Value = Math.Clamp(ref_.Muestras, nudMuestras.Minimum, nudMuestras.Maximum);
+        nudRetardo.Value  = Math.Clamp(ref_.RetardoMs, (int)nudRetardo.Minimum, (int)nudRetardo.Maximum);
+
+        AddLog($"📝 Modelo: {ref_.ReferenciaNombre} — {_parametrosManual.Count} contactos", LogLevel.Info);
+        await SendBoardConfigAsync();
+    }
+
+    /// <summary>Ejecuta el ensayo (resistencia + cortocircuito) de un único contacto, sin guardar informe en BD.</summary>
+    private async void BtnProbarContacto_Click(object? sender, EventArgs e)
+    {
+        if (_referenciaActual is null || cmbContactoManual.SelectedItem is not ParametroEnsayo paso)
+        {
+            AddLog("⚠️ Seleccione un modelo y un contacto", LogLevel.Warning);
+            return;
+        }
+        if (!_serialPort.IsOpen)
+        {
+            AddLog("⚠️ Puerto no abierto", LogLevel.Warning);
+            return;
+        }
+
+        btnProbarContacto.Enabled  = false;
+        lblSemiAutoResult.Text      = $"Probando {paso.NombreContacto}…";
+        lblSemiAutoResult.ForeColor = Color.Gray;
+
+        _semiAutoCts = new CancellationTokenSource();
+        try
+        {
+            var resultado = await _stateMachine.RunAsync(
+                _referenciaActual,
+                new List<ParametroEnsayo> { paso },
+                "Manual", string.Empty,
+                _serialPort, _parser,
+                progress: null,
+                stepCompleted: null,
+                AppSettings.Instance.DefaultTimeout,
+                _semiAutoCts.Token,
+                cmd => AddLog(cmd, LogLevel.Debug));
+
+            var detalle = resultado.Detalles.FirstOrDefault();
+            if (detalle is null)
+            {
+                lblSemiAutoResult.Text      = "⚠️ Sin resultado (revisar log)";
+                lblSemiAutoResult.ForeColor = Color.Gray;
+            }
+            else
+            {
+                string rStr = detalle.ResistenciaMedida < 0f ? "∞" : detalle.ResistenciaMedida.ToString("F2");
+                lblSemiAutoResult.Text = $"{paso.NombreContacto}: {detalle.Estado}   R = {rStr} Ω";
+                lblSemiAutoResult.ForeColor = detalle.Estado switch
+                {
+                    EstadoMedicion.Ok            => Color.FromArgb(0, 140, 60),
+                    EstadoMedicion.Nok           => Color.FromArgb(200, 40, 40),
+                    EstadoMedicion.Cortocircuito => Color.FromArgb(230, 120, 0),
+                    EstadoMedicion.Abierto       => Color.FromArgb(0, 90, 200),
+                    _ => Color.Black
+                };
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            lblSemiAutoResult.Text      = "⛔ Cancelado";
+            lblSemiAutoResult.ForeColor = Color.Gray;
+        }
+        catch (Exception ex)
+        {
+            AddLog($"❌ {ex.Message}", LogLevel.Error);
+            lblSemiAutoResult.Text      = "❌ Error";
+            lblSemiAutoResult.ForeColor = Color.Red;
+        }
+        finally
+        {
+            btnProbarContacto.Enabled = true;
+            _semiAutoCts?.Dispose();
+            _semiAutoCts = null;
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Comunicación genérica
     // ─────────────────────────────────────────────────────────────────────────
@@ -471,103 +557,6 @@ public partial class ManualControlPanel : UserControl
         => double.IsInfinity(r) ? "∞" : $"{r:F2}";
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Test completo manual (todas las salidas configuradas)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private async Task RunFullTestAsync()
-    {
-        if (!_serialPort.IsOpen)
-        {
-            AddLog("⚠️ Puerto no abierto", LogLevel.Warning);
-            return;
-        }
-
-        btnFullTest.Enabled = false;
-        int numMcps = (int)nudNumMcps.Value;
-        int totalOutputs = numMcps * Pc7866Commands.McpPinCount;
-        AddLog($"🔍 Iniciando test completo ({totalOutputs} salidas, {numMcps} MCP)…", LogLevel.Info);
-
-        var results = new List<FullTestRow>(totalOutputs);
-
-        for (int i = 0; i < totalOutputs; i++)
-        {
-            int chip = i / Pc7866Commands.McpPinCount;
-            int pin  = i % Pc7866Commands.McpPinCount;
-            ushort word = (ushort)(1 << pin);
-
-            string outCmd = Pc7866Commands.BuildOutputCommand(chip, word);
-            AddLog($"▶️  Salida {i + 1:D2} (MCP {chip}, pin {pin}) → {outCmd}", LogLevel.Info);
-            await _serialPort.SendCommandAsync(outCmd, AppSettings.Instance.DefaultTimeout);
-
-            await Task.Delay(3);
-
-            var row = new FullTestRow { Output = i + 1 };
-
-            // Leer RAW (4 canales)
-            int?[] rawVals = new int?[4];
-            for (int ch = 0; ch < 4; ch++)
-            {
-                string rawResp = await _serialPort.SendCommandAsync(
-                    Pc7866Commands.ReadRaw(ch), AppSettings.Instance.DefaultTimeout);
-                rawVals[ch] = _parser.ParseRawValue(rawResp);
-            }
-            if (rawVals.All(v => v is not null))
-            {
-                row.Ain1Raw = rawVals[0]!.Value;
-                row.Ain2Raw = rawVals[1]!.Value;
-                row.Ain3Raw = rawVals[2]!.Value;
-                row.Ain4Raw = rawVals[3]!.Value;
-            }
-            else
-            {
-                row.Error = "RAW: respuesta inesperada en alguno de los canales";
-            }
-
-            // Leer Filtrado (4 canales)
-            float?[] filtVals = new float?[4];
-            for (int ch = 0; ch < 4; ch++)
-            {
-                string filtResp = await _serialPort.SendCommandAsync(
-                    Pc7866Commands.ReadFiltered(ch), AppSettings.Instance.DefaultTimeout);
-                filtVals[ch] = _parser.ParseFilteredValue(filtResp);
-            }
-            if (filtVals.All(v => v is not null))
-            {
-                row.Ain1Filt = (int)filtVals[0]!.Value;
-                row.Ain2Filt = (int)filtVals[1]!.Value;
-                row.Ain3Filt = (int)filtVals[2]!.Value;
-                row.Ain4Filt = (int)filtVals[3]!.Value;
-
-                row.Vain = filtVals[0]!.Value - filtVals[1]!.Value;
-                row.Ve   = filtVals[2]!.Value - filtVals[3]!.Value;
-                double denom = row.Ve - row.Vain;
-                row.Resistance = CalcResistance(row.Vain, denom);
-            }
-            else if (string.IsNullOrEmpty(row.Error))
-            {
-                row.Error = "FILT: respuesta inesperada en alguno de los canales";
-            }
-
-            results.Add(row);
-            AddLog($"   S{i + 1:D2}: Vain={row.Vain:F4}V  Ve={row.Ve:F4}V  R={FormatResistance(row.Resistance)} Ω", LogLevel.Info);
-        }
-
-        // Apagar todas las salidas al terminar
-        for (int chip = 0; chip < numMcps; chip++)
-            await _serialPort.SendCommandAsync(Pc7866Commands.BuildOutputCommand(chip, 0), AppSettings.Instance.DefaultTimeout);
-        foreach (var chk in _outputChecks) { chk.CheckedChanged -= OutputCheck_Changed; chk.Checked = false; chk.CheckedChanged += OutputCheck_Changed; }
-        lblOutputMask.Text = "Trama:  —";
-
-        AddLog($"✅ Test completo finalizado. {results.Count} salidas medidas.", LogLevel.Info);
-        await SaveFullTestResultsAsync(results);
-        btnFullTest.Enabled = true;
-
-        // Mostrar informe
-        using var form = new FullTestReportForm(results);
-        form.ShowDialog(ParentForm as Form ?? (IWin32Window)this);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
     // Log
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -583,11 +572,13 @@ public partial class ManualControlPanel : UserControl
 
     protected override void OnHandleDestroyed(EventArgs e)
     {
+        _semiAutoCts?.Cancel();
         if (_ownsSerialPort)
         {
             if (_serialPort.IsOpen) _serialPort.Close();
             _serialPort.Dispose();
         }
+        _repository?.Dispose();
         base.OnHandleDestroyed(e);
     }
 }

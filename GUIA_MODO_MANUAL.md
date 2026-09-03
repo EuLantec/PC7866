@@ -1,6 +1,6 @@
 # Guía de uso — Modo Manual
 
-El modo **Manual** permite operar el banco PC7866 comando a comando: diagnosticar hardware, configurar la dirección de pines de los MCP23017, seleccionar pista de medida, activar salidas individuales, leer entradas analógicas (RAW/filtradas), enviar la configuración de placa y ejecutar un test completo de las 96 salidas. Está pensado para pruebas puntuales, calibración y diagnóstico de hardware, sin necesidad de referencias ni parámetros de ensayo guardados en BD.
+El modo **Manual** permite operar el banco PC7866 comando a comando: diagnosticar hardware, configurar la dirección de pines de los MCP23017, seleccionar pista de medida, activar salidas individuales, leer entradas analógicas (RAW/filtradas) y enviar la configuración de placa. Está pensado para pruebas puntuales, calibración y diagnóstico de hardware, sin necesidad de referencias ni parámetros de ensayo guardados en BD.
 
 Se accede desde el menú superior **Manual**.
 
@@ -42,7 +42,6 @@ Grupo **Salidas**: representa hasta 96 salidas (6 × MCP23017 de 16 bits cada un
 
 - Marca o desmarca cualquier checkbox para activar/desactivar esa salida individual. Cada cambio envía automáticamente una trama `S<chip><estados:4hex>` solo para el chip afectado (no hace falta reenviar los demás chips).
 - **Todas ON** / **Todas OFF**: activan o desactivan las 96 salidas de una vez (una trama `S` por cada uno de los 6 chips).
-- **Test completo**: recorre las 96 salidas una a una (activa solo esa salida, lee `F0..F3`, calcula la resistencia) y muestra el resultado de cada una en el log. Útil para verificar todo el banco sin tener que ir salida por salida a mano.
 
 ## 6. Lectura analógica y cálculo de resistencia
 
@@ -58,6 +57,8 @@ Grupo **Analógica**: el canal (0-3) se elige en el desplegable **Canal**.
 
 Esta es la misma fórmula (y la misma secuencia F0-F3) que usa el modo automático para evaluar cada paso del ensayo.
 
+El mapa de imagen y las bolas con el nombre de cada contacto pertenecen a la configuración de referencias y al modo automático; el modo manual trabaja directamente con comandos y no carga mapas.
+
 ## 7. Configuración de placa (I)
 
 Grupo **Config. placa**: envía la trama `I` con la configuración que luego usará el modo automático para cada referencia: **nº de MCP** activos (0-6), posición de pin (0-15, o vacío/libre) de **INH1-INH4**, **referencia** de placa (texto, informativo), **muestras** para el promedio analógico y **retardo** (ms) antes de leer tras un `F`/`R`. El botón **Enviar** construye y envía `I<numMcps><inh1><inh2><inh3><inh4><referencia:7><muestras:2><retardo:3>`.
@@ -72,5 +73,4 @@ El panel inferior muestra todas las tramas enviadas (`➡️ TX`) y recibidas (`
 
 ## Notas
 
-- El resultado del **Test completo** se intenta guardar en BD (tabla `resultados`/`resultados_detalle`) sin referencia asociada (`ReferenciaId = null`), solo si hay conexión de BD configurada y disponible; si falla, se registra un aviso en el log y la operación no se interrumpe.
 - El modo manual no requiere referencias ni parámetros de ensayo — para pruebas de producción con criterios de OK/NOK por referencia, usa el [modo automático](GUIA_MODO_AUTOMATICO.md), que además explica en detalle técnico paso a paso la secuencia interna (`I` → `P` → `S` → `F0..F3` → cálculo de R → clasificación).

@@ -37,10 +37,10 @@ public class Referencia
     public int? Inh4Pos  { get; set; }
 
     /// <summary>Nº de muestras para el promedio analógico del canal 0 (0-99).</summary>
-    public int  Muestras { get; set; } = 10;
+    public int  Muestras { get; set; } = 1;
 
     /// <summary>Retardo en ms antes de iniciar la lectura analógica tras un comando F o R.</summary>
-    public int  RetardoMs { get; set; } = 20;
+    public int  RetardoMs { get; set; } = 0;
 
     /// <summary>Parámetros de ensayo asociados (cargados bajo demanda).</summary>
     public List<ParametroEnsayo> Parametros { get; set; } = new();

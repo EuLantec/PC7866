@@ -10,7 +10,6 @@ PC7866/
 │   ├── Resultado.cs                 # Cabecera de un ensayo
 │   ├── ResultadoDetalle.cs          # Resultado por paso + EstadoMedicion
 │   ├── Pc7866Commands.cs            # Builders de tramas del protocolo serie
-│   ├── FullTestRow.cs               # Fila del test completo (modo manual)
 │   └── ...                          # TestParameters, MeasurementResult, DeviceResponse, etc.
 │
 ├── Services/
@@ -33,7 +32,7 @@ PC7866/
 │   ├── ParametersPanel.cs           # Referencias y parámetros de ensayo
 │   ├── ReportsPanel.cs              # Informes / histórico
 │   ├── ConfigurationForm.cs         # Configuración (puerto, BD, opciones)
-│   └── ...                          # FullTestReportForm, ResultadoDetalleForm
+│   └── ...                          # ResultadoDetalleForm
 │
 ├── Utils/
 │   ├── Logger.cs                    # Sistema de logging
@@ -229,6 +228,7 @@ Los módulos principales están implementados y operativos:
 - **Base de datos MariaDB** — `TestRepository` crea/asegura el esquema (`CREATE DATABASE`/`CREATE TABLE IF NOT EXISTS`) y migra columnas nuevas con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
 - **Máquina de estados** — `TestStateMachine` + estados `Initializing` → `Running` → `Completed`.
 - **Modo automático** — `AutomaticTestPanel` ejecuta el ensayo punto a punto y guarda resultados en BD.
+- **Mapa de contactos** — `ParametersPanel` y `AutomaticTestPanel` dibujan una bola por cada parámetro colocado sobre la imagen. La bola contiene `NombreContacto` y, durante el ensayo, usa el color del estado de la medición.
 - **Import/export** — parámetros de ensayo en CSV y JSON (`ParametroImportExport`).
 - **Informes** — histórico y detalle por paso (`ReportsPanel`, `ResultadoDetalleForm`), con exportación PDF.
 

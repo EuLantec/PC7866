@@ -18,12 +18,17 @@ Antes de ejecutar un ensayo automático debe existir en BD:
 1. Una **Referencia** (`Referencia`), que además de nombre/imagen guarda la **configuración de placa**: `ModeloPlaca` (modelo de 7 dígitos que se envía en el comando `I`; el nombre de la referencia puede ser cualquiera y no se usa para configurar el micro), `NumMcps` (nº de MCP23017 activos, 0-6), `Inh1Pos`..`Inh4Pos` (posición de pin 0-15 de cada inhibición, o libre elección), `Muestras` (nº de muestras para el promedio analógico) y `RetardoMs` (retardo antes de leer tras F/R).
 2. Uno o varios **ParametroEnsayo** asociados a esa referencia — un registro por contacto/paso —, cada uno con: `NombreContacto`, `NPasoEnsayo` (orden), `McpArribaChip`/`McpArribaPin` y `McpAbajoChip`/`McpAbajoPin` (selectores de excitación 5V/masa usados por el algoritmo de medición, ver más abajo), `CanalMultiplexor` (nº de pista 0-48 para el comando `P`), `ResistenciaNominal`, `Tolerancia`, `Pendiente`, `Offset` y `ResistenciaMinima` (umbral de cortocircuito por software). `Pendiente` y `Offset` forman la función lineal de calibración aplicada a la resistencia bruta calculada (ver Paso 2); `Pendiente` por defecto es `1` (sin efecto sobre el cálculo anterior).
 
+### Mapa de contactos
+
+La imagen de la referencia utiliza `PosX` y `PosY` de cada `ParametroEnsayo` para colocar una bola sobre el contacto correspondiente. El nombre mostrado dentro de la bola es `NombreContacto` (por ejemplo, `X-XX`), no el número de paso. Las bolas tienen un tamaño fijo para admitir nombres de hasta cuatro caracteres; los puntos sin posición (`PosX=0` y `PosY=0`) no se dibujan.
+
 Sin al menos un parámetro para la referencia seleccionada, el botón **Iniciar ensayo** queda deshabilitado (`UpdateStartButton`).
 
 ## Paso 0 — Conexión y selección en la UI
 
 1. El operario conecta el puerto serie (`btnConnect` → `_serialPort.Open(puerto, baudios)`).
 2. Selecciona una **Referencia** en `cmbReferencia`. Esto dispara `OnReferenciaChangedAsync`, que carga `_parametros` desde BD (`GetParametrosByReferenciaAsync`) y resetea los indicadores visuales ("dots") de la imagen a gris.
+   Cada indicador muestra dentro el `NombreContacto`; durante la ejecución cambia de color según el resultado.
 3. Rellena **Operario** (obligatorio) y **Lote** (opcional).
 4. Pulsa **Iniciar ensayo** (`BtnStartTest_Click`), que valida referencia/parámetros/operario, prepara la barra de progreso y llama a `TestStateMachine.RunAsync(...)`.
 
@@ -51,6 +56,7 @@ Por cada paso (comprobar cancelación → reportar progreso `"[i/total] NombreCo
 3. **Restaurar el paso** — "arriba" a **0V** (`S`), "abajo" de nuevo como **salida** (`M`) y a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
 4. Se dispara `StepCompleted` con el `ResultadoDetalle` final, que la UI usa para:
 - Pintar el punto (dot) de ese paso sobre la imagen: verde=Ok, rojo=Nok, naranja=Cortocircuito, azul=Abierto.
+- Mostrar dentro de la bola el nombre del contacto (`NombreContacto`).
 - Añadir una fila a la tabla de resultados con paso, contacto, resistencia medida, nominal±tolerancia y etiqueta de resultado.
 - Registrar la línea correspondiente en el log.
 

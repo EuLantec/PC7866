@@ -154,8 +154,8 @@ public partial class ParametersPanel : UserControl
         txtRefModelo.Text = string.Empty;
         chkActiva.Checked = true;
         nudRefNumMcps.Value  = PC7866.Models.Pc7866Commands.McpChipCount;
-        nudRefMuestras.Value = 10;
-        nudRefRetardo.Value  = 20;
+        nudRefMuestras.Value = 1;
+        nudRefRetardo.Value  = 0;
         txtRefInh1.Text = "N"; txtRefInh2.Text = "N"; txtRefInh3.Text = "N"; txtRefInh4.Text = "N";
         picPreview.Image  = null;
         gridParametros.Rows.Clear();
@@ -233,12 +233,15 @@ public partial class ParametersPanel : UserControl
         if (MessageBox.Show($"¿Eliminar referencia '{_referenciaActual.ReferenciaNombre}'?",
             "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
 
-        await _repository.SetReferenciaActivaAsync(_referenciaActual.Id, false);
+        await _repository.DeleteReferenciaAsync(_referenciaActual.Id);
         _referenciaActual = null;
         await LoadReferenciasAsync();
         gridParametros.Rows.Clear();
         ClearParamForm();
         picPreview.Invalidate();
+
+        MessageBox.Show("Referencia borrada correctamente.", "OK",
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void BtnCargarImagen_Click(object? sender, EventArgs e)
@@ -641,8 +644,8 @@ public partial class ParametersPanel : UserControl
         var g = e.Graphics;
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-        const int R       = 7;   // radio del punto seleccionado
-        const int R_otros = 5;   // radio de puntos del resto de pasos
+        const int R       = 16;  // radio del punto seleccionado
+        const int R_otros = 14;  // radio de puntos del resto de pasos
 
         // ── Dibujar todos los puntos en gris ─────────────────────────────
         int selectedId = 0;
@@ -658,7 +661,7 @@ public partial class ParametersPanel : UserControl
             int py = Convert.ToInt32(row.Cells["colP_PosY"].Value);
             if (px == 0 && py == 0) continue;
 
-            int paso = Convert.ToInt32(row.Cells["colP_Paso"].Value);
+            string contacto = row.Cells["colP_Contacto"].Value?.ToString() ?? string.Empty;
             var cp   = ImageToControl(px, py);
 
             using var brushGris = new SolidBrush(Color.FromArgb(180, Color.DimGray));
@@ -668,7 +671,7 @@ public partial class ParametersPanel : UserControl
 
             using var fnt  = new Font("Segoe UI", 7f, FontStyle.Bold);
             using var brushTxt = new SolidBrush(Color.White);
-            var label = paso.ToString();
+            var label = contacto;
             var sz    = g.MeasureString(label, fnt);
             g.DrawString(label, fnt, brushTxt, cp.X - sz.Width / 2, cp.Y - sz.Height / 2);
         }
@@ -691,17 +694,14 @@ public partial class ParametersPanel : UserControl
         g.DrawLine(penCruz, selPt.X - R + 3, selPt.Y, selPt.X + R - 3, selPt.Y);
         g.DrawLine(penCruz, selPt.X, selPt.Y - R + 3, selPt.X, selPt.Y + R - 3);
 
-        // Número de paso
-        int selPaso = (int)nudPaso.Value;
+        // Nombre del contacto
         using var fntSel    = new Font("Segoe UI", 8f, FontStyle.Bold);
-        using var brushNeg  = new SolidBrush(Color.Black);
-        var labelSel = selPaso.ToString();
+        var labelSel = txtContacto.Text.Trim();
+        if (labelSel.Length == 0) return;
         var szSel    = g.MeasureString(labelSel, fntSel);
-        // Fondo negro semitransparente detrás del número
-        g.FillRectangle(new SolidBrush(Color.FromArgb(140, Color.Black)),
-            selPt.X + R, selPt.Y - szSel.Height / 2 - 1, szSel.Width + 2, szSel.Height + 2);
+        // Fondo negro semitransparente detrás del nombre
         g.DrawString(labelSel, fntSel, Brushes.White,
-            selPt.X + R + 1, selPt.Y - szSel.Height / 2);
+            selPt.X - szSel.Width / 2, selPt.Y - szSel.Height / 2);
     }
 
     private void PicPreview_MouseDown(object? sender, MouseEventArgs e)
