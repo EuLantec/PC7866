@@ -59,3 +59,4 @@ $bytes = Replace-Bytes $bytes @(0xC3,0xA2,0xE2,0x82,0xAC,0xE2,0x80,0x9D) @(0xE2,
 
 [System.IO.File]::WriteAllBytes($file, $bytes)
 Write-Host "Done. Bytes: $orig -> $($bytes.Length) (reduced by $($orig - $bytes.Length))"
+

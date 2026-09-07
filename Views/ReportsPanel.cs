@@ -12,8 +12,9 @@ namespace PC7866.Views;
 public partial class ReportsPanel : UserControl
 {
     private ITestRepository?  _repository;
-    private List<Resultado>   _todos    = new();
-    private List<Referencia>  _refsList = new();
+    private List<Resultado>   _todos      = new();
+    private List<Referencia>  _refsList   = new();
+    private List<Resultado>   _filtrados  = new();
 
     public ReportsPanel()
     {
@@ -24,10 +25,11 @@ public partial class ReportsPanel : UserControl
 
     private void AttachEventHandlers()
     {
-        btnBuscar.Click     += async (_, _) => await FilterAsync();
-        btnExportCsv.Click  += BtnExportCsv_Click;
-        btnVerDetalle.Click += BtnVerDetalle_Click;
-        btnRefrescar.Click  += async (_, _) => await LoadResultadosAsync();
+        btnBuscar.Click        += async (_, _) => await FilterAsync();
+        btnExportCsv.Click     += BtnExportCsv_Click;
+        btnExportCsvGeneral.Click += BtnExportCsvGeneral_Click;
+        btnVerDetalle.Click    += BtnVerDetalle_Click;
+        btnRefrescar.Click     += async (_, _) => await LoadResultadosAsync();
 
         dtpDesde.Value = DateTime.Today.AddMonths(-1);
         dtpHasta.Value = DateTime.Today.AddDays(1);
@@ -98,6 +100,7 @@ public partial class ReportsPanel : UserControl
                 r.Lote.Contains(lote, StringComparison.OrdinalIgnoreCase));
 
         var lista = filtrados.OrderByDescending(r => r.FechaPrueba).ToList();
+        _filtrados = lista;
         PopulateGrid(lista);
         lblTotal.Text = $"Total: {lista.Count} resultados";
         await Task.CompletedTask;
@@ -162,6 +165,71 @@ public partial class ReportsPanel : UserControl
         File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
         MessageBox.Show($"Exportado:\n{dlg.FileName}", "OK",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private async void BtnExportCsvGeneral_Click(object? sender, EventArgs e)
+    {
+        if (_repository is null || _filtrados.Count == 0)
+        {
+            MessageBox.Show("No hay datos para exportar.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        using var dlg = new SaveFileDialog
+        {
+            Filter   = "CSV|*.csv",
+            FileName = $"InformeGeneral_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+            Title    = "Guardar informe general CSV"
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        Cursor = Cursors.WaitCursor;
+        btnExportCsvGeneral.Enabled = false;
+        try
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("ID_Resultado;Fecha;Referencia;Operario;Lote;Resultado;Paso;Contacto;R_medida_Ohm;RAW_Vain;RAW_Ve;Resultado_Paso;Timestamp");
+
+            foreach (var r in _filtrados)
+            {
+                string refNombre = _refsList
+                    .FirstOrDefault(x => x.Id == r.ReferenciaId)?.ReferenciaNombre
+                    ?? (r.ReferenciaId.HasValue ? r.ReferenciaId.ToString()! : "Manual");
+                string resStr = r.ResultadoGlobal ? "BUENO" : "MALO";
+                string fecha  = r.FechaPrueba.ToString("dd/MM/yyyy HH:mm:ss");
+
+                var detalles = (await _repository.GetDetallesByResultadoAsync(r.Id)).ToList();
+                if (detalles.Count == 0)
+                {
+                    sb.AppendLine(string.Join(";",
+                        r.Id, fecha, refNombre, r.Operario, r.Lote, resStr,
+                        "", "", "", "", "", "", ""));
+                    continue;
+                }
+
+                foreach (var d in detalles)
+                {
+                    string rValue = d.ResistenciaMedida < 0
+                        ? "∞"
+                        : d.ResistenciaMedida.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+                    sb.AppendLine(string.Join(";",
+                        r.Id, fecha, refNombre, r.Operario, r.Lote, resStr,
+                        d.NPasoEnsayo, d.NombreContacto, rValue, d.ValorRawVain, d.ValorRawVe,
+                        d.Resultado ? "OK" : "NOK",
+                        d.Timestamp.ToString("dd/MM/yyyy HH:mm:ss.fff")));
+                }
+            }
+
+            File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
+            MessageBox.Show($"Exportado:\n{dlg.FileName}", "OK",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        finally
+        {
+            Cursor = Cursors.Default;
+            btnExportCsvGeneral.Enabled = true;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

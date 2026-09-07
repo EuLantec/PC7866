@@ -42,6 +42,7 @@ partial class ReportsPanel
         pnlBottom      = new Panel();
         lblTotal       = new Label();
         btnVerDetalle  = new Button();
+        btnExportCsvGeneral = new Button();
         btnExportCsv   = new Button();
 
         grpFiltros.SuspendLayout();
@@ -125,6 +126,13 @@ partial class ReportsPanel
         btnVerDetalle.Location = new Point(900, 8); btnVerDetalle.Size = new Size(130, 28);
         btnVerDetalle.Font = new Font("Segoe UI", 9f);
 
+        btnExportCsvGeneral.Text      = "📊 Informe general (CSV)";
+        btnExportCsvGeneral.Location  = new Point(700, 8); btnExportCsvGeneral.Size = new Size(190, 28);
+        btnExportCsvGeneral.Font      = new Font("Segoe UI", 9f, FontStyle.Bold);
+        btnExportCsvGeneral.BackColor = Color.FromArgb(0, 102, 204);
+        btnExportCsvGeneral.ForeColor = Color.White;
+        btnExportCsvGeneral.FlatStyle = FlatStyle.Flat;
+
         btnExportCsv.Text      = "💾 Exportar CSV";
         btnExportCsv.Location  = new Point(1038, 8); btnExportCsv.Size = new Size(140, 28);
         btnExportCsv.Font      = new Font("Segoe UI", 9f, FontStyle.Bold);
@@ -132,7 +140,7 @@ partial class ReportsPanel
         btnExportCsv.ForeColor = Color.White;
         btnExportCsv.FlatStyle = FlatStyle.Flat;
 
-        pnlBottom.Controls.AddRange(new Control[] { lblTotal, btnVerDetalle, btnExportCsv });
+        pnlBottom.Controls.AddRange(new Control[] { lblTotal, btnVerDetalle, btnExportCsvGeneral, btnExportCsv });
 
         // ── ReportsPanel ──────────────────────────────────────────────────────
         AutoScaleDimensions = new SizeF(96f, 96f);
@@ -179,5 +187,6 @@ partial class ReportsPanel
     private Panel  pnlBottom;
     private Label  lblTotal;
     private Button btnVerDetalle;
+    private Button btnExportCsvGeneral;
     private Button btnExportCsv;
 }
