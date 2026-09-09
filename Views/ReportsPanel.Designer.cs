@@ -32,6 +32,7 @@ partial class ReportsPanel
 
         grpResultados  = new GroupBox();
         gridResultados = new DataGridView();
+        colR_Check     = new DataGridViewCheckBoxColumn();
         colR_Id        = new DataGridViewTextBoxColumn();
         colR_Fecha     = new DataGridViewTextBoxColumn();
         colR_Ref       = new DataGridViewTextBoxColumn();
@@ -41,6 +42,7 @@ partial class ReportsPanel
 
         pnlBottom      = new Panel();
         lblTotal       = new Label();
+        chkSeleccionarTodos = new CheckBox();
         btnVerDetalle  = new Button();
         btnExportCsvGeneral = new Button();
         btnExportCsv   = new Button();
@@ -99,19 +101,20 @@ partial class ReportsPanel
         gridResultados.Dock = DockStyle.Fill;
         gridResultados.AllowUserToAddRows    = false;
         gridResultados.AllowUserToDeleteRows = false;
-        gridResultados.ReadOnly              = true;
+        gridResultados.ReadOnly              = false;
         gridResultados.SelectionMode         = DataGridViewSelectionMode.FullRowSelect;
         gridResultados.RowHeadersVisible     = false;
         gridResultados.AutoSizeColumnsMode   = DataGridViewAutoSizeColumnsMode.Fill;
         gridResultados.Font = new Font("Segoe UI", 9f);
 
-        colR_Id.HeaderText = "ID";           colR_Id.FillWeight = 6;
-        colR_Fecha.HeaderText = "Fecha";     colR_Fecha.FillWeight = 20;
-        colR_Ref.HeaderText = "Referencia";  colR_Ref.FillWeight = 22;
-        colR_Op.HeaderText = "Operario";     colR_Op.FillWeight = 16;
-        colR_Lote.HeaderText = "Lote";       colR_Lote.FillWeight = 14;
-        colR_Resultado.HeaderText = "Resultado"; colR_Resultado.FillWeight = 12;
-        gridResultados.Columns.AddRange(colR_Id, colR_Fecha, colR_Ref, colR_Op, colR_Lote, colR_Resultado);
+        colR_Check.HeaderText = "";          colR_Check.FillWeight = 6;
+        colR_Id.HeaderText = "ID";           colR_Id.FillWeight = 6;    colR_Id.ReadOnly = true;
+        colR_Fecha.HeaderText = "Fecha";     colR_Fecha.FillWeight = 20;  colR_Fecha.ReadOnly = true;
+        colR_Ref.HeaderText = "Referencia";  colR_Ref.FillWeight = 22;  colR_Ref.ReadOnly = true;
+        colR_Op.HeaderText = "Operario";     colR_Op.FillWeight = 16;   colR_Op.ReadOnly = true;
+        colR_Lote.HeaderText = "Lote";       colR_Lote.FillWeight = 14; colR_Lote.ReadOnly = true;
+        colR_Resultado.HeaderText = "Resultado"; colR_Resultado.FillWeight = 12; colR_Resultado.ReadOnly = true;
+        gridResultados.Columns.AddRange(colR_Check, colR_Id, colR_Fecha, colR_Ref, colR_Op, colR_Lote, colR_Resultado);
 
         // ── pnlBottom ─────────────────────────────────────────────────────────
         pnlBottom.Dock = DockStyle.Bottom;
@@ -121,6 +124,11 @@ partial class ReportsPanel
         lblTotal.AutoSize = true; lblTotal.Location = new Point(10, 14);
         lblTotal.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
         lblTotal.Text = "Total: 0 resultados";
+
+        chkSeleccionarTodos.AutoSize = true;
+        chkSeleccionarTodos.Location = new Point(220, 14);
+        chkSeleccionarTodos.Font = new Font("Segoe UI", 9f);
+        chkSeleccionarTodos.Text = "Seleccionar todos";
 
         btnVerDetalle.Text     = "🔎 Ver detalle";
         btnVerDetalle.Location = new Point(900, 8); btnVerDetalle.Size = new Size(130, 28);
@@ -140,7 +148,7 @@ partial class ReportsPanel
         btnExportCsv.ForeColor = Color.White;
         btnExportCsv.FlatStyle = FlatStyle.Flat;
 
-        pnlBottom.Controls.AddRange(new Control[] { lblTotal, btnVerDetalle, btnExportCsvGeneral, btnExportCsv });
+        pnlBottom.Controls.AddRange(new Control[] { lblTotal, chkSeleccionarTodos, btnVerDetalle, btnExportCsvGeneral, btnExportCsv });
 
         // ── ReportsPanel ──────────────────────────────────────────────────────
         AutoScaleDimensions = new SizeF(96f, 96f);
@@ -177,6 +185,7 @@ partial class ReportsPanel
 
     private GroupBox   grpResultados;
     private DataGridView gridResultados;
+    private DataGridViewCheckBoxColumn colR_Check;
     private DataGridViewTextBoxColumn colR_Id;
     private DataGridViewTextBoxColumn colR_Fecha;
     private DataGridViewTextBoxColumn colR_Ref;
@@ -186,6 +195,7 @@ partial class ReportsPanel
 
     private Panel  pnlBottom;
     private Label  lblTotal;
+    private CheckBox chkSeleccionarTodos;
     private Button btnVerDetalle;
     private Button btnExportCsvGeneral;
     private Button btnExportCsv;

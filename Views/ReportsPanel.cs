@@ -15,6 +15,7 @@ public partial class ReportsPanel : UserControl
     private List<Resultado>   _todos      = new();
     private List<Referencia>  _refsList   = new();
     private List<Resultado>   _filtrados  = new();
+    private bool              _isPopulating;
 
     public ReportsPanel()
     {
@@ -31,8 +32,25 @@ public partial class ReportsPanel : UserControl
         btnVerDetalle.Click    += BtnVerDetalle_Click;
         btnRefrescar.Click     += async (_, _) => await LoadResultadosAsync();
 
+        chkSeleccionarTodos.CheckedChanged += ChkSeleccionarTodos_CheckedChanged;
+        gridResultados.CurrentCellDirtyStateChanged += (_, _) =>
+        {
+            if (gridResultados.IsCurrentCellDirty)
+                gridResultados.CommitEdit(DataGridViewDataErrorContexts.Commit);
+        };
+
         dtpDesde.Value = DateTime.Today.AddMonths(-1);
         dtpHasta.Value = DateTime.Today.AddDays(1);
+    }
+
+    private void ChkSeleccionarTodos_CheckedChanged(object? sender, EventArgs e)
+    {
+        if (_isPopulating) return;
+        foreach (DataGridViewRow row in gridResultados.Rows)
+        {
+            if (row.IsNewRow) continue;
+            row.Cells[colR_Check.Index].Value = chkSeleccionarTodos.Checked;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -108,6 +126,7 @@ public partial class ReportsPanel : UserControl
 
     private void PopulateGrid(List<Resultado> lista)
     {
+        _isPopulating = true;
         gridResultados.Rows.Clear();
         foreach (var r in lista)
         {
@@ -117,6 +136,7 @@ public partial class ReportsPanel : UserControl
             string resStr = r.ResultadoGlobal ? "✅ BUENO" : "❌ MALO";
 
             int idx = gridResultados.Rows.Add(
+                false,
                 r.Id,
                 r.FechaPrueba.ToString("dd/MM/yyyy HH:mm:ss"),
                 refNombre,
@@ -128,6 +148,8 @@ public partial class ReportsPanel : UserControl
                 ? Color.FromArgb(220, 255, 220)
                 : Color.FromArgb(255, 220, 220);
         }
+        chkSeleccionarTodos.Checked = false;
+        _isPopulating = false;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -157,9 +179,9 @@ public partial class ReportsPanel : UserControl
         {
             if (row.IsNewRow) continue;
             sb.AppendLine(string.Join(";",
-                row.Cells[0].Value, row.Cells[1].Value,
-                row.Cells[2].Value, row.Cells[3].Value,
-                row.Cells[4].Value, row.Cells[5].Value));
+                row.Cells[colR_Id.Index].Value, row.Cells[colR_Fecha.Index].Value,
+                row.Cells[colR_Ref.Index].Value, row.Cells[colR_Op.Index].Value,
+                row.Cells[colR_Lote.Index].Value, row.Cells[colR_Resultado.Index].Value));
         }
 
         File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
@@ -169,9 +191,20 @@ public partial class ReportsPanel : UserControl
 
     private async void BtnExportCsvGeneral_Click(object? sender, EventArgs e)
     {
-        if (_repository is null || _filtrados.Count == 0)
+        var seleccionados = new List<Resultado>();
+        foreach (DataGridViewRow row in gridResultados.Rows)
         {
-            MessageBox.Show("No hay datos para exportar.", "Aviso",
+            if (row.IsNewRow) continue;
+            bool marcado = row.Cells[colR_Check.Index].Value is bool b && b;
+            if (!marcado) continue;
+            int id = Convert.ToInt32(row.Cells[colR_Id.Index].Value);
+            var res = _filtrados.FirstOrDefault(r => r.Id == id);
+            if (res is not null) seleccionados.Add(res);
+        }
+
+        if (_repository is null || seleccionados.Count == 0)
+        {
+            MessageBox.Show("No hay resultados seleccionados para exportar. Marque las casillas de los resultados deseados.", "Aviso",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -191,7 +224,7 @@ public partial class ReportsPanel : UserControl
             var sb = new StringBuilder();
             sb.AppendLine("ID_Resultado;Fecha;Referencia;Operario;Lote;Resultado;Paso;Contacto;R_medida_Ohm;RAW_Vain;RAW_Ve;Resultado_Paso;Timestamp");
 
-            foreach (var r in _filtrados)
+            foreach (var r in seleccionados)
             {
                 string refNombre = _refsList
                     .FirstOrDefault(x => x.Id == r.ReferenciaId)?.ReferenciaNombre
@@ -239,7 +272,7 @@ public partial class ReportsPanel : UserControl
     private async void BtnVerDetalle_Click(object? sender, EventArgs e)
     {
         if (_repository is null || gridResultados.SelectedRows.Count == 0) return;
-        int id = Convert.ToInt32(gridResultados.SelectedRows[0].Cells[0].Value);
+        int id = Convert.ToInt32(gridResultados.SelectedRows[0].Cells[colR_Id.Index].Value);
         var detalles = (await _repository.GetDetallesByResultadoAsync(id)).ToList();
 
         if (detalles.Count == 0)
