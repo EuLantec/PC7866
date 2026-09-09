@@ -260,11 +260,11 @@ partial class ParametersPanel
         AddRow(lblPendiente,"Pendiente:",     nudPendiente, 4);
         AddRow(lblOffset,   "Offset (Ω):",    nudOffset,    5);
         AddRow(lblMinima,   "R mín corto (Ω):",nudMinima,   6);
-        AddRow(lblMcpArribaChip, "Chip arriba (0-5):", nudMcpArribaChip, 7);
-        AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  8);
-        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5):",  nudMcpAbajoChip,  9);
-        AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   10);
-        AddRow(lblCanalMux,      "Pista mux (0-48):",  nudCanalMux,      11);
+        AddRow(lblCanalMux,      "Pista mux (0-48):",  nudCanalMux,      7);
+        AddRow(lblMcpArribaChip, "Chip arriba (0-5):", nudMcpArribaChip, 8);
+        AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  9);
+        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5):",  nudMcpAbajoChip,  10);
+        AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   11);
         AddRow(lblPosX,     "Pos X:",         nudPosX,      12);
         AddRow(lblPosY,     "Pos Y:",         nudPosY,      13);
 
