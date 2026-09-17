@@ -33,11 +33,7 @@ public partial class ReportsPanel : UserControl
         btnRefrescar.Click     += async (_, _) => await LoadResultadosAsync();
 
         chkSeleccionarTodos.CheckedChanged += ChkSeleccionarTodos_CheckedChanged;
-        gridResultados.CurrentCellDirtyStateChanged += (_, _) =>
-        {
-            if (gridResultados.IsCurrentCellDirty)
-                gridResultados.CommitEdit(DataGridViewDataErrorContexts.Commit);
-        };
+        gridResultados.CellClick += GridResultados_CellClick;
 
         dtpDesde.Value = DateTime.Today.AddMonths(-1);
         dtpHasta.Value = DateTime.Today.AddDays(1);
@@ -51,7 +47,39 @@ public partial class ReportsPanel : UserControl
             if (row.IsNewRow) continue;
             row.Cells[colR_Check.Index].Value = chkSeleccionarTodos.Checked;
         }
+        ActualizarContadorSeleccion();
     }
+
+    // La columna de checkbox es ReadOnly (ver Designer); el marcado se aplica a mano aquí
+    // para que funcione con un único clic desde la primera vez (CellClick, no CellContentClick:
+    // este último no siempre dispara al primer clic sobre una casilla de verificación).
+    private void GridResultados_CellClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex != colR_Check.Index) return;
+        var cell = gridResultados.Rows[e.RowIndex].Cells[colR_Check.Index];
+        cell.Value = !(cell.Value is bool b && b);
+        gridResultados.InvalidateCell(cell);
+        ActualizarContadorSeleccion();
+    }
+
+    private List<int> GetIdsSeleccionados()
+    {
+        var ids = new List<int>();
+        foreach (DataGridViewRow row in gridResultados.Rows)
+        {
+            if (row.IsNewRow) continue;
+            if (row.Cells[colR_Check.Index].Value is bool b && b)
+                ids.Add(Convert.ToInt32(row.Cells[colR_Id.Index].Value));
+        }
+        return ids;
+    }
+
+    private void ActualizarContadorSeleccion()
+    {
+        int total = gridResultados.Rows.Cast<DataGridViewRow>().Count(r => !r.IsNewRow);
+        lblTotal.Text = $"Total: {total} resultados · Seleccionados: {GetIdsSeleccionados().Count}";
+    }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // Inicialización
@@ -120,7 +148,7 @@ public partial class ReportsPanel : UserControl
         var lista = filtrados.OrderByDescending(r => r.FechaPrueba).ToList();
         _filtrados = lista;
         PopulateGrid(lista);
-        lblTotal.Text = $"Total: {lista.Count} resultados";
+        ActualizarContadorSeleccion();
         await Task.CompletedTask;
     }
 
@@ -175,9 +203,14 @@ public partial class ReportsPanel : UserControl
 
         var sb = new StringBuilder();
         sb.AppendLine("ID;Fecha;Referencia;Operario;Lote;Resultado");
+        var idsSeleccionados = GetIdsSeleccionados();
         foreach (DataGridViewRow row in gridResultados.Rows)
         {
             if (row.IsNewRow) continue;
+            // Si hay filas marcadas, se exportan solo esas; si no hay ninguna, se exporta todo.
+            if (idsSeleccionados.Count > 0 &&
+                !idsSeleccionados.Contains(Convert.ToInt32(row.Cells[colR_Id.Index].Value)))
+                continue;
             sb.AppendLine(string.Join(";",
                 row.Cells[colR_Id.Index].Value, row.Cells[colR_Fecha.Index].Value,
                 row.Cells[colR_Ref.Index].Value, row.Cells[colR_Op.Index].Value,
@@ -191,16 +224,12 @@ public partial class ReportsPanel : UserControl
 
     private async void BtnExportCsvGeneral_Click(object? sender, EventArgs e)
     {
-        var seleccionados = new List<Resultado>();
-        foreach (DataGridViewRow row in gridResultados.Rows)
-        {
-            if (row.IsNewRow) continue;
-            bool marcado = row.Cells[colR_Check.Index].Value is bool b && b;
-            if (!marcado) continue;
-            int id = Convert.ToInt32(row.Cells[colR_Id.Index].Value);
-            var res = _filtrados.FirstOrDefault(r => r.Id == id);
-            if (res is not null) seleccionados.Add(res);
-        }
+        var idsSeleccionados = GetIdsSeleccionados();
+        var seleccionados = idsSeleccionados
+            .Select(id => _filtrados.FirstOrDefault(r => r.Id == id))
+            .Where(r => r is not null)
+            .Select(r => r!)
+            .ToList();
 
         if (_repository is null || seleccionados.Count == 0)
         {
@@ -258,8 +287,14 @@ public partial class ReportsPanel : UserControl
             }
 
             File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
-            MessageBox.Show($"Exportado:\n{dlg.FileName}", "OK",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(
+                $"Exportados {seleccionados.Count} resultados (IDs: {string.Join(", ", seleccionados.Select(r => r.Id))}).\n\n{dlg.FileName}",
+                "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al exportar:\n{ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
