@@ -107,7 +107,10 @@ partial class ReportsPanel
         gridResultados.AutoSizeColumnsMode   = DataGridViewAutoSizeColumnsMode.Fill;
         gridResultados.Font = new Font("Segoe UI", 9f);
 
-        colR_Check.HeaderText = "";          colR_Check.FillWeight = 6;
+        colR_Check.HeaderText = "Sel.";     colR_Check.FillWeight = 8;
+        // ReadOnly: el toggle se hace a mano en CellClick para garantizar 1 solo clic
+        // (el editor nativo de DataGridViewCheckBoxColumn necesita 2 clics la primera vez).
+        colR_Check.ReadOnly = true;
         colR_Id.HeaderText = "ID";           colR_Id.FillWeight = 6;    colR_Id.ReadOnly = true;
         colR_Fecha.HeaderText = "Fecha";     colR_Fecha.FillWeight = 20;  colR_Fecha.ReadOnly = true;
         colR_Ref.HeaderText = "Referencia";  colR_Ref.FillWeight = 22;  colR_Ref.ReadOnly = true;
