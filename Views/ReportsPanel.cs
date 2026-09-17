@@ -222,7 +222,7 @@ public partial class ReportsPanel : UserControl
         try
         {
             var sb = new StringBuilder();
-            sb.AppendLine("ID_Resultado;Fecha;Referencia;Operario;Lote;Resultado;Paso;Contacto;R_medida_Ohm;RAW_Vain;RAW_Ve;Resultado_Paso;Timestamp");
+            sb.AppendLine("ID_Resultado;Fecha;Referencia;Operario;Lote;Resultado;Paso;Contacto;R_medida_Ohm;R_cortocircuito_Ohm;RAW_Vain;RAW_Ve;Resultado_Paso;Timestamp");
 
             foreach (var r in seleccionados)
             {
@@ -237,7 +237,7 @@ public partial class ReportsPanel : UserControl
                 {
                     sb.AppendLine(string.Join(";",
                         r.Id, fecha, refNombre, r.Operario, r.Lote, resStr,
-                        "", "", "", "", "", "", ""));
+                        "", "", "", "", "", "", "", ""));
                     continue;
                 }
 
@@ -246,9 +246,12 @@ public partial class ReportsPanel : UserControl
                     string rValue = d.ResistenciaMedida < 0
                         ? "∞"
                         : d.ResistenciaMedida.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+                    string rCortoValue = d.ResistenciaCortocircuito < 0
+                        ? "∞"
+                        : d.ResistenciaCortocircuito.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
                     sb.AppendLine(string.Join(";",
                         r.Id, fecha, refNombre, r.Operario, r.Lote, resStr,
-                        d.NPasoEnsayo, d.NombreContacto, rValue, d.ValorRawVain, d.ValorRawVe,
+                        d.NPasoEnsayo, d.NombreContacto, rValue, rCortoValue, d.ValorRawVain, d.ValorRawVe,
                         d.Resultado ? "OK" : "NOK",
                         d.Timestamp.ToString("dd/MM/yyyy HH:mm:ss.fff")));
                 }

@@ -41,6 +41,7 @@ public sealed class ResultadoDetalleForm : Form
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Paso",       FillWeight = 8  });
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Contacto",   FillWeight = 18 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "R medida (Ω)", FillWeight = 18 });
+        grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "R corto (Ω)",   FillWeight = 18 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "RAW Vain",   FillWeight = 14 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "RAW Ve",     FillWeight = 14 });
         grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Resultado",  FillWeight = 14 });
@@ -57,10 +58,12 @@ public sealed class ResultadoDetalleForm : Form
                 _                             => "❌ NOK"
             };
             string rStr = d.ResistenciaMedida < 0 ? "∞" : $"{d.ResistenciaMedida:F3}";
+            string rCortoStr = d.ResistenciaCortocircuito < 0 ? "∞" : $"{d.ResistenciaCortocircuito:F3}";
             int idx = grid.Rows.Add(
                 d.NPasoEnsayo,
                 d.NombreContacto,
                 rStr,
+                rCortoStr,
                 d.ValorRawVain,
                 d.ValorRawVe,
                 res,
@@ -126,14 +129,16 @@ public sealed class ResultadoDetalleForm : Form
         if (dlg.ShowDialog() != DialogResult.OK) return;
 
         var sb = new StringBuilder();
-        sb.AppendLine("Paso;Contacto;R_medida_Ohm;RAW_Vain;RAW_Ve;Resultado;Timestamp");
+        sb.AppendLine("Paso;Contacto;R_medida_Ohm;R_cortocircuito_Ohm;RAW_Vain;RAW_Ve;Resultado;Timestamp");
         foreach (var d in _detalles)
         {
             string rValue = d.ResistenciaMedida < 0 ? "∞" : d.ResistenciaMedida.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+            string rCortoValue = d.ResistenciaCortocircuito < 0 ? "∞" : d.ResistenciaCortocircuito.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
             sb.AppendLine(string.Join(";",
                 d.NPasoEnsayo,
                 d.NombreContacto,
                 rValue,
+                rCortoValue,
                 d.ValorRawVain,
                 d.ValorRawVe,
                 d.Resultado ? "OK" : "NOK",

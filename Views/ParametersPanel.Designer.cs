@@ -30,6 +30,8 @@ partial class ParametersPanel
         nudRefMuestras = new NumericUpDown();
         lblRefRetardo  = new Label();
         nudRefRetardo  = new NumericUpDown();
+        lblRefResistenciaCortocircuito = new Label();
+        nudRefResistenciaCortocircuito = new NumericUpDown();
         lblRefInh      = new Label();
         txtRefInh1     = new TextBox();
         txtRefInh2     = new TextBox();
@@ -99,6 +101,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudRefNumMcps).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudRefMuestras).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudRefRetardo).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefResistenciaCortocircuito).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gridParametros).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudPaso).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).BeginInit();
@@ -153,6 +156,12 @@ partial class ParametersPanel
         nudRefRetardo.Location = new Point(540, 154); nudRefRetardo.Size = new Size(60, 23);
         nudRefRetardo.Minimum = 0; nudRefRetardo.Maximum = 999; nudRefRetardo.Value = 0;
 
+        lblRefResistenciaCortocircuito.Text = "R cortocircuito modelo (Ω):"; lblRefResistenciaCortocircuito.AutoSize = true;
+        lblRefResistenciaCortocircuito.Location = new Point(340, 188);
+        nudRefResistenciaCortocircuito.Location = new Point(520, 184); nudRefResistenciaCortocircuito.Size = new Size(80, 23);
+        nudRefResistenciaCortocircuito.Minimum = 0; nudRefResistenciaCortocircuito.Maximum = 100000;
+        nudRefResistenciaCortocircuito.DecimalPlaces = 2; nudRefResistenciaCortocircuito.Value = 0;
+
         lblRefInh.Text = "INH1-4 pos (hex/N):"; lblRefInh.AutoSize = true; lblRefInh.Location = new Point(8, 188);
         void InhRefBox(TextBox t, int x)
         {
@@ -178,6 +187,7 @@ partial class ParametersPanel
             lblRefDesc, txtRefDesc,
             lblRefModelo, txtRefModelo,
             lblRefNumMcps, nudRefNumMcps, lblRefMuestras, nudRefMuestras, lblRefRetardo, nudRefRetardo,
+            lblRefResistenciaCortocircuito, nudRefResistenciaCortocircuito,
             lblRefInh, txtRefInh1, txtRefInh2, txtRefInh3, txtRefInh4,
             btnCargarImagen, picPreview
         });
@@ -307,6 +317,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudRefNumMcps).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudRefMuestras).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudRefRetardo).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefResistenciaCortocircuito).EndInit();
         ((System.ComponentModel.ISupportInitialize)gridParametros).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudPaso).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).EndInit();
@@ -343,6 +354,8 @@ partial class ParametersPanel
     private NumericUpDown nudRefMuestras;
     private Label     lblRefRetardo;
     private NumericUpDown nudRefRetardo;
+    private Label     lblRefResistenciaCortocircuito;
+    private NumericUpDown nudRefResistenciaCortocircuito;
     private Label     lblRefInh;
     private TextBox   txtRefInh1;
     private TextBox   txtRefInh2;

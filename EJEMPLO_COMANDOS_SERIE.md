@@ -44,7 +44,7 @@ F1  F2  F3   // SOLO en el primer paso: F1/F2/F3 son fijos en automático → se
 
 // Cortocircuito: "abajo" pasa a entrada (alta impedancia); "arriba" sigue a 5V, la pista sigue en P01
 M0E0002      // chip0 bit1 (abajo, pin2) → ENTRADA
-F0           // leer tensión; si < 4,5V → Cortocircuito
+F0           // leer F0; se calcula R_corto con F1/F2/F3 cacheados; si R_corto < Referencia.ResistenciaCortocircuito → Cortocircuito
 
 // Restaurar el paso
 S00000       // arriba → 0V
@@ -52,7 +52,7 @@ M0S0002      // abajo → SALIDA de nuevo
 S00000       // abajo → 0V
 ```
 
-Con `F0..F3` se calcula `Vain = F0-F1`, `Ve = F2-F3`, `R_bruta = Vain/(Ve-Vain)×390`. El abierto/cortocircuito se detecta sobre `R_bruta` (igual que el modo manual) y solo a las lecturas válidas se les aplica la calibración lineal `R = Pendiente×R_bruta + Offset` (`Pendiente=1`/`Offset=0` por defecto dejan el valor bruto).
+Con `F0..F3` se calcula `Vain = F0-F1`, `Ve = F2-F3`, `R_bruta = Vain/(Ve-Vain)×390`. El abierto/cortocircuito se detecta sobre `R_bruta` (igual que el modo manual) y solo a las lecturas válidas se les aplica la calibración lineal `R = Pendiente×R_bruta + Offset` (`Pendiente=1`/`Offset=0` por defecto dejan el valor bruto). En la fase de cortocircuito se recalcula `R_corto` con la misma fórmula (reutilizando `F1`/`F2`/`F3`, sin calibración por pin) y se compara contra `Referencia.ResistenciaCortocircuito`, el umbral de resistencia del modelo (común a todos los pasos, no por pin).
 
 ### Paso 2 (Pin2: arriba 0.3, abajo 0.4 — ambos en chip0)
 
@@ -117,7 +117,7 @@ S10000       // chip1 → todas las salidas a 0V
 ## Notas
 
 - El tiempo de asentamiento entre cambiar el estado eléctrico (`M`/`S`/`P`) y leer se controla con la constante `SETTLE_DELAY_MS` de `RunningState.cs`. Si las lecturas salieran inestables (R≈0 o falso cortocircuito), subir ese valor.
-- El umbral de cortocircuito es la constante `CORTOCIRCUITO_VOLTAGE_THRESHOLD` (4,5V) de `RunningState.cs`.
+- El umbral de cortocircuito es `Referencia.ResistenciaCortocircuito` (Ω), configurable por modelo en el panel de Parámetros (no por pin). 0 desactiva esa comprobación.
 - El paso siempre se restaura en un bloque `finally`, incluso si hubo una excepción durante la medición, para no dejar salidas activas entre contactos.
 
 > Referencia de tramas: [Pc7866Commands.cs](Models/Pc7866Commands.cs). Lógica completa: [RunningState.cs](Services/StateMachine/States/RunningState.cs). Detalle paso a paso: [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).

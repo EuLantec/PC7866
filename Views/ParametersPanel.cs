@@ -99,6 +99,8 @@ public partial class ParametersPanel : UserControl
         nudRefNumMcps.Value  = Math.Clamp(r.NumMcps, (int)nudRefNumMcps.Minimum, (int)nudRefNumMcps.Maximum);
         nudRefMuestras.Value = Math.Clamp(r.Muestras, (int)nudRefMuestras.Minimum, (int)nudRefMuestras.Maximum);
         nudRefRetardo.Value  = Math.Clamp(r.RetardoMs, (int)nudRefRetardo.Minimum, (int)nudRefRetardo.Maximum);
+        nudRefResistenciaCortocircuito.Value = Math.Clamp((decimal)r.ResistenciaCortocircuito,
+            nudRefResistenciaCortocircuito.Minimum, nudRefResistenciaCortocircuito.Maximum);
         txtRefInh1.Text = FormatInh(r.Inh1Pos);
         txtRefInh2.Text = FormatInh(r.Inh2Pos);
         txtRefInh3.Text = FormatInh(r.Inh3Pos);
@@ -156,6 +158,7 @@ public partial class ParametersPanel : UserControl
         nudRefNumMcps.Value  = PC7866.Models.Pc7866Commands.McpChipCount;
         nudRefMuestras.Value = 1;
         nudRefRetardo.Value  = 0;
+        nudRefResistenciaCortocircuito.Value = 0;
         txtRefInh1.Text = "N"; txtRefInh2.Text = "N"; txtRefInh3.Text = "N"; txtRefInh4.Text = "N";
         picPreview.Image  = null;
         gridParametros.Rows.Clear();
@@ -193,6 +196,7 @@ public partial class ParametersPanel : UserControl
                 NumMcps           = (int)nudRefNumMcps.Value,
                 Muestras          = (int)nudRefMuestras.Value,
                 RetardoMs         = (int)nudRefRetardo.Value,
+                ResistenciaCortocircuito = (float)nudRefResistenciaCortocircuito.Value,
                 Inh1Pos           = ParseInh(txtRefInh1.Text),
                 Inh2Pos           = ParseInh(txtRefInh2.Text),
                 Inh3Pos           = ParseInh(txtRefInh3.Text),
@@ -213,6 +217,7 @@ public partial class ParametersPanel : UserControl
             _referenciaActual.NumMcps           = (int)nudRefNumMcps.Value;
             _referenciaActual.Muestras          = (int)nudRefMuestras.Value;
             _referenciaActual.RetardoMs         = (int)nudRefRetardo.Value;
+            _referenciaActual.ResistenciaCortocircuito = (float)nudRefResistenciaCortocircuito.Value;
             _referenciaActual.Inh1Pos           = ParseInh(txtRefInh1.Text);
             _referenciaActual.Inh2Pos           = ParseInh(txtRefInh2.Text);
             _referenciaActual.Inh3Pos           = ParseInh(txtRefInh3.Text);
