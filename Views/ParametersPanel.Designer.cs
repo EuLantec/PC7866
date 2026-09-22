@@ -39,6 +39,7 @@ partial class ParametersPanel
         txtRefInh4     = new TextBox();        btnCargarImagen = new Button();
         picPreview   = new PictureBox();
         btnNuevaRef  = new Button();
+        btnDuplicarRef = new Button();
         btnGuardarRef  = new Button();
         btnEliminarRef = new Button();
         pnlRefButtons  = new Panel();
@@ -195,9 +196,10 @@ partial class ParametersPanel
         btnNuevaRef.Text = "➕ Nueva"; btnNuevaRef.Location = new Point(8, 6); btnNuevaRef.Size = new Size(100, 28);
         btnGuardarRef.Text = "💾 Guardar"; btnGuardarRef.Location = new Point(116, 6); btnGuardarRef.Size = new Size(110, 28);
         btnEliminarRef.Text = "🗑 Borrar"; btnEliminarRef.Location = new Point(234, 6); btnEliminarRef.Size = new Size(100, 28);
+        btnDuplicarRef.Text = "📋 Duplicar"; btnDuplicarRef.Location = new Point(342, 6); btnDuplicarRef.Size = new Size(110, 28);
         pnlRefButtons.Dock = DockStyle.Bottom;
         pnlRefButtons.Height = 42;
-        pnlRefButtons.Controls.AddRange(new Control[] { btnNuevaRef, btnGuardarRef, btnEliminarRef });
+        pnlRefButtons.Controls.AddRange(new Control[] { btnNuevaRef, btnGuardarRef, btnEliminarRef, btnDuplicarRef });
 
         grpRefs.Controls.AddRange(new Control[] { pnlRefForm, listReferencias, pnlRefButtons });
 
@@ -364,6 +366,7 @@ partial class ParametersPanel
     private Button    btnCargarImagen;
     private PictureBox picPreview;
     private Button    btnNuevaRef;
+    private Button    btnDuplicarRef;
     private Button    btnGuardarRef;
     private Button    btnEliminarRef;
     private Panel     pnlRefButtons;

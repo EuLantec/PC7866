@@ -33,6 +33,7 @@ public partial class ParametersPanel : UserControl
         btnNuevaRef.Click                    += BtnNuevaRef_Click;
         btnGuardarRef.Click                  += BtnGuardarRef_Click;
         btnEliminarRef.Click                 += BtnEliminarRef_Click;
+        btnDuplicarRef.Click                 += BtnDuplicarRef_Click;
         btnCargarImagen.Click                += BtnCargarImagen_Click;
         listReferencias.SelectedIndexChanged += ListReferencias_SelectedIndexChanged;
 
@@ -247,6 +248,113 @@ public partial class ParametersPanel : UserControl
 
         MessageBox.Show("Referencia borrada correctamente.", "OK",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private async void BtnDuplicarRef_Click(object? sender, EventArgs e)
+    {
+        if (_referenciaActual is null || _repository is null)
+        {
+            MessageBox.Show("Primero seleccione una referencia para duplicar.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var origen = _referenciaActual;
+        string? nuevoNombre = PedirTexto("Duplicar referencia", "Nombre de la nueva referencia:",
+            origen.ReferenciaNombre + " - copia");
+        if (string.IsNullOrWhiteSpace(nuevoNombre)) return;
+
+        var copia = new Referencia
+        {
+            ReferenciaNombre         = nuevoNombre.Trim(),
+            Descripcion              = origen.Descripcion,
+            ModeloPlaca              = origen.ModeloPlaca,
+            BActiva                  = origen.BActiva,
+            NumMcps                  = origen.NumMcps,
+            Muestras                 = origen.Muestras,
+            RetardoMs                = origen.RetardoMs,
+            ResistenciaCortocircuito = origen.ResistenciaCortocircuito,
+            Inh1Pos                  = origen.Inh1Pos,
+            Inh2Pos                  = origen.Inh2Pos,
+            Inh3Pos                  = origen.Inh3Pos,
+            Inh4Pos                  = origen.Inh4Pos,
+            FechaCreacion            = DateTime.Now,
+            FechaModificacion        = DateTime.Now,
+            Imagen                   = origen.Imagen
+        };
+        copia.Id = await _repository.InsertReferenciaAsync(copia);
+
+        var parametrosOrigen = (await _repository.GetParametrosByReferenciaAsync(origen.Id)).ToList();
+        foreach (var p in parametrosOrigen)
+        {
+            var nuevoParam = new ParametroEnsayo
+            {
+                ReferenciaId       = copia.Id,
+                NPasoEnsayo        = p.NPasoEnsayo,
+                NombreContacto     = p.NombreContacto,
+                ResistenciaNominal = p.ResistenciaNominal,
+                Tolerancia         = p.Tolerancia,
+                Pendiente          = p.Pendiente,
+                Offset             = p.Offset,
+                ResistenciaMinima  = p.ResistenciaMinima,
+                McpArribaChip      = p.McpArribaChip,
+                McpArribaPin       = p.McpArribaPin,
+                McpAbajoChip       = p.McpAbajoChip,
+                McpAbajoPin        = p.McpAbajoPin,
+                CanalMultiplexor   = p.CanalMultiplexor,
+                PosX               = p.PosX,
+                PosY               = p.PosY,
+                FechaCreacion      = DateTime.Now,
+                FechaModificacion  = DateTime.Now
+            };
+            await _repository.InsertParametroAsync(nuevoParam);
+        }
+
+        await LoadReferenciasAsync();
+
+        for (int i = 0; i < listReferencias.Items.Count; i++)
+        {
+            if (listReferencias.Items[i] is Referencia r && r.Id == copia.Id)
+            {
+                listReferencias.SelectedIndex = i;
+                break;
+            }
+        }
+
+        MessageBox.Show(
+            $"Referencia duplicada como '{copia.ReferenciaNombre}' con {parametrosOrigen.Count} parámetro(s).",
+            "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    /// <summary>Muestra un diálogo simple con un cuadro de texto y devuelve el valor introducido, o null si se cancela.</summary>
+    private static string? PedirTexto(string titulo, string etiqueta, string valorInicial)
+    {
+        using var dlg = new Form
+        {
+            Text            = titulo,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition   = FormStartPosition.CenterParent,
+            MinimizeBox     = false,
+            MaximizeBox     = false,
+            ClientSize      = new Size(360, 110)
+        };
+        var lbl = new Label { Text = etiqueta, Location = new Point(10, 12), AutoSize = true };
+        var txt = new TextBox { Text = valorInicial, Location = new Point(10, 34), Width = 340 };
+        var btnOk = new Button
+        {
+            Text = "Aceptar", DialogResult = DialogResult.OK,
+            Location = new Point(190, 70), Size = new Size(80, 28)
+        };
+        var btnCancel = new Button
+        {
+            Text = "Cancelar", DialogResult = DialogResult.Cancel,
+            Location = new Point(270, 70), Size = new Size(80, 28)
+        };
+        dlg.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
+        dlg.AcceptButton = btnOk;
+        dlg.CancelButton = btnCancel;
+
+        return dlg.ShowDialog() == DialogResult.OK ? txt.Text : null;
     }
 
     private void BtnCargarImagen_Click(object? sender, EventArgs e)

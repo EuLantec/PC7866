@@ -140,7 +140,7 @@ public partial class AutomaticTestPanel : UserControl
         if (_repository is null) return;
         try
         {
-            var refs = await _repository.GetAllReferenciasAsync();
+            var refs = await _repository.GetAllReferenciasAsync(soloActivas: true);
             cmbReferencia.Items.Clear();
             foreach (var r in refs) cmbReferencia.Items.Add(r);
             cmbReferencia.DisplayMember = "ReferenciaNombre";
@@ -164,7 +164,7 @@ public partial class AutomaticTestPanel : UserControl
         {
             string? prevName = _referenciaActual?.ReferenciaNombre;
 
-            var refs = await _repository.GetAllReferenciasAsync();
+            var refs = await _repository.GetAllReferenciasAsync(soloActivas: true);
             cmbReferencia.Items.Clear();
             foreach (var r in refs) cmbReferencia.Items.Add(r);
             cmbReferencia.DisplayMember = "ReferenciaNombre";
