@@ -47,7 +47,7 @@ public class Referencia
     /// referencia (dato del modelo, no por pin). Si la resistencia calculada en esa fase cae por
     /// debajo de este valor, el paso se marca como Cortocircuito. 0 desactiva la comprobación.
     /// </summary>
-    public float ResistenciaCortocircuito { get; set; }
+    public float ResistenciaCortocircuito { get; set; } = 1000f;
 
     /// <summary>Parámetros de ensayo asociados (cargados bajo demanda).</summary>
     public List<ParametroEnsayo> Parametros { get; set; } = new();
