@@ -206,16 +206,22 @@ public partial class AutomaticTestPanel : UserControl
         _dotColors.Clear();
         foreach (var p in _parametros) _dotColors[p.Id] = Color.Gray;
 
-        // Mostrar imagen si existe
+        // Mostrar imagen si existe. Se copia a un Bitmap propio (independiente del MemoryStream,
+        // que se descarta al salir del using) para evitar que la imagen quede corrupta o no
+        // termine de cargar — GDI+ mantiene viva la referencia al stream mientras exista la
+        // Image, y aquí el stream no sobrevive fuera de este método.
+        var oldImage = picReferencia.Image;
         if (ref_.Imagen?.Length > 0)
         {
             using var ms = new MemoryStream(ref_.Imagen);
-            picReferencia.Image = Image.FromStream(ms);
+            using var loaded = Image.FromStream(ms);
+            picReferencia.Image = new Bitmap(loaded);
         }
         else
         {
             picReferencia.Image = null;
         }
+        oldImage?.Dispose();
 
         picReferencia.Invalidate();
         gridResultados.Rows.Clear();

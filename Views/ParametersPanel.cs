@@ -109,8 +109,11 @@ public partial class ParametersPanel : UserControl
 
         if (r.Imagen?.Length > 0)
         {
+            var oldImage = picPreview.Image;
             using var ms = new MemoryStream(r.Imagen);
-            picPreview.Image = Image.FromStream(ms);
+            using var loaded = Image.FromStream(ms);
+            picPreview.Image = new Bitmap(loaded);
+            oldImage?.Dispose();
         }
         else picPreview.Image = null;
 
