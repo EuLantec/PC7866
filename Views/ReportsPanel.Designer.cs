@@ -27,6 +27,8 @@ partial class ReportsPanel
         txtFiltroOperario = new TextBox();
         lblFiltroLote  = new Label();
         txtFiltroLote  = new TextBox();
+        lblFiltroModelo = new Label();
+        txtFiltroModelo = new TextBox();
         btnBuscar      = new Button();
         btnRefrescar   = new Button();
 
@@ -36,6 +38,7 @@ partial class ReportsPanel
         colR_Id        = new DataGridViewTextBoxColumn();
         colR_Fecha     = new DataGridViewTextBoxColumn();
         colR_Ref       = new DataGridViewTextBoxColumn();
+        colR_Modelo    = new DataGridViewTextBoxColumn();
         colR_Op        = new DataGridViewTextBoxColumn();
         colR_Lote      = new DataGridViewTextBoxColumn();
         colR_Resultado = new DataGridViewTextBoxColumn();
@@ -76,6 +79,7 @@ partial class ReportsPanel
         AddFiltro(lblHasta,      "Hasta:",       dtpHasta,           200);
         AddFiltro(lblFiltroOp,   "Operario:",    txtFiltroOperario,  110);
         AddFiltro(lblFiltroLote, "Lote:",        txtFiltroLote,       90);
+        AddFiltro(lblFiltroModelo, "Modelo:",    txtFiltroModelo,    100);
 
         cmbFiltroRef.DropDownStyle       = ComboBoxStyle.DropDownList;
         cmbFiltroResultado.DropDownStyle = ComboBoxStyle.DropDownList;
@@ -114,10 +118,11 @@ partial class ReportsPanel
         colR_Id.HeaderText = "ID";           colR_Id.FillWeight = 6;    colR_Id.ReadOnly = true;
         colR_Fecha.HeaderText = "Fecha";     colR_Fecha.FillWeight = 20;  colR_Fecha.ReadOnly = true;
         colR_Ref.HeaderText = "Referencia";  colR_Ref.FillWeight = 22;  colR_Ref.ReadOnly = true;
+        colR_Modelo.HeaderText = "Modelo";   colR_Modelo.FillWeight = 16; colR_Modelo.ReadOnly = true;
         colR_Op.HeaderText = "Operario";     colR_Op.FillWeight = 16;   colR_Op.ReadOnly = true;
         colR_Lote.HeaderText = "Lote";       colR_Lote.FillWeight = 14; colR_Lote.ReadOnly = true;
         colR_Resultado.HeaderText = "Resultado"; colR_Resultado.FillWeight = 12; colR_Resultado.ReadOnly = true;
-        gridResultados.Columns.AddRange(colR_Check, colR_Id, colR_Fecha, colR_Ref, colR_Op, colR_Lote, colR_Resultado);
+        gridResultados.Columns.AddRange(colR_Check, colR_Id, colR_Fecha, colR_Ref, colR_Modelo, colR_Op, colR_Lote, colR_Resultado);
 
         // ── pnlBottom ─────────────────────────────────────────────────────────
         pnlBottom.Dock = DockStyle.Bottom;
@@ -183,6 +188,8 @@ partial class ReportsPanel
     private TextBox    txtFiltroOperario;
     private Label      lblFiltroLote;
     private TextBox    txtFiltroLote;
+    private Label      lblFiltroModelo;
+    private TextBox    txtFiltroModelo;
     private Button     btnBuscar;
     private Button     btnRefrescar;
 
@@ -192,6 +199,7 @@ partial class ReportsPanel
     private DataGridViewTextBoxColumn colR_Id;
     private DataGridViewTextBoxColumn colR_Fecha;
     private DataGridViewTextBoxColumn colR_Ref;
+    private DataGridViewTextBoxColumn colR_Modelo;
     private DataGridViewTextBoxColumn colR_Op;
     private DataGridViewTextBoxColumn colR_Lote;
     private DataGridViewTextBoxColumn colR_Resultado;

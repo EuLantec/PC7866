@@ -145,6 +145,12 @@ public partial class ReportsPanel : UserControl
             filtrados = filtrados.Where(r =>
                 r.Lote.Contains(lote, StringComparison.OrdinalIgnoreCase));
 
+        string modelo = txtFiltroModelo.Text.Trim();
+        if (!string.IsNullOrEmpty(modelo))
+            filtrados = filtrados.Where(r =>
+                (_refsList.FirstOrDefault(x => x.Id == r.ReferenciaId)?.ModeloPlaca ?? string.Empty)
+                    .Contains(modelo, StringComparison.OrdinalIgnoreCase));
+
         var lista = filtrados.OrderByDescending(r => r.FechaPrueba).ToList();
         _filtrados = lista;
         PopulateGrid(lista);
@@ -158,9 +164,10 @@ public partial class ReportsPanel : UserControl
         gridResultados.Rows.Clear();
         foreach (var r in lista)
         {
-            string refNombre = _refsList
-                .FirstOrDefault(x => x.Id == r.ReferenciaId)?.ReferenciaNombre
+            var refActual = _refsList.FirstOrDefault(x => x.Id == r.ReferenciaId);
+            string refNombre = refActual?.ReferenciaNombre
                 ?? (r.ReferenciaId.HasValue ? r.ReferenciaId.ToString()! : "Manual");
+            string modelo = refActual?.ModeloPlaca ?? string.Empty;
             string resStr = r.ResultadoGlobal ? "✅ BUENO" : "❌ MALO";
 
             int idx = gridResultados.Rows.Add(
@@ -168,6 +175,7 @@ public partial class ReportsPanel : UserControl
                 r.Id,
                 r.FechaPrueba.ToString("dd/MM/yyyy HH:mm:ss"),
                 refNombre,
+                modelo,
                 r.Operario,
                 r.Lote,
                 resStr);
@@ -202,7 +210,7 @@ public partial class ReportsPanel : UserControl
         if (dlg.ShowDialog() != DialogResult.OK) return;
 
         var sb = new StringBuilder();
-        sb.AppendLine("ID;Fecha;Referencia;Operario;Lote;Resultado");
+        sb.AppendLine("ID;Fecha;Referencia;Modelo;Operario;Lote;Resultado");
         var idsSeleccionados = GetIdsSeleccionados();
         foreach (DataGridViewRow row in gridResultados.Rows)
         {
@@ -213,7 +221,8 @@ public partial class ReportsPanel : UserControl
                 continue;
             sb.AppendLine(string.Join(";",
                 row.Cells[colR_Id.Index].Value, row.Cells[colR_Fecha.Index].Value,
-                row.Cells[colR_Ref.Index].Value, row.Cells[colR_Op.Index].Value,
+                row.Cells[colR_Ref.Index].Value, row.Cells[colR_Modelo.Index].Value,
+                row.Cells[colR_Op.Index].Value,
                 row.Cells[colR_Lote.Index].Value, row.Cells[colR_Resultado.Index].Value));
         }
 
@@ -251,13 +260,14 @@ public partial class ReportsPanel : UserControl
         try
         {
             var sb = new StringBuilder();
-            sb.AppendLine("ID_Resultado;Fecha;Referencia;Operario;Lote;Resultado;Paso;Contacto;R_medida_Ohm;R_cortocircuito_Ohm;RAW_Vain;RAW_Ve;Resultado_Paso;Timestamp");
+            sb.AppendLine("ID_Resultado;Fecha;Referencia;Modelo;Operario;Lote;Resultado;Paso;Contacto;R_medida_Ohm;R_cortocircuito_Ohm;RAW_Vain;RAW_Ve;Resultado_Paso;Timestamp");
 
             foreach (var r in seleccionados)
             {
-                string refNombre = _refsList
-                    .FirstOrDefault(x => x.Id == r.ReferenciaId)?.ReferenciaNombre
+                var refActual = _refsList.FirstOrDefault(x => x.Id == r.ReferenciaId);
+                string refNombre = refActual?.ReferenciaNombre
                     ?? (r.ReferenciaId.HasValue ? r.ReferenciaId.ToString()! : "Manual");
+                string modelo = refActual?.ModeloPlaca ?? string.Empty;
                 string resStr = r.ResultadoGlobal ? "BUENO" : "MALO";
                 string fecha  = r.FechaPrueba.ToString("dd/MM/yyyy HH:mm:ss");
 
@@ -265,7 +275,7 @@ public partial class ReportsPanel : UserControl
                 if (detalles.Count == 0)
                 {
                     sb.AppendLine(string.Join(";",
-                        r.Id, fecha, refNombre, r.Operario, r.Lote, resStr,
+                        r.Id, fecha, refNombre, modelo, r.Operario, r.Lote, resStr,
                         "", "", "", "", "", "", "", ""));
                     continue;
                 }
@@ -279,7 +289,7 @@ public partial class ReportsPanel : UserControl
                         ? "∞"
                         : d.ResistenciaCortocircuito.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
                     sb.AppendLine(string.Join(";",
-                        r.Id, fecha, refNombre, r.Operario, r.Lote, resStr,
+                        r.Id, fecha, refNombre, modelo, r.Operario, r.Lote, resStr,
                         d.NPasoEnsayo, d.NombreContacto, rValue, rCortoValue, d.ValorRawVain, d.ValorRawVe,
                         d.Resultado ? "OK" : "NOK",
                         d.Timestamp.ToString("dd/MM/yyyy HH:mm:ss.fff")));
