@@ -40,6 +40,7 @@ partial class AutomaticTestPanel
         colPaso = new DataGridViewTextBoxColumn();
         colContacto = new DataGridViewTextBoxColumn();
         colMedido = new DataGridViewTextBoxColumn();
+        colCortocircuito = new DataGridViewTextBoxColumn();
         colNominal = new DataGridViewTextBoxColumn();
         colResultado = new DataGridViewTextBoxColumn();
         grpProgress = new GroupBox();
@@ -291,7 +292,7 @@ partial class AutomaticTestPanel
         gridResultados.AllowUserToAddRows = false;
         gridResultados.AllowUserToDeleteRows = false;
         gridResultados.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        gridResultados.Columns.AddRange(new DataGridViewColumn[] { colPaso, colContacto, colMedido, colNominal, colResultado });
+        gridResultados.Columns.AddRange(new DataGridViewColumn[] { colPaso, colContacto, colMedido, colCortocircuito, colNominal, colResultado });
         gridResultados.Dock = DockStyle.Fill;
         gridResultados.Font = new Font("Consolas", 9F);
         gridResultados.Location = new Point(3, 19);
@@ -322,6 +323,13 @@ partial class AutomaticTestPanel
         colMedido.HeaderText = "R medida (Ω)";
         colMedido.Name = "colMedido";
         colMedido.ReadOnly = true;
+        // 
+        // colCortocircuito
+        // 
+        colCortocircuito.FillWeight = 20F;
+        colCortocircuito.HeaderText = "R cortocircuito (Ω)";
+        colCortocircuito.Name = "colCortocircuito";
+        colCortocircuito.ReadOnly = true;
         // 
         // colNominal
         // 
@@ -463,6 +471,7 @@ partial class AutomaticTestPanel
     private DataGridViewTextBoxColumn colPaso;
     private DataGridViewTextBoxColumn colContacto;
     private DataGridViewTextBoxColumn colMedido;
+    private DataGridViewTextBoxColumn colCortocircuito;
     private DataGridViewTextBoxColumn colNominal;
     private DataGridViewTextBoxColumn colResultado;
 
