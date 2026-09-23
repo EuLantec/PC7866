@@ -356,6 +356,7 @@ public partial class AutomaticTestPanel : UserControl
             paso.NPasoEnsayo,
             paso.NombreContacto,
             $"{FormatResistance(detalle.ResistenciaMedida)}",
+            $"{FormatResistance(detalle.ResistenciaCortocircuito)}",
             $"{paso.ResistenciaNominal:F2} ±{paso.Tolerancia:F2}",
             resultado);
 
