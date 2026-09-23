@@ -35,6 +35,9 @@ public class ResultadoDetalle
     /// <summary>Resistencia medida calculada en Ohmios.</summary>
     public float ResistenciaMedida   { get; set; }
 
+    /// <summary>Resistencia calculada durante la fase de cortocircuito (-1 si no calculable/abierta).</summary>
+    public float ResistenciaCortocircuito { get; set; } = -1f;
+
     /// <summary>Valor RAW del canal analógico 1 (Vain).</summary>
     public int   ValorRawVain        { get; set; }
 

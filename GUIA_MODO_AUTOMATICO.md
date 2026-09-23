@@ -15,7 +15,7 @@ Se accede desde el menú superior **Automático** (panel por defecto al abrir la
 
 Antes de ejecutar un ensayo automático debe existir en BD:
 
-1. Una **Referencia** (`Referencia`), que además de nombre/imagen guarda la **configuración de placa**: `ModeloPlaca` (modelo de 7 dígitos que se envía en el comando `I`; el nombre de la referencia puede ser cualquiera y no se usa para configurar el micro), `NumMcps` (nº de MCP23017 activos, 0-6), `Inh1Pos`..`Inh4Pos` (posición de pin 0-15 de cada inhibición, o libre elección), `Muestras` (nº de muestras para el promedio analógico) y `RetardoMs` (retardo antes de leer tras F/R).
+1. Una **Referencia** (`Referencia`), que además de nombre/imagen guarda la **configuración de placa**: `ModeloPlaca` (modelo de 7 dígitos que se envía en el comando `I`; el nombre de la referencia puede ser cualquiera y no se usa para configurar el micro), `NumMcps` (nº de MCP23017 activos, 0-6), `Inh1Pos`..`Inh4Pos` (posición de pin 0-15 de cada inhibición, o libre elección), `Muestras` (nº de muestras para el promedio analógico), `RetardoMs` (retardo antes de leer tras F/R) y `ResistenciaCortocircuito` (umbral de resistencia en Ω para la fase de cortocircuito, único para todos los pasos de esta referencia — dato del modelo, no por pin).
 2. Uno o varios **ParametroEnsayo** asociados a esa referencia — un registro por contacto/paso —, cada uno con: `NombreContacto`, `NPasoEnsayo` (orden), `McpArribaChip`/`McpArribaPin` y `McpAbajoChip`/`McpAbajoPin` (selectores de excitación 5V/masa usados por el algoritmo de medición, ver más abajo), `CanalMultiplexor` (nº de pista 0-48 para el comando `P`), `ResistenciaNominal`, `Tolerancia`, `Pendiente`, `Offset` y `ResistenciaMinima` (umbral de cortocircuito por software). `Pendiente` y `Offset` forman la función lineal de calibración aplicada a la resistencia bruta calculada (ver Paso 2); `Pendiente` por defecto es `1` (sin efecto sobre el cálculo anterior).
 
 ### Mapa de contactos
@@ -78,11 +78,12 @@ Al terminar todos los pasos, `RunningState`:
 > `ParametroEnsayo.McpAbajoChip`/`McpAbajoPin` de cada paso.
 >
 > **Decisiones tomadas por defecto (pendientes de validar con el hardware real):**
-> - Umbral de "caída de tensión" del cortocircuito: **4,5 V** (constante `CORTOCIRCUITO_VOLTAGE_THRESHOLD`
->   en `RunningState.cs`). Ajustar esa constante si el hardware define otro valor.
-> - Relación con la detección por software existente (`ResistenciaMinima`): **coexisten**. Si
->   cualquiera de los dos criterios (resistencia medida por debajo de `ResistenciaMinima`, o caída
->   de tensión detectada) indica cortocircuito, el paso se marca como `Cortocircuito`.
+> - Umbral de cortocircuito de la fase 2: `Referencia.ResistenciaCortocircuito` (Ω), configurable por
+>   modelo en el panel de Parámetros. 0 desactiva esa comprobación.
+> - Relación con la detección por software existente (`ParametroEnsayo.ResistenciaMinima`):
+>   **coexisten**. Si cualquiera de los dos criterios (resistencia principal medida por debajo de
+>   `ResistenciaMinima` del paso, o resistencia de la fase 2 por debajo de `ResistenciaCortocircuito`
+>   del modelo) indica cortocircuito, el paso se marca como `Cortocircuito`.
 
 El ensayo recorre los pasos de la referencia **uno a uno**; por cada paso se hace primero la
 medición de resistencia y a continuación la comprobación de cortocircuito, antes de pasar al
@@ -100,9 +101,12 @@ Todos los MCP de la placa (`0..NumMcps-1`, se usen o no en algún paso) se confi
    `Vain`, `Ve` → `R`). `F1`/`F2`/`F3` se leen solo en el primer paso y se reutilizan. Abierto/cortocircuito
    se detectan sobre la resistencia **bruta**; solo a lecturas válidas se aplica `R = Pendiente×R_bruta + Offset`.
 2. **Cortocircuito** — el pin "abajo" de ese paso se reconfigura como **entrada** (`M`, alta
-   impedancia), manteniendo su "arriba" a 5V y la pista ya seleccionada. Se lee la tensión
-   (`F0`). Si la tensión cae por debajo del umbral (4,5V por defecto) o la lectura falla, se marca
-   `Cortocircuito` (prevalece sobre el resultado de resistencia).
+   impedancia), manteniendo su "arriba" a 5V y la pista ya seleccionada. Se lee `F0` y se calcula
+   una **resistencia de cortocircuito** con la misma fórmula que la resistencia principal
+   (reutilizando los `F1`/`F2`/`F3` ya cacheados, sin calibración `Pendiente`/`Offset` por pin). Si
+   esa resistencia cae por debajo de `Referencia.ResistenciaCortocircuito` (umbral del modelo, no
+   por pin) o falla la lectura, se marca `Cortocircuito` (prevalece sobre el resultado de
+   resistencia).
 3. **Restaurar** — el pin "arriba" vuelve a **0V** (`S`), el "abajo" se reconfigura como **salida**
    (`M`) y se pone a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
 4. Solo entonces se dispara `StepCompleted` con el `ResultadoDetalle` final del paso.
@@ -134,7 +138,7 @@ Clase [`CompletedState`](Services/StateMachine/States/CompletedState.cs): calcul
 
 1. Si no hay repositorio/BD disponible, solo registra un aviso en el log — el ensayo no se pierde, simplemente no queda guardado.
 2. Si hay BD: inserta la cabecera en `resultados` (`InsertResultadoAsync`, con `ReferenciaId`, `FechaPrueba`, `Operario`, `Lote`, `ResultadoGlobal`) y luego cada `ResultadoDetalle` en `resultados_detalle` (`InsertDetalleAsync`), enlazado por `ResultadoId`.
-3. Cada fila de detalle guarda: `ParametroEnsayoId`, `NombreContacto`, `NPasoEnsayo`, `ResistenciaMedida` (`-1` si abierto), `ValorRawVain`/`ValorRawVe`, `Resultado` (bool) y `Estado` (`Ok`/`Nok`/`Cortocircuito`/`Abierto`).
+3. Cada fila de detalle guarda: `ParametroEnsayoId`, `NombreContacto`, `NPasoEnsayo`, `ResistenciaMedida` (`-1` si abierto), `ResistenciaCortocircuito` (`-1` si no calculable/abierta, resistencia de la fase 2), `ValorRawVain`/`ValorRawVe`, `Resultado` (bool) y `Estado` (`Ok`/`Nok`/`Cortocircuito`/`Abierto`). Los informes (`Views/ReportsPanel.cs`, `Views/ResultadoDetalleForm.cs`) muestran y exportan ambas resistencias.
 
 ## Cancelación (Abortar ensayo)
 

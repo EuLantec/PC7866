@@ -42,6 +42,13 @@ public class Referencia
     /// <summary>Retardo en ms antes de iniciar la lectura analógica tras un comando F o R.</summary>
     public int  RetardoMs { get; set; } = 0;
 
+    /// <summary>
+    /// Umbral de resistencia (Ω) de la fase de cortocircuito, común a todos los pasos de esta
+    /// referencia (dato del modelo, no por pin). Si la resistencia calculada en esa fase cae por
+    /// debajo de este valor, el paso se marca como Cortocircuito. 0 desactiva la comprobación.
+    /// </summary>
+    public float ResistenciaCortocircuito { get; set; } = 1000f;
+
     /// <summary>Parámetros de ensayo asociados (cargados bajo demanda).</summary>
     public List<ParametroEnsayo> Parametros { get; set; } = new();
 

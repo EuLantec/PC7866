@@ -30,6 +30,8 @@ partial class ParametersPanel
         nudRefMuestras = new NumericUpDown();
         lblRefRetardo  = new Label();
         nudRefRetardo  = new NumericUpDown();
+        lblRefResistenciaCortocircuito = new Label();
+        nudRefResistenciaCortocircuito = new NumericUpDown();
         lblRefInh      = new Label();
         txtRefInh1     = new TextBox();
         txtRefInh2     = new TextBox();
@@ -37,6 +39,7 @@ partial class ParametersPanel
         txtRefInh4     = new TextBox();        btnCargarImagen = new Button();
         picPreview   = new PictureBox();
         btnNuevaRef  = new Button();
+        btnDuplicarRef = new Button();
         btnGuardarRef  = new Button();
         btnEliminarRef = new Button();
         pnlRefButtons  = new Panel();
@@ -99,6 +102,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudRefNumMcps).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudRefMuestras).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudRefRetardo).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefResistenciaCortocircuito).BeginInit();
         ((System.ComponentModel.ISupportInitialize)gridParametros).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudPaso).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).BeginInit();
@@ -153,6 +157,12 @@ partial class ParametersPanel
         nudRefRetardo.Location = new Point(540, 154); nudRefRetardo.Size = new Size(60, 23);
         nudRefRetardo.Minimum = 0; nudRefRetardo.Maximum = 999; nudRefRetardo.Value = 0;
 
+        lblRefResistenciaCortocircuito.Text = "R cortocircuito modelo (Ω):"; lblRefResistenciaCortocircuito.AutoSize = true;
+        lblRefResistenciaCortocircuito.Location = new Point(340, 188);
+        nudRefResistenciaCortocircuito.Location = new Point(520, 184); nudRefResistenciaCortocircuito.Size = new Size(80, 23);
+        nudRefResistenciaCortocircuito.Minimum = 0; nudRefResistenciaCortocircuito.Maximum = 100000;
+        nudRefResistenciaCortocircuito.DecimalPlaces = 2; nudRefResistenciaCortocircuito.Value = 0;
+
         lblRefInh.Text = "INH1-4 pos (hex/N):"; lblRefInh.AutoSize = true; lblRefInh.Location = new Point(8, 188);
         void InhRefBox(TextBox t, int x)
         {
@@ -178,6 +188,7 @@ partial class ParametersPanel
             lblRefDesc, txtRefDesc,
             lblRefModelo, txtRefModelo,
             lblRefNumMcps, nudRefNumMcps, lblRefMuestras, nudRefMuestras, lblRefRetardo, nudRefRetardo,
+            lblRefResistenciaCortocircuito, nudRefResistenciaCortocircuito,
             lblRefInh, txtRefInh1, txtRefInh2, txtRefInh3, txtRefInh4,
             btnCargarImagen, picPreview
         });
@@ -185,9 +196,10 @@ partial class ParametersPanel
         btnNuevaRef.Text = "➕ Nueva"; btnNuevaRef.Location = new Point(8, 6); btnNuevaRef.Size = new Size(100, 28);
         btnGuardarRef.Text = "💾 Guardar"; btnGuardarRef.Location = new Point(116, 6); btnGuardarRef.Size = new Size(110, 28);
         btnEliminarRef.Text = "🗑 Borrar"; btnEliminarRef.Location = new Point(234, 6); btnEliminarRef.Size = new Size(100, 28);
+        btnDuplicarRef.Text = "📋 Duplicar"; btnDuplicarRef.Location = new Point(342, 6); btnDuplicarRef.Size = new Size(110, 28);
         pnlRefButtons.Dock = DockStyle.Bottom;
         pnlRefButtons.Height = 42;
-        pnlRefButtons.Controls.AddRange(new Control[] { btnNuevaRef, btnGuardarRef, btnEliminarRef });
+        pnlRefButtons.Controls.AddRange(new Control[] { btnNuevaRef, btnGuardarRef, btnEliminarRef, btnDuplicarRef });
 
         grpRefs.Controls.AddRange(new Control[] { pnlRefForm, listReferencias, pnlRefButtons });
 
@@ -260,11 +272,11 @@ partial class ParametersPanel
         AddRow(lblPendiente,"Pendiente:",     nudPendiente, 4);
         AddRow(lblOffset,   "Offset (Ω):",    nudOffset,    5);
         AddRow(lblMinima,   "R mín corto (Ω):",nudMinima,   6);
-        AddRow(lblMcpArribaChip, "Chip arriba (0-5):", nudMcpArribaChip, 7);
-        AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  8);
-        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5):",  nudMcpAbajoChip,  9);
-        AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   10);
-        AddRow(lblCanalMux,      "Pista mux (0-48):",  nudCanalMux,      11);
+        AddRow(lblCanalMux,      "Pista mux (0-48):",  nudCanalMux,      7);
+        AddRow(lblMcpArribaChip, "Chip arriba (0-5):", nudMcpArribaChip, 8);
+        AddRow(lblMcpArribaPin,  "Pin arriba (1-16):", nudMcpArribaPin,  9);
+        AddRow(lblMcpAbajoChip,  "Chip abajo (0-5):",  nudMcpAbajoChip,  10);
+        AddRow(lblMcpAbajoPin,   "Pin abajo (1-16):",  nudMcpAbajoPin,   11);
         AddRow(lblPosX,     "Pos X:",         nudPosX,      12);
         AddRow(lblPosY,     "Pos Y:",         nudPosY,      13);
 
@@ -307,6 +319,7 @@ partial class ParametersPanel
         ((System.ComponentModel.ISupportInitialize)nudRefNumMcps).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudRefMuestras).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudRefRetardo).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudRefResistenciaCortocircuito).EndInit();
         ((System.ComponentModel.ISupportInitialize)gridParametros).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudPaso).EndInit();
         ((System.ComponentModel.ISupportInitialize)nudNominal).EndInit();
@@ -343,6 +356,8 @@ partial class ParametersPanel
     private NumericUpDown nudRefMuestras;
     private Label     lblRefRetardo;
     private NumericUpDown nudRefRetardo;
+    private Label     lblRefResistenciaCortocircuito;
+    private NumericUpDown nudRefResistenciaCortocircuito;
     private Label     lblRefInh;
     private TextBox   txtRefInh1;
     private TextBox   txtRefInh2;
@@ -351,6 +366,7 @@ partial class ParametersPanel
     private Button    btnCargarImagen;
     private PictureBox picPreview;
     private Button    btnNuevaRef;
+    private Button    btnDuplicarRef;
     private Button    btnGuardarRef;
     private Button    btnEliminarRef;
     private Panel     pnlRefButtons;

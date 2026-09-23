@@ -27,21 +27,27 @@ partial class ReportsPanel
         txtFiltroOperario = new TextBox();
         lblFiltroLote  = new Label();
         txtFiltroLote  = new TextBox();
+        lblFiltroModelo = new Label();
+        txtFiltroModelo = new TextBox();
         btnBuscar      = new Button();
         btnRefrescar   = new Button();
 
         grpResultados  = new GroupBox();
         gridResultados = new DataGridView();
+        colR_Check     = new DataGridViewCheckBoxColumn();
         colR_Id        = new DataGridViewTextBoxColumn();
         colR_Fecha     = new DataGridViewTextBoxColumn();
         colR_Ref       = new DataGridViewTextBoxColumn();
+        colR_Modelo    = new DataGridViewTextBoxColumn();
         colR_Op        = new DataGridViewTextBoxColumn();
         colR_Lote      = new DataGridViewTextBoxColumn();
         colR_Resultado = new DataGridViewTextBoxColumn();
 
         pnlBottom      = new Panel();
         lblTotal       = new Label();
+        chkSeleccionarTodos = new CheckBox();
         btnVerDetalle  = new Button();
+        btnExportCsvGeneral = new Button();
         btnExportCsv   = new Button();
 
         grpFiltros.SuspendLayout();
@@ -73,6 +79,7 @@ partial class ReportsPanel
         AddFiltro(lblHasta,      "Hasta:",       dtpHasta,           200);
         AddFiltro(lblFiltroOp,   "Operario:",    txtFiltroOperario,  110);
         AddFiltro(lblFiltroLote, "Lote:",        txtFiltroLote,       90);
+        AddFiltro(lblFiltroModelo, "Modelo:",    txtFiltroModelo,    100);
 
         cmbFiltroRef.DropDownStyle       = ComboBoxStyle.DropDownList;
         cmbFiltroResultado.DropDownStyle = ComboBoxStyle.DropDownList;
@@ -98,19 +105,24 @@ partial class ReportsPanel
         gridResultados.Dock = DockStyle.Fill;
         gridResultados.AllowUserToAddRows    = false;
         gridResultados.AllowUserToDeleteRows = false;
-        gridResultados.ReadOnly              = true;
+        gridResultados.ReadOnly              = false;
         gridResultados.SelectionMode         = DataGridViewSelectionMode.FullRowSelect;
         gridResultados.RowHeadersVisible     = false;
         gridResultados.AutoSizeColumnsMode   = DataGridViewAutoSizeColumnsMode.Fill;
         gridResultados.Font = new Font("Segoe UI", 9f);
 
-        colR_Id.HeaderText = "ID";           colR_Id.FillWeight = 6;
-        colR_Fecha.HeaderText = "Fecha";     colR_Fecha.FillWeight = 20;
-        colR_Ref.HeaderText = "Referencia";  colR_Ref.FillWeight = 22;
-        colR_Op.HeaderText = "Operario";     colR_Op.FillWeight = 16;
-        colR_Lote.HeaderText = "Lote";       colR_Lote.FillWeight = 14;
-        colR_Resultado.HeaderText = "Resultado"; colR_Resultado.FillWeight = 12;
-        gridResultados.Columns.AddRange(colR_Id, colR_Fecha, colR_Ref, colR_Op, colR_Lote, colR_Resultado);
+        colR_Check.HeaderText = "Sel.";     colR_Check.FillWeight = 8;
+        // ReadOnly: el toggle se hace a mano en CellClick para garantizar 1 solo clic
+        // (el editor nativo de DataGridViewCheckBoxColumn necesita 2 clics la primera vez).
+        colR_Check.ReadOnly = true;
+        colR_Id.HeaderText = "ID";           colR_Id.FillWeight = 6;    colR_Id.ReadOnly = true;
+        colR_Fecha.HeaderText = "Fecha";     colR_Fecha.FillWeight = 20;  colR_Fecha.ReadOnly = true;
+        colR_Ref.HeaderText = "Referencia";  colR_Ref.FillWeight = 22;  colR_Ref.ReadOnly = true;
+        colR_Modelo.HeaderText = "Modelo";   colR_Modelo.FillWeight = 16; colR_Modelo.ReadOnly = true;
+        colR_Op.HeaderText = "Operario";     colR_Op.FillWeight = 16;   colR_Op.ReadOnly = true;
+        colR_Lote.HeaderText = "Lote";       colR_Lote.FillWeight = 14; colR_Lote.ReadOnly = true;
+        colR_Resultado.HeaderText = "Resultado"; colR_Resultado.FillWeight = 12; colR_Resultado.ReadOnly = true;
+        gridResultados.Columns.AddRange(colR_Check, colR_Id, colR_Fecha, colR_Ref, colR_Modelo, colR_Op, colR_Lote, colR_Resultado);
 
         // ── pnlBottom ─────────────────────────────────────────────────────────
         pnlBottom.Dock = DockStyle.Bottom;
@@ -121,9 +133,21 @@ partial class ReportsPanel
         lblTotal.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
         lblTotal.Text = "Total: 0 resultados";
 
+        chkSeleccionarTodos.AutoSize = true;
+        chkSeleccionarTodos.Location = new Point(220, 14);
+        chkSeleccionarTodos.Font = new Font("Segoe UI", 9f);
+        chkSeleccionarTodos.Text = "Seleccionar todos";
+
         btnVerDetalle.Text     = "🔎 Ver detalle";
         btnVerDetalle.Location = new Point(900, 8); btnVerDetalle.Size = new Size(130, 28);
         btnVerDetalle.Font = new Font("Segoe UI", 9f);
+
+        btnExportCsvGeneral.Text      = "📊 Informe general (CSV)";
+        btnExportCsvGeneral.Location  = new Point(700, 8); btnExportCsvGeneral.Size = new Size(190, 28);
+        btnExportCsvGeneral.Font      = new Font("Segoe UI", 9f, FontStyle.Bold);
+        btnExportCsvGeneral.BackColor = Color.FromArgb(0, 102, 204);
+        btnExportCsvGeneral.ForeColor = Color.White;
+        btnExportCsvGeneral.FlatStyle = FlatStyle.Flat;
 
         btnExportCsv.Text      = "💾 Exportar CSV";
         btnExportCsv.Location  = new Point(1038, 8); btnExportCsv.Size = new Size(140, 28);
@@ -132,7 +156,7 @@ partial class ReportsPanel
         btnExportCsv.ForeColor = Color.White;
         btnExportCsv.FlatStyle = FlatStyle.Flat;
 
-        pnlBottom.Controls.AddRange(new Control[] { lblTotal, btnVerDetalle, btnExportCsv });
+        pnlBottom.Controls.AddRange(new Control[] { lblTotal, chkSeleccionarTodos, btnVerDetalle, btnExportCsvGeneral, btnExportCsv });
 
         // ── ReportsPanel ──────────────────────────────────────────────────────
         AutoScaleDimensions = new SizeF(96f, 96f);
@@ -164,20 +188,26 @@ partial class ReportsPanel
     private TextBox    txtFiltroOperario;
     private Label      lblFiltroLote;
     private TextBox    txtFiltroLote;
+    private Label      lblFiltroModelo;
+    private TextBox    txtFiltroModelo;
     private Button     btnBuscar;
     private Button     btnRefrescar;
 
     private GroupBox   grpResultados;
     private DataGridView gridResultados;
+    private DataGridViewCheckBoxColumn colR_Check;
     private DataGridViewTextBoxColumn colR_Id;
     private DataGridViewTextBoxColumn colR_Fecha;
     private DataGridViewTextBoxColumn colR_Ref;
+    private DataGridViewTextBoxColumn colR_Modelo;
     private DataGridViewTextBoxColumn colR_Op;
     private DataGridViewTextBoxColumn colR_Lote;
     private DataGridViewTextBoxColumn colR_Resultado;
 
     private Panel  pnlBottom;
     private Label  lblTotal;
+    private CheckBox chkSeleccionarTodos;
     private Button btnVerDetalle;
+    private Button btnExportCsvGeneral;
     private Button btnExportCsv;
 }

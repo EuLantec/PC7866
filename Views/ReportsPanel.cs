@@ -12,8 +12,10 @@ namespace PC7866.Views;
 public partial class ReportsPanel : UserControl
 {
     private ITestRepository?  _repository;
-    private List<Resultado>   _todos    = new();
-    private List<Referencia>  _refsList = new();
+    private List<Resultado>   _todos      = new();
+    private List<Referencia>  _refsList   = new();
+    private List<Resultado>   _filtrados  = new();
+    private bool              _isPopulating;
 
     public ReportsPanel()
     {
@@ -24,14 +26,60 @@ public partial class ReportsPanel : UserControl
 
     private void AttachEventHandlers()
     {
-        btnBuscar.Click     += async (_, _) => await FilterAsync();
-        btnExportCsv.Click  += BtnExportCsv_Click;
-        btnVerDetalle.Click += BtnVerDetalle_Click;
-        btnRefrescar.Click  += async (_, _) => await LoadResultadosAsync();
+        btnBuscar.Click        += async (_, _) => await FilterAsync();
+        btnExportCsv.Click     += BtnExportCsv_Click;
+        btnExportCsvGeneral.Click += BtnExportCsvGeneral_Click;
+        btnVerDetalle.Click    += BtnVerDetalle_Click;
+        btnRefrescar.Click     += async (_, _) => await LoadResultadosAsync();
+
+        chkSeleccionarTodos.CheckedChanged += ChkSeleccionarTodos_CheckedChanged;
+        gridResultados.CellClick += GridResultados_CellClick;
 
         dtpDesde.Value = DateTime.Today.AddMonths(-1);
         dtpHasta.Value = DateTime.Today.AddDays(1);
     }
+
+    private void ChkSeleccionarTodos_CheckedChanged(object? sender, EventArgs e)
+    {
+        if (_isPopulating) return;
+        foreach (DataGridViewRow row in gridResultados.Rows)
+        {
+            if (row.IsNewRow) continue;
+            row.Cells[colR_Check.Index].Value = chkSeleccionarTodos.Checked;
+        }
+        ActualizarContadorSeleccion();
+    }
+
+    // La columna de checkbox es ReadOnly (ver Designer); el marcado se aplica a mano aquí
+    // para que funcione con un único clic desde la primera vez (CellClick, no CellContentClick:
+    // este último no siempre dispara al primer clic sobre una casilla de verificación).
+    private void GridResultados_CellClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex != colR_Check.Index) return;
+        var cell = gridResultados.Rows[e.RowIndex].Cells[colR_Check.Index];
+        cell.Value = !(cell.Value is bool b && b);
+        gridResultados.InvalidateCell(cell);
+        ActualizarContadorSeleccion();
+    }
+
+    private List<int> GetIdsSeleccionados()
+    {
+        var ids = new List<int>();
+        foreach (DataGridViewRow row in gridResultados.Rows)
+        {
+            if (row.IsNewRow) continue;
+            if (row.Cells[colR_Check.Index].Value is bool b && b)
+                ids.Add(Convert.ToInt32(row.Cells[colR_Id.Index].Value));
+        }
+        return ids;
+    }
+
+    private void ActualizarContadorSeleccion()
+    {
+        int total = gridResultados.Rows.Cast<DataGridViewRow>().Count(r => !r.IsNewRow);
+        lblTotal.Text = $"Total: {total} resultados · Seleccionados: {GetIdsSeleccionados().Count}";
+    }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // Inicialización
@@ -97,26 +145,37 @@ public partial class ReportsPanel : UserControl
             filtrados = filtrados.Where(r =>
                 r.Lote.Contains(lote, StringComparison.OrdinalIgnoreCase));
 
+        string modelo = txtFiltroModelo.Text.Trim();
+        if (!string.IsNullOrEmpty(modelo))
+            filtrados = filtrados.Where(r =>
+                (_refsList.FirstOrDefault(x => x.Id == r.ReferenciaId)?.ModeloPlaca ?? string.Empty)
+                    .Contains(modelo, StringComparison.OrdinalIgnoreCase));
+
         var lista = filtrados.OrderByDescending(r => r.FechaPrueba).ToList();
+        _filtrados = lista;
         PopulateGrid(lista);
-        lblTotal.Text = $"Total: {lista.Count} resultados";
+        ActualizarContadorSeleccion();
         await Task.CompletedTask;
     }
 
     private void PopulateGrid(List<Resultado> lista)
     {
+        _isPopulating = true;
         gridResultados.Rows.Clear();
         foreach (var r in lista)
         {
-            string refNombre = _refsList
-                .FirstOrDefault(x => x.Id == r.ReferenciaId)?.ReferenciaNombre
+            var refActual = _refsList.FirstOrDefault(x => x.Id == r.ReferenciaId);
+            string refNombre = refActual?.ReferenciaNombre
                 ?? (r.ReferenciaId.HasValue ? r.ReferenciaId.ToString()! : "Manual");
+            string modelo = refActual?.ModeloPlaca ?? string.Empty;
             string resStr = r.ResultadoGlobal ? "✅ BUENO" : "❌ MALO";
 
             int idx = gridResultados.Rows.Add(
+                false,
                 r.Id,
                 r.FechaPrueba.ToString("dd/MM/yyyy HH:mm:ss"),
                 refNombre,
+                modelo,
                 r.Operario,
                 r.Lote,
                 resStr);
@@ -125,6 +184,8 @@ public partial class ReportsPanel : UserControl
                 ? Color.FromArgb(220, 255, 220)
                 : Color.FromArgb(255, 220, 220);
         }
+        chkSeleccionarTodos.Checked = false;
+        _isPopulating = false;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -149,19 +210,107 @@ public partial class ReportsPanel : UserControl
         if (dlg.ShowDialog() != DialogResult.OK) return;
 
         var sb = new StringBuilder();
-        sb.AppendLine("ID;Fecha;Referencia;Operario;Lote;Resultado");
+        sb.AppendLine("ID;Fecha;Referencia;Modelo;Operario;Lote;Resultado");
+        var idsSeleccionados = GetIdsSeleccionados();
         foreach (DataGridViewRow row in gridResultados.Rows)
         {
             if (row.IsNewRow) continue;
+            // Si hay filas marcadas, se exportan solo esas; si no hay ninguna, se exporta todo.
+            if (idsSeleccionados.Count > 0 &&
+                !idsSeleccionados.Contains(Convert.ToInt32(row.Cells[colR_Id.Index].Value)))
+                continue;
             sb.AppendLine(string.Join(";",
-                row.Cells[0].Value, row.Cells[1].Value,
-                row.Cells[2].Value, row.Cells[3].Value,
-                row.Cells[4].Value, row.Cells[5].Value));
+                row.Cells[colR_Id.Index].Value, row.Cells[colR_Fecha.Index].Value,
+                row.Cells[colR_Ref.Index].Value, row.Cells[colR_Modelo.Index].Value,
+                row.Cells[colR_Op.Index].Value,
+                row.Cells[colR_Lote.Index].Value, row.Cells[colR_Resultado.Index].Value));
         }
 
         File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
         MessageBox.Show($"Exportado:\n{dlg.FileName}", "OK",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private async void BtnExportCsvGeneral_Click(object? sender, EventArgs e)
+    {
+        var idsSeleccionados = GetIdsSeleccionados();
+        var seleccionados = idsSeleccionados
+            .Select(id => _filtrados.FirstOrDefault(r => r.Id == id))
+            .Where(r => r is not null)
+            .Select(r => r!)
+            .ToList();
+
+        if (_repository is null || seleccionados.Count == 0)
+        {
+            MessageBox.Show("No hay resultados seleccionados para exportar. Marque las casillas de los resultados deseados.", "Aviso",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        using var dlg = new SaveFileDialog
+        {
+            Filter   = "CSV|*.csv",
+            FileName = $"InformeGeneral_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+            Title    = "Guardar informe general CSV"
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        Cursor = Cursors.WaitCursor;
+        btnExportCsvGeneral.Enabled = false;
+        try
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("ID_Resultado;Fecha;Referencia;Modelo;Operario;Lote;Resultado;Paso;Contacto;R_medida_Ohm;R_cortocircuito_Ohm;RAW_Vain;RAW_Ve;Resultado_Paso;Timestamp");
+
+            foreach (var r in seleccionados)
+            {
+                var refActual = _refsList.FirstOrDefault(x => x.Id == r.ReferenciaId);
+                string refNombre = refActual?.ReferenciaNombre
+                    ?? (r.ReferenciaId.HasValue ? r.ReferenciaId.ToString()! : "Manual");
+                string modelo = refActual?.ModeloPlaca ?? string.Empty;
+                string resStr = r.ResultadoGlobal ? "BUENO" : "MALO";
+                string fecha  = r.FechaPrueba.ToString("dd/MM/yyyy HH:mm:ss");
+
+                var detalles = (await _repository.GetDetallesByResultadoAsync(r.Id)).ToList();
+                if (detalles.Count == 0)
+                {
+                    sb.AppendLine(string.Join(";",
+                        r.Id, fecha, refNombre, modelo, r.Operario, r.Lote, resStr,
+                        "", "", "", "", "", "", "", ""));
+                    continue;
+                }
+
+                foreach (var d in detalles)
+                {
+                    string rValue = d.ResistenciaMedida < 0
+                        ? "∞"
+                        : d.ResistenciaMedida.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+                    string rCortoValue = d.ResistenciaCortocircuito < 0
+                        ? "∞"
+                        : d.ResistenciaCortocircuito.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+                    sb.AppendLine(string.Join(";",
+                        r.Id, fecha, refNombre, modelo, r.Operario, r.Lote, resStr,
+                        d.NPasoEnsayo, d.NombreContacto, rValue, rCortoValue, d.ValorRawVain, d.ValorRawVe,
+                        d.Resultado ? "OK" : "NOK",
+                        d.Timestamp.ToString("dd/MM/yyyy HH:mm:ss.fff")));
+                }
+            }
+
+            File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
+            MessageBox.Show(
+                $"Exportados {seleccionados.Count} resultados (IDs: {string.Join(", ", seleccionados.Select(r => r.Id))}).\n\n{dlg.FileName}",
+                "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al exportar:\n{ex.Message}", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            Cursor = Cursors.Default;
+            btnExportCsvGeneral.Enabled = true;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -171,7 +320,7 @@ public partial class ReportsPanel : UserControl
     private async void BtnVerDetalle_Click(object? sender, EventArgs e)
     {
         if (_repository is null || gridResultados.SelectedRows.Count == 0) return;
-        int id = Convert.ToInt32(gridResultados.SelectedRows[0].Cells[0].Value);
+        int id = Convert.ToInt32(gridResultados.SelectedRows[0].Cells[colR_Id.Index].Value);
         var detalles = (await _repository.GetDetallesByResultadoAsync(id)).ToList();
 
         if (detalles.Count == 0)

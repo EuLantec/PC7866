@@ -29,6 +29,12 @@ public partial class AutomaticTestPanel : UserControl
     private Referencia? _referenciaActual;
     private List<ParametroEnsayo> _parametros = new();
 
+    // Evitan que respuestas asíncronas solapadas (varias referencias seleccionadas seguidas,
+    // o varias entradas al panel Automático) apliquen datos obsoletos sobre la UI "enganchando"
+    // la referencia anterior: solo se aplica el resultado de la llamada más reciente.
+    private int  _referenciaLoadSeq;
+    private bool _isLoadingReferenciasList;
+
     // Colores de los dots: gris=no medido, verde=OK, rojo=NOK
     private readonly Dictionary<int, Color> _dotColors = new();
 
@@ -137,10 +143,11 @@ public partial class AutomaticTestPanel : UserControl
 
     private async Task LoadReferenciasAsync()
     {
-        if (_repository is null) return;
+        if (_repository is null || _isLoadingReferenciasList) return;
+        _isLoadingReferenciasList = true;
         try
         {
-            var refs = await _repository.GetAllReferenciasAsync();
+            var refs = await _repository.GetAllReferenciasAsync(soloActivas: true);
             cmbReferencia.Items.Clear();
             foreach (var r in refs) cmbReferencia.Items.Add(r);
             cmbReferencia.DisplayMember = "ReferenciaNombre";
@@ -151,6 +158,10 @@ public partial class AutomaticTestPanel : UserControl
         {
             AddLog($"❌ Error cargando referencias: {ex.Message}", LogLevel.Error);
         }
+        finally
+        {
+            _isLoadingReferenciasList = false;
+        }
     }
 
     /// <summary>
@@ -159,12 +170,13 @@ public partial class AutomaticTestPanel : UserControl
     /// </summary>
     public async Task RefreshAsync()
     {
-        if (_repository is null) return;
+        if (_repository is null || _isLoadingReferenciasList) return;
+        _isLoadingReferenciasList = true;
         try
         {
             string? prevName = _referenciaActual?.ReferenciaNombre;
 
-            var refs = await _repository.GetAllReferenciasAsync();
+            var refs = await _repository.GetAllReferenciasAsync(soloActivas: true);
             cmbReferencia.Items.Clear();
             foreach (var r in refs) cmbReferencia.Items.Add(r);
             cmbReferencia.DisplayMember = "ReferenciaNombre";
@@ -194,28 +206,45 @@ public partial class AutomaticTestPanel : UserControl
         {
             AddLog($"❌ Error recargando referencias: {ex.Message}", LogLevel.Error);
         }
+        finally
+        {
+            _isLoadingReferenciasList = false;
+        }
     }
 
     private async Task OnReferenciaChangedAsync()
     {
         if (cmbReferencia.SelectedItem is not Referencia ref_ || _repository is null) return;
+
+        // Token de secuencia: si mientras esperamos la BD se dispara otra carga (nueva selección,
+        // u otra entrada al panel), esta respuesta queda obsoleta y no debe pisar la más reciente.
+        int seq = ++_referenciaLoadSeq;
+        var parametros = (await _repository.GetParametrosByReferenciaAsync(ref_.Id)).ToList();
+        if (seq != _referenciaLoadSeq) return;
+
         _referenciaActual = ref_;
-        _parametros = (await _repository.GetParametrosByReferenciaAsync(ref_.Id)).ToList();
+        _parametros = parametros;
 
         // Resetear dots a gris
         _dotColors.Clear();
         foreach (var p in _parametros) _dotColors[p.Id] = Color.Gray;
 
-        // Mostrar imagen si existe
+        // Mostrar imagen si existe. Se copia a un Bitmap propio (independiente del MemoryStream,
+        // que se descarta al salir del using) para evitar que la imagen quede corrupta o no
+        // termine de cargar — GDI+ mantiene viva la referencia al stream mientras exista la
+        // Image, y aquí el stream no sobrevive fuera de este método.
+        var oldImage = picReferencia.Image;
         if (ref_.Imagen?.Length > 0)
         {
             using var ms = new MemoryStream(ref_.Imagen);
-            picReferencia.Image = Image.FromStream(ms);
+            using var loaded = Image.FromStream(ms);
+            picReferencia.Image = new Bitmap(loaded);
         }
         else
         {
             picReferencia.Image = null;
         }
+        oldImage?.Dispose();
 
         picReferencia.Invalidate();
         gridResultados.Rows.Clear();
@@ -356,6 +385,7 @@ public partial class AutomaticTestPanel : UserControl
             paso.NPasoEnsayo,
             paso.NombreContacto,
             $"{FormatResistance(detalle.ResistenciaMedida)}",
+            $"{FormatResistance(detalle.ResistenciaCortocircuito)}",
             $"{paso.ResistenciaNominal:F2} ±{paso.Tolerancia:F2}",
             resultado);
 

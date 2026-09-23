@@ -383,7 +383,7 @@ public partial class ManualControlPanel : UserControl
         if (_repository is null) return;
         try
         {
-            var refs = await _repository.GetAllReferenciasAsync();
+            var refs = await _repository.GetAllReferenciasAsync(soloActivas: true);
             cmbReferenciaManual.Items.Clear();
             foreach (var r in refs) cmbReferenciaManual.Items.Add(r);
             cmbReferenciaManual.DisplayMember = "ReferenciaNombre";

@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using MySqlConnector;
 using PC7866.Models;
 using System.Text.Json;
@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace PC7866.Services.Database;
 
 /// <summary>
-/// ImplementaciÃ³n de acceso a MariaDB mediante Dapper.
+/// Implementacion de acceso a MariaDB mediante Dapper.
 /// Schema: referencias, parametros_ensayo, resultados, resultados_detalle.
 /// </summary>
 public class TestRepository : ITestRepository
@@ -20,9 +20,9 @@ public class TestRepository : ITestRepository
 
     private MySqlConnection CreateConnection() => new(_connectionString);
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Referencias
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// <summary>
+    /// Operaciones de consulta, alta, modificacion y eliminacion de referencias.
+    /// </summary>
 
     public async Task<IEnumerable<Referencia>> GetAllReferenciasAsync(bool soloActivas = false)
     {
@@ -48,10 +48,12 @@ public class TestRepository : ITestRepository
         const string sql = """
             INSERT INTO referencias
                 (b_activa, referencia, descripcion, fecha_creacion, fecha_modificacion, imagen,
-                 modelo_placa, num_mcps, inh1_pos, inh2_pos, inh3_pos, inh4_pos, muestras, retardo_ms)
+                 modelo_placa, num_mcps, inh1_pos, inh2_pos, inh3_pos, inh4_pos, muestras, retardo_ms,
+                 resistencia_cortocircuito)
             VALUES
                 (@BActiva, @Referencia, @Descripcion, @FechaCreacion, @FechaModificacion, @Imagen,
-                 @ModeloPlaca, @NumMcps, @Inh1Pos, @Inh2Pos, @Inh3Pos, @Inh4Pos, @Muestras, @RetardoMs);
+                 @ModeloPlaca, @NumMcps, @Inh1Pos, @Inh2Pos, @Inh3Pos, @Inh4Pos, @Muestras, @RetardoMs,
+                 @ResistenciaCortocircuito);
             SELECT LAST_INSERT_ID();
             """;
 
@@ -71,7 +73,8 @@ public class TestRepository : ITestRepository
             r.Inh3Pos,
             r.Inh4Pos,
             r.Muestras,
-            r.RetardoMs
+            r.RetardoMs,
+            r.ResistenciaCortocircuito
         });
     }
 
@@ -91,7 +94,8 @@ public class TestRepository : ITestRepository
                 inh3_pos           = @Inh3Pos,
                 inh4_pos           = @Inh4Pos,
                 muestras           = @Muestras,
-                retardo_ms         = @RetardoMs
+                retardo_ms         = @RetardoMs,
+                resistencia_cortocircuito = @ResistenciaCortocircuito
             WHERE id = @Id
             """;
 
@@ -111,7 +115,8 @@ public class TestRepository : ITestRepository
             r.Inh3Pos,
             r.Inh4Pos,
             r.Muestras,
-            r.RetardoMs
+            r.RetardoMs,
+            r.ResistenciaCortocircuito
         });
     }
 
@@ -155,9 +160,9 @@ public class TestRepository : ITestRepository
         }
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // ParametrosEnsayo
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// <summary>
+    /// Operaciones de consulta, alta, modificacion y eliminacion de parametros de ensayo.
+    /// </summary>
 
     public async Task<IEnumerable<ParametroEnsayo>> GetParametrosByReferenciaAsync(int referenciaId)
     {
@@ -270,9 +275,9 @@ public class TestRepository : ITestRepository
         await conn.ExecuteAsync(sql, new { Id = id });
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Resultados
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// <summary>
+    /// Operaciones de consulta y alta de resultados completos de ensayo.
+    /// </summary>
 
     public async Task<IEnumerable<Resultado>> GetAllResultadosAsync()
     {
@@ -370,9 +375,9 @@ public class TestRepository : ITestRepository
         });
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // ResultadosDetalle
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// <summary>
+    /// Operaciones de consulta y alta de detalles asociados a un resultado.
+    /// </summary>
 
     public async Task<IEnumerable<ResultadoDetalle>> GetDetallesByResultadoAsync(int resultadoId)
     {
@@ -392,10 +397,12 @@ public class TestRepository : ITestRepository
         const string sql = """
             INSERT INTO resultados_detalle
                 (resultado_id, parametro_ensayo_id, nombre_contacto, n_paso_ensayo,
-                 resistencia_medida, valor_raw_vain, valor_raw_ve, resultado, estado_medicion, timestamp_medicion)
+                 resistencia_medida, resistencia_cortocircuito, valor_raw_vain, valor_raw_ve,
+                 resultado, estado_medicion, timestamp_medicion)
             VALUES
                 (@ResultadoId, @ParametroEnsayoId, @NombreContacto, @NPasoEnsayo,
-                 @ResistenciaMedida, @ValorRawVain, @ValorRawVe, @Resultado, @Estado, @Timestamp)
+                 @ResistenciaMedida, @ResistenciaCortocircuito, @ValorRawVain, @ValorRawVe,
+                 @Resultado, @Estado, @Timestamp)
             """;
 
         using var conn = CreateConnection();
@@ -406,6 +413,7 @@ public class TestRepository : ITestRepository
             d.NombreContacto,
             d.NPasoEnsayo,
             d.ResistenciaMedida,
+            d.ResistenciaCortocircuito,
             d.ValorRawVain,
             d.ValorRawVe,
             d.Resultado,
@@ -414,9 +422,9 @@ public class TestRepository : ITestRepository
         });
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Utilidades
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// <summary>
+    /// Operaciones auxiliares de conexion, inicializacion y mantenimiento del esquema.
+    /// </summary>
 
     public async Task<bool> TestConnectionAsync()
     {
@@ -464,7 +472,8 @@ public class TestRepository : ITestRepository
                 inh3_pos            INT NULL,
                 inh4_pos            INT NULL,
                 muestras            INT NOT NULL DEFAULT 1,
-                retardo_ms          INT NOT NULL DEFAULT 0
+                retardo_ms          INT NOT NULL DEFAULT 0,
+                resistencia_cortocircuito FLOAT NOT NULL DEFAULT 0
             );
             """;
 
@@ -512,6 +521,7 @@ public class TestRepository : ITestRepository
                 nombre_contacto     VARCHAR(20),
                 n_paso_ensayo       INT  NOT NULL,
                 resistencia_medida  FLOAT NOT NULL,
+                resistencia_cortocircuito FLOAT NOT NULL DEFAULT -1,
                 valor_raw_vain      INT   NOT NULL DEFAULT 0,
                 valor_raw_ve        INT   NOT NULL DEFAULT 0,
                 resultado           BOOLEAN NOT NULL,
@@ -561,13 +571,18 @@ public class TestRepository : ITestRepository
 
         // Migracion: el nombre de la referencia ya no es unico (el identificador real es modelo_placa)
         await conn.ExecuteAsync("ALTER TABLE referencias DROP INDEX IF EXISTS referencia;");
+
+        // Migraciones: umbral de resistencia de cortocircuito a nivel de modelo (Referencia), y
+        // resistencia calculada en la fase de cortocircuito de cada detalle de resultado.
+        await conn.ExecuteAsync("ALTER TABLE referencias ADD COLUMN IF NOT EXISTS resistencia_cortocircuito FLOAT NOT NULL DEFAULT 0;");
+        await conn.ExecuteAsync("ALTER TABLE resultados_detalle ADD COLUMN IF NOT EXISTS resistencia_cortocircuito FLOAT NOT NULL DEFAULT -1;");
     }
 
     public void Dispose() { }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // Mappers privados
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    /// <summary>
+    /// Conversion de filas dinamicas de base de datos a modelos de dominio.
+    /// </summary>
 
     private static Referencia MapReferencia(dynamic row) => new()
     {
@@ -585,7 +600,8 @@ public class TestRepository : ITestRepository
         Inh3Pos            = HasColumn(row, "inh3_pos")  ? (int?)row.inh3_pos : null,
         Inh4Pos            = HasColumn(row, "inh4_pos")  ? (int?)row.inh4_pos : null,
         Muestras           = HasColumn(row, "muestras")  ? (int)row.muestras  : 1,
-        RetardoMs          = HasColumn(row, "retardo_ms") ? (int)row.retardo_ms : 0
+        RetardoMs          = HasColumn(row, "retardo_ms") ? (int)row.retardo_ms : 0,
+        ResistenciaCortocircuito = HasColumn(row, "resistencia_cortocircuito") ? (float)row.resistencia_cortocircuito : 0f
     };
 
     private static ParametroEnsayo MapParametroEnsayo(dynamic row)
@@ -648,6 +664,7 @@ public class TestRepository : ITestRepository
             NombreContacto    = (string?)row.nombre_contacto ?? string.Empty,
             NPasoEnsayo       = (int)row.n_paso_ensayo,
             ResistenciaMedida = (float)row.resistencia_medida,
+            ResistenciaCortocircuito = HasColumn(row, "resistencia_cortocircuito") ? (float)row.resistencia_cortocircuito : -1f,
             ValorRawVain      = (int)row.valor_raw_vain,
             ValorRawVe        = (int)row.valor_raw_ve,
             Resultado         = resultado,

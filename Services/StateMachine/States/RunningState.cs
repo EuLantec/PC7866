@@ -7,20 +7,16 @@ namespace PC7866.Services.StateMachine.States;
 /// Al inicio TODOS los MCP de la placa (se usen o no) se ponen como salida a 0V. Luego, por cada
 /// paso: se pone su "arriba" (McpArribaChip/Pin) a 5V y su "abajo" (McpAbajoChip/Pin) a 0V, se
 /// selecciona la pista (P) y se leen las analógicas filtradas (F0..F3) para calcular R; a
-/// continuación su "abajo" pasa a entrada (alta impedancia) y se comprueba la caída de tensión
-/// (cortocircuito real); finalmente se restaura el paso (arriba a 0V, abajo de nuevo como salida a
-/// 0V) antes de pasar al siguiente.
+/// continuación su "abajo" pasa a entrada (alta impedancia) y se vuelve a calcular una resistencia
+/// (misma fórmula, reutilizando F1/F2/F3) para detectar el cortocircuito comparándola contra un
+/// umbral de resistencia definido a nivel de Referencia (dato del modelo, no por pin); finalmente
+/// se restaura el paso (arriba a 0V, abajo de nuevo como salida a 0V) antes de pasar al siguiente.
 /// Fórmula de resistencia (función lineal): R = Pendiente * (Vain / (Ve - Vain) * 390) + Offset
 /// </summary>
 public class RunningState : ITestState
 {
     private const float R_REF = 390f;   // Ohm
     private const float R_OPEN_THRESHOLD = 1000f; // Ohm
-
-    // Umbral de tensión (V) por debajo del cual se considera "caída" (cortocircuito real) en la
-    // Fase B, al leer con "arriba" excitado a 5V. Asunción (sin confirmar por hardware): mitad de
-    // la tensión de excitación nominal. Ajustar aquí si se define un valor distinto.
-    private const float CORTOCIRCUITO_VOLTAGE_THRESHOLD = 4.5f; // V
 
     // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S/P) antes de leer, para que el
     // relé/mux y la carga del cableado se estabilicen. Con el ensayo punto a punto solo conmuta
@@ -208,11 +204,39 @@ public class RunningState : ITestState
                 await Task.Delay(SETTLE_DELAY_MS, context.CancellationToken);
 
                 string respF = await SendLoggedAsync(context, Pc7866Commands.ReadFiltered(0));
-                float? voltaje = context.Parser.ParseFilteredValue(respF);
+                float? f0Corto = context.Parser.ParseFilteredValue(respF);
 
-                // Caída de tensión (o respuesta inválida) por debajo del umbral → cortocircuito real
-                if (voltaje is null || voltaje.Value < CORTOCIRCUITO_VOLTAGE_THRESHOLD)
+                if (f0Corto is null)
+                {
+                    // Fallo de lectura: no se puede calcular la resistencia de cortocircuito; se
+                    // marca cortocircuito por seguridad (fail-safe, igual que ante el fallo de F0..F3).
                     detalle.Estado = EstadoMedicion.Cortocircuito;
+                }
+                else
+                {
+                    // Misma fórmula que la resistencia principal (Vain/Ve → R_bruta), reutilizando
+                    // F1/F2/F3 ya cacheados, pero con el nuevo F0 leído en esta fase. Sin calibración
+                    // por pin: el umbral de comparación es un dato del modelo (Referencia), no de
+                    // cada paso.
+                    float vainCorto = f0Corto.Value - canalesFijos[0]!.Value;
+                    float denomCorto = ve - vainCorto;
+                    float resistenciaCorto = -1f;
+                    if (Math.Abs(denomCorto) > 1e-6f)
+                    {
+                        float rBrutaCorto = (vainCorto / denomCorto) * R_REF;
+                        if (rBrutaCorto > 0f && rBrutaCorto <= R_OPEN_THRESHOLD)
+                            resistenciaCorto = rBrutaCorto;
+                    }
+                    detalle.ResistenciaCortocircuito = resistenciaCorto;
+
+                    float umbralCorto = context.Referencia.ResistenciaCortocircuito;
+                    if (umbralCorto > 0f && resistenciaCorto >= 0f && resistenciaCorto < umbralCorto)
+                        detalle.Estado = EstadoMedicion.Cortocircuito;
+
+                    context.CommandLogger?.Invoke(
+                        $"CALC-CORTO {paso.NombreContacto}: VainCorto={vainCorto:F4} denom={denomCorto:F4} " +
+                        $"R={resistenciaCorto:F4} Umbral={umbralCorto:F4}");
+                }
             }
 
             detalle.Resultado = detalle.Estado == EstadoMedicion.Ok;
