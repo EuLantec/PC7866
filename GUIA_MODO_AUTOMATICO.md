@@ -51,8 +51,8 @@ Clase [`RunningState`](Services/StateMachine/States/RunningState.cs). Los parám
 
 Por cada paso (comprobar cancelación → reportar progreso `"[i/total] NombreContacto"`):
 
-1. **Resistencia** — poner su "arriba" a **5V** (`S`), su "abajo" ya está a 0V → `P<CanalMultiplexor>` para seleccionar la pista → esperar asentamiento (`SETTLE_DELAY_MS`) → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` dejan el cálculo bruto). `F0` cambia con cada resistencia, pero `F1`/`F2`/`F3` son fijos en automático, así que se leen **una sola vez** (en el primer paso) y se reutilizan en los demás para acelerar el ensayo. El abierto/cortocircuito se detecta sobre la resistencia **bruta** (igual que el modo manual) y solo a lecturas válidas se aplica la calibración. Se clasifica `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última si `R < ResistenciaMinima`).
-2. **Cortocircuito** — poner su "abajo" como **entrada** (`M`, alta impedancia) manteniendo "arriba" a 5V y la pista ya seleccionada → esperar asentamiento → leer `F0`; si la tensión cae por debajo de **4,5V** (o falla la lectura) se marca `Cortocircuito` sobre el resultado del punto 1.
+1. **Resistencia** — poner su "arriba" a **5V** (`S`), su "abajo" ya está a 0V → `P<CanalMultiplexor>` para seleccionar la pista → esperar asentamiento (`SETTLE_DELAY_MS`) → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` dejan el cálculo bruto). `F0` cambia con cada resistencia, pero `F1`/`F2`/`F3` son fijos en automático, así que se leen **una sola vez** (en el primer paso) y se reutilizan en los demás para acelerar el ensayo. El abierto/cortocircuito se detecta sobre la resistencia **bruta** (igual que el modo manual) y solo a lecturas válidas se aplica la calibración; se considera abierta (`R = ∞`) si la resistencia bruta es `≤ 0` o `> 1000 Ω`. Se clasifica `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última si `R < ResistenciaMinima`).
+2. **Cortocircuito** — poner su "abajo" como **entrada** (`M`, alta impedancia) manteniendo "arriba" a 5V y la pista ya seleccionada → esperar asentamiento → leer `F0` de nuevo y calcular una **resistencia de cortocircuito** con la misma fórmula (reutilizando `F1`/`F2`/`F3` cacheados, sin calibración `Pendiente`/`Offset`); si esa resistencia cae por debajo de `Referencia.ResistenciaCortocircuito` (umbral del modelo, no por pin) o falla la lectura, se marca `Cortocircuito` sobre el resultado del punto 1.
 3. **Restaurar el paso** — "arriba" a **0V** (`S`), "abajo" de nuevo como **salida** (`M`) y a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
 4. Se dispara `StepCompleted` con el `ResultadoDetalle` final, que la UI usa para:
 - Pintar el punto (dot) de ese paso sobre la imagen: verde=Ok, rojo=Nok, naranja=Cortocircuito, azul=Abierto.
@@ -153,8 +153,8 @@ flowchart TD
     B -->|OK| INIT[Poner TODOS los MCP de la placa a 0V]
     INIT --> P0[Por cada paso...]
     P0 --> R1[Resistencia: arriba=5V, P pista, F0..F3, calcular R, clasificar]
-    R1 --> C1[Cortocircuito: abajo=entrada, arriba=5V, leer tension]
-    C1 --> C2{Cae la tension?}
+    R1 --> C1[Cortocircuito: abajo=entrada, arriba=5V, leer F0 y calcular R corto]
+    C1 --> C2{R corto menor que umbral del modelo?}
     C2 -->|si| CORTO[Marcar Cortocircuito]
     C2 -->|no| KEEP[Mantener estado de resistencia]
     CORTO --> RESTORE[Restaurar arriba=0V, abajo=salida 0V]
@@ -175,3 +175,4 @@ Los resultados guardados se revisan luego desde el panel **Informes**, incluyend
 
 - Si la BD no está disponible al abrir el panel, se registra un aviso en el log pero el panel sigue funcionando en local (no se podrán cargar referencias ni guardar resultados hasta restablecer la conexión).
 - El modo automático no permite operar salidas individuales fuera del flujo del ensayo — para eso usa el [modo manual](GUIA_MODO_MANUAL.md).
+- El botón "Probar contacto" del modo manual (sección **Semiautomático**) invoca la misma `TestStateMachine.RunAsync(...)` con un único paso, por lo que el cálculo de resistencia, el umbral de abierto (1000 Ω) y la comparación de cortocircuito son idénticos a los descritos aquí; la única diferencia es que ese resultado no se guarda en BD. Ver [GUIA_MODO_MANUAL.md](GUIA_MODO_MANUAL.md#10-semiautomático--probar-un-solo-contacto).

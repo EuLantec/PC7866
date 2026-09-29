@@ -133,6 +133,7 @@ Resultado completo:
 - ✅ Selección de puerto y velocidad
 - ✅ Conexión/desconexión
 - ✅ Diagnosis, configuración de MCP, matriz de 96 salidas y lectura analógica
+- ✅ Semiautomático: probar un solo contacto de una referencia (resistencia + cortocircuito), reutilizando `TestStateMachine.RunAsync` sin guardar en BD
 - ✅ Log en tiempo real con timestamps
 - ✅ Manejo de errores y timeouts
 - ✅ Indicador de estado en barra inferior
