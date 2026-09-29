@@ -571,7 +571,7 @@ partial class ManualControlPanel
         // ═════════════════════════════════════════════════════════════════════════
         grpSemiAuto.Text    = "Semiautomático – probar un contacto";
         grpSemiAuto.Dock    = System.Windows.Forms.DockStyle.Top;
-        grpSemiAuto.Height  = 172;
+        grpSemiAuto.Height  = 215;
         grpSemiAuto.Font    = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
         lblRefManual.Text     = "Modelo:";
@@ -608,8 +608,10 @@ partial class ManualControlPanel
 
         lblSemiAutoResult.Text      = "Resultado: —";
         lblSemiAutoResult.AutoSize  = true;
-        lblSemiAutoResult.Location  = new System.Drawing.Point(6, 130);
-        lblSemiAutoResult.Font      = new System.Drawing.Font("Consolas", 10f, System.Drawing.FontStyle.Bold);
+        // Limita el ancho para que el texto largo haga wrap en vez de recortarse contra el borde del groupbox.
+        lblSemiAutoResult.MaximumSize = new System.Drawing.Size(400, 0);
+        lblSemiAutoResult.Location  = new System.Drawing.Point(6, 126);
+        lblSemiAutoResult.Font      = new System.Drawing.Font("Consolas", 9.5f, System.Drawing.FontStyle.Bold);
         lblSemiAutoResult.ForeColor = System.Drawing.Color.FromArgb(80, 80, 80);
 
         grpSemiAuto.Controls.AddRange(new System.Windows.Forms.Control[]

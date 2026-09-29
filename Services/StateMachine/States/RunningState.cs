@@ -17,6 +17,8 @@ public class RunningState : ITestState
 {
     private const float R_REF = 390f;   // Ohm
     private const float R_OPEN_THRESHOLD = 1000f; // Ohm
+    // Mismo criterio que ManualControlPanel.CalcResistance: denominador <= 0 se trata como abierto.
+    private const float DENOM_EPSILON = 1e-9f;
 
     // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S/P) antes de leer, para que el
     // relé/mux y la carga del cableado se estabilicen. Con el ensayo punto a punto solo conmuta
@@ -173,7 +175,8 @@ public class RunningState : ITestState
             float resistencia = -1f;
             float denom = ve - vain;
             float rBruta = 0f;
-            if (Math.Abs(denom) > 1e-6f)
+            // Solo un denominador POSITIVO es físicamente válido; negativo = nodo flotando → abierto (∞).
+            if (denom > DENOM_EPSILON)
             {
                 rBruta = (vain / denom) * R_REF;
                 if (rBruta > 0f && rBruta <= R_OPEN_THRESHOLD)
@@ -221,7 +224,7 @@ public class RunningState : ITestState
                     float vainCorto = f0Corto.Value - canalesFijos[0]!.Value;
                     float denomCorto = ve - vainCorto;
                     float resistenciaCorto = -1f;
-                    if (Math.Abs(denomCorto) > 1e-6f)
+                    if (denomCorto > DENOM_EPSILON)
                     {
                         float rBrutaCorto = (vainCorto / denomCorto) * R_REF;
                         if (rBrutaCorto > 0f && rBrutaCorto <= R_OPEN_THRESHOLD)
