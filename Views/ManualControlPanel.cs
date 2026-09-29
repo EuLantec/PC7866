@@ -462,8 +462,9 @@ public partial class ManualControlPanel : UserControl
             }
             else
             {
-                string rStr = detalle.ResistenciaMedida < 0f ? "∞" : detalle.ResistenciaMedida.ToString("F2");
-                lblSemiAutoResult.Text = $"{paso.NombreContacto}: {detalle.Estado}   R = {rStr} Ω";
+                string rStr      = detalle.ResistenciaMedida < 0f ? "∞" : detalle.ResistenciaMedida.ToString("F2");
+                string rCortoStr = detalle.ResistenciaCortocircuito < 0f ? "∞" : detalle.ResistenciaCortocircuito.ToString("F2");
+                lblSemiAutoResult.Text = $"{paso.NombreContacto}: {detalle.Estado}   R = {rStr} Ω   R cortocircuito = {rCortoStr} Ω";
                 lblSemiAutoResult.ForeColor = detalle.Estado switch
                 {
                     EstadoMedicion.Ok            => Color.FromArgb(0, 140, 60),

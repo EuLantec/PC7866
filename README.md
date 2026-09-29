@@ -16,7 +16,7 @@ La aplicacion permite:
 ## Estado actual
 
 El proyecto ya incluye funcionalidad operativa en:
-- Modo manual: diagnosis, activacion de salidas y lecturas analogicas.
+- Modo manual: diagnosis, activacion de salidas, lecturas analogicas y una seccion Semiautomatico para probar un solo contacto (resistencia + cortocircuito) reutilizando la maquina de estados del modo automatico, sin guardar en BD.
 - Modo automatico: ejecucion punto a punto (resistencia + cortocircuito por contacto) con maquina de estados y progreso visual.
 - Parametros: gestion de referencias y parametros de ensayo, con import/export en CSV y JSON.
 - Mapa de contactos: la imagen de cada referencia muestra una bola por contacto, con su nombre dentro y colores de estado durante el ensayo.

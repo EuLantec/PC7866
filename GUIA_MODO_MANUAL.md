@@ -71,6 +71,22 @@ Botón **Reset** (grupo Reset): pide confirmación y, si se acepta, envía el co
 
 El panel inferior muestra todas las tramas enviadas (`➡️ TX`) y recibidas (`⬅️ RX`), además de avisos y errores (timeout, puerto no abierto, etc.). Botón **Limpiar log** para vaciarlo.
 
+## 10. Semiautomático — probar un solo contacto
+
+Grupo **Semiautomático**: permite ejecutar el ensayo completo (resistencia + cortocircuito) de un único contacto de una referencia guardada en BD, sin lanzar el ensayo completo del modo automático ni guardar el resultado.
+
+1. Elige el **Modelo** (Referencia) en el desplegable; al seleccionarlo se cargan sus contactos, se rellenan los campos de **Config. placa** (nº MCP, INH1-4, modelo de placa, muestras, retardo) con los valores guardados de esa referencia y se envía automáticamente la trama `I` de configuración. El botón 🔄 refresca la lista de modelos.
+2. Elige el **Contacto** (paso) a probar.
+3. Pulsa **▶ Probar contacto (R + Cortocircuito)**. Esto ejecuta internamente la misma máquina de estados que usa el modo automático (`TestStateMachine.RunAsync`) mediante `_stateMachine.RunAsync(...)`, con una lista de un solo paso — es decir, la secuencia de tramas, el cálculo de la resistencia y la comprobación de cortocircuito son exactamente iguales a las del [modo automático](GUIA_MODO_AUTOMATICO.md).
+4. El resultado se muestra en la etiqueta inferior con el formato:
+   ```
+   {Contacto}: {Estado}   R = {valor} Ω   R cortocircuito = {valor} Ω
+   ```
+   - `R` es la resistencia principal medida del contacto; `R cortocircuito` es la resistencia calculada en la segunda fase (pin "abajo" como entrada), comparada contra `Referencia.ResistenciaCortocircuito` (umbral del modelo).
+   - Cualquiera de las dos resistencias se muestra como `∞` si la resistencia bruta calculada es `≤ 0` o `> 1000 Ω` (umbral de "abierto"), en cuyo caso el estado es **Abierto**.
+   - El color del texto refleja el estado: verde=Ok, rojo=Nok, naranja=Cortocircuito, azul=Abierto.
+5. Este ensayo puntual **no se guarda en base de datos** — para eso usa el ensayo completo del modo automático.
+
 ## Notas
 
-- El modo manual no requiere referencias ni parámetros de ensayo — para pruebas de producción con criterios de OK/NOK por referencia, usa el [modo automático](GUIA_MODO_AUTOMATICO.md), que además explica en detalle técnico paso a paso la secuencia interna (`I` → `P` → `S` → `F0..F3` → cálculo de R → clasificación).
+- El modo manual no requiere referencias ni parámetros de ensayo para las secciones de comandos crudos (1-9) — para pruebas de producción con criterios de OK/NOK por referencia (y guardado en BD), usa el [modo automático](GUIA_MODO_AUTOMATICO.md), que además explica en detalle técnico paso a paso la secuencia interna (`I` → `P` → `S` → `F0..F3` → cálculo de R → clasificación) que también reutiliza la sección **Semiautomático** de este modo.
