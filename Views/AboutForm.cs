@@ -17,7 +17,7 @@ public sealed class AboutForm : Form
         MaximizeBox     = false;
         MinimizeBox     = false;
         ShowInTaskbar   = false;
-        ClientSize      = new Size(460, 340);
+        ClientSize      = new Size(480, 470);
         BackColor       = UiTheme.Surface;
         Font            = UiTheme.BaseFont;
         AutoScaleMode   = AutoScaleMode.Font;
@@ -41,7 +41,7 @@ public sealed class AboutForm : Form
         };
         var lblSubtitle = new Label
         {
-            Text      = "Banco de test resistivo Embega",
+            Text      = "Banco de test resistivo · Lantec2000 para Embega",
             ForeColor = Color.FromArgb(220, 235, 233),
             Font      = new Font("Segoe UI", 10F),
             AutoSize  = true,
@@ -64,13 +64,17 @@ public sealed class AboutForm : Form
                 "mediante el equipo PC7866 (comunicación serie).\n\n" +
                 "Funciones: modo manual, ensayo automático punto a punto, gestión de " +
                 "referencias y parámetros, informes y exportación de resultados.\n\n" +
+                "Desarrollado por LANTEC2000, ingeniería de automatización industrial y " +
+                "bancos de test a medida.\n\n" +
+                "Cliente: Embega\n" +
+                "Autores: Eduardo Castillo Bello y Eugenio Goñi\n\n" +
                 "Tecnología: .NET 10 · WinForms · MariaDB/MySQL (Dapper) · PdfSharpCore."
         };
 
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 56, BackColor = UiTheme.Surface };
         var lblCopyright = new Label
         {
-            Text      = $"© {DateTime.Now:yyyy} Embega — Todos los derechos reservados",
+            Text      = $"© {DateTime.Now:yyyy} LANTEC2000 — Todos los derechos reservados",
             ForeColor = UiTheme.TextMuted,
             AutoSize  = true,
             Location  = new Point(24, 20)

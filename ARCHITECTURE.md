@@ -175,7 +175,7 @@ DefaultTimeout = 5000
 
 // Base de datos
 DatabaseServer = "localhost"
-DatabaseName = "pc7866_test"
+DatabaseName = "control_electrico_salud"
 DatabaseUser = "root"
 DatabasePort = 3306
 

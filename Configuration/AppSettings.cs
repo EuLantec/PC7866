@@ -48,7 +48,7 @@ public class AppSettings
 
     // Configuración de base de datos
     public string DatabaseServer { get; set; } = "localhost";
-    public string DatabaseName { get; set; } = "pc7866_test";
+    public string DatabaseName { get; set; } = "control_electrico_salud";
     public string DatabaseUser { get; set; } = "root";
     public string DatabasePassword { get; set; } = "";
     public int DatabasePort { get; set; } = 3306;
@@ -175,7 +175,7 @@ public class AppSettings
         public int    DefaultBaudRate        { get; set; } = 115200;
         public int    DefaultTimeout         { get; set; } = 5000;
         public string DatabaseServer         { get; set; } = "localhost";
-        public string DatabaseName           { get; set; } = "pc7866_test";
+        public string DatabaseName           { get; set; } = "control_electrico_salud";
         public string DatabaseUser           { get; set; } = "root";
         public string DatabasePassword       { get; set; } = "";   // cifrado en Base64
         public int    DatabasePort           { get; set; } = 3306;
