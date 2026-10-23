@@ -20,7 +20,7 @@ El proyecto ya incluye funcionalidad operativa en:
 - Modo automatico: ejecucion punto a punto (resistencia + cortocircuito por contacto) con maquina de estados y progreso visual.
 - Parametros: gestion de referencias y parametros de ensayo, con import/export en CSV y JSON.
 - Mapa de contactos: la imagen de cada referencia muestra una bola por contacto, con su nombre dentro y colores de estado durante el ensayo.
-- Informes: consulta de historico y detalle de resultados.
+- Informes: consulta de historico y detalle de resultados, con exportacion a CSV.
 - Configuracion: puerto serie, conexion BD y opciones generales mediante `appsettings.json`.
 
 ## Tecnologias
@@ -34,8 +34,7 @@ Dependencias NuGet principales:
 - `Dapper`
 - `MySqlConnector`
 - `System.IO.Ports`
-- `PdfSharpCore`
-- `SixLabors.ImageSharp`
+- `PdfSharpCore` y `SixLabors.ImageSharp` (referenciadas en el proyecto; los informes se exportan hoy a CSV)
 
 ## Requisitos
 
@@ -112,13 +111,27 @@ En modo manual y automatico se utilizan los builders de `Pc7866Commands` para co
 
 ## Estructura del proyecto
 
+- `Program.cs` / `Form1.cs`: punto de entrada y ventana principal (menu, paneles, barra de estado).
 - `Configuration/`: configuracion global y persistencia.
 - `Models/`: modelos de dominio, comandos y resultados.
 - `Services/SerialCommunication/`: puerto serie y parser de respuestas.
 - `Services/Database/`: repositorio Dapper y creacion de esquema.
 - `Services/StateMachine/`: ejecucion del ensayo automatico por estados.
-- `Views/`: paneles UI (manual, automatico, parametros, informes).
-- `Utils/`: utilidades como logging.
+- `Views/`: paneles UI (manual, automatico, parametros, informes) y formularios (configuracion, detalle, acerca de).
+- `Utils/`: logging, import/export de parametros y tema visual.
+
+### Vista rapida
+
+```mermaid
+flowchart LR
+    UI["Views<br/>WinForms"] --> SM["StateMachine<br/>Initializing - Running - Completed"]
+    UI --> DB["TestRepository<br/>Dapper"]
+    SM --> SP["SerialPortService"]
+    SP <-->|USB / COM| HW[("Placa PC7866")]
+    DB <--> MDB[("MariaDB")]
+```
+
+Mas diagramas en [diagrama.md](diagrama.md).
 
 ## Base de datos
 
@@ -157,8 +170,11 @@ Para diagnostico de hardware, calibracion o pruebas puntuales sin referencia aso
   - Validar baudrate y puerto.
   - Probar diagnosis en modo manual antes de ejecutar automatico.
 
-## Documentacion adicional
+## Documentación adicional
 
-- Arquitectura tecnica detallada: `ARCHITECTURE.md`
-- Guia de uso del modo manual: `GUIA_MODO_MANUAL.md`
-- Guia de uso del modo automatico: `GUIA_MODO_AUTOMATICO.md`
+- [ARCHITECTURE.md](ARCHITECTURE.md): arquitectura técnica, componentes y patrones.
+- [diagrama.md](diagrama.md): diagramas (arquitectura, circuito de medida, máquina de estados, secuencia, algoritmo por paso, modelo de datos, clases y navegación).
+- [GUIA_MODO_MANUAL.md](GUIA_MODO_MANUAL.md): guía de uso del modo manual.
+- [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md): guía detallada del modo automático.
+- [EJEMPLO_COMANDOS_SERIE.md](EJEMPLO_COMANDOS_SERIE.md): ejemplo de tramas serie enviadas en un ensayo de 5 pasos.
+- [cambio-proyecto.md](cambio-proyecto.md): origen y alcance de la funcionalidad de medida de resistencia y cortocircuito.
