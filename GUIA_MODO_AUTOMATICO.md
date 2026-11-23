@@ -60,7 +60,7 @@ Por cada paso (comprobar cancelación → reportar progreso `"[i/total] NombreCo
 - Añadir una fila a la tabla de resultados con paso, contacto, resistencia medida, nominal±tolerancia y etiqueta de resultado.
 - Registrar la línea correspondiente en el log.
 
-Si se pulsa "Abortar ensayo", el resultado global pasa a `Aborted`. Cualquier excepción durante un paso (timeout, error de parseo, etc.) se captura y ese paso se clasifica **Nok**, sin interrumpir el resto del ensayo; el paso siempre se restaura (bloque `finally`) antes de continuar. Ver la sección ["Procedimiento eléctrico real"](#procedimiento-eléctrico-real-de-medición-punto-a-punto) más abajo para el detalle completo de tramas.
+Si se pulsa "Abortar ensayo", la máquina pasa a `Aborted` (ver [Cancelación](#cancelación-abortar-ensayo)). Cualquier excepción durante un paso (timeout, error de parseo, etc.) se captura y ese paso se clasifica **Nok**, sin interrumpir el resto del ensayo; el paso siempre se restaura (bloque `finally`) antes de continuar. Ver la sección ["Procedimiento eléctrico real"](#procedimiento-eléctrico-real-de-medición-punto-a-punto) más abajo para el detalle completo de tramas.
 
 Al terminar todos los pasos, `RunningState`:
 
@@ -118,8 +118,8 @@ Si un paso no tiene `McpArribaChip`/`McpAbajoChip` configurados (índice de bit 
 
 - El paso siempre se restaura en un bloque `finally`, incluso si hubo una excepción durante la
   medición, para no dejar salidas activas entre contactos.
-- Cualquier fallo de comunicación (timeout, respuesta `N`) durante la comprobación de cortocircuito
-  se trata como "no concluyente" (no se marca cortocircuito solo por eso).
+- En la comprobación de cortocircuito: si `M` (abajo→entrada) no responde `O`, la fase se omite (no concluyente); si `F0` no se puede leer, se marca `Cortocircuito` por seguridad (fail-safe); un timeout lanza excepción y el paso queda `Nok`.
+- Si algún MCP no responde `O` al ponerlo como salida a 0V al inicio de `Running`, el ensayo termina en `Error`.
 
 ## Paso 3 — Estado `Completed`
 
@@ -138,11 +138,16 @@ Clase [`CompletedState`](Services/StateMachine/States/CompletedState.cs): calcul
 
 1. Si no hay repositorio/BD disponible, solo registra un aviso en el log — el ensayo no se pierde, simplemente no queda guardado.
 2. Si hay BD: inserta la cabecera en `resultados` (`InsertResultadoAsync`, con `ReferenciaId`, `FechaPrueba`, `Operario`, `Lote`, `ResultadoGlobal`) y luego cada `ResultadoDetalle` en `resultados_detalle` (`InsertDetalleAsync`), enlazado por `ResultadoId`.
-3. Cada fila de detalle guarda: `ParametroEnsayoId`, `NombreContacto`, `NPasoEnsayo`, `ResistenciaMedida` (`-1` si abierto), `ResistenciaCortocircuito` (`-1` si no calculable/abierta, resistencia de la fase 2), `ValorRawVain`/`ValorRawVe`, `Resultado` (bool) y `Estado` (`Ok`/`Nok`/`Cortocircuito`/`Abierto`). Los informes (`Views/ReportsPanel.cs`, `Views/ResultadoDetalleForm.cs`) muestran y exportan ambas resistencias.
+3. Cada fila de detalle guarda: `ParametroEnsayoId`, `NombreContacto`, `NPasoEnsayo`, `ResistenciaMedida` (`-1` si abierto), `ResistenciaCortocircuito` (`-1` si no calculable/abierta, resistencia de la fase 2), `ValorRawVain`/`ValorRawVe` (hoy el ensayo automático no los rellena: se guardan a `0`), `Resultado` (bool) y `Estado` (`Ok`/`Nok`/`Cortocircuito`/`Abierto`). Los informes (`Views/ReportsPanel.cs`, `Views/ResultadoDetalleForm.cs`) muestran y exportan ambas resistencias.
 
 ## Cancelación (Abortar ensayo)
 
-En cualquier momento del bucle de `Running`, pulsar **Abortar ensayo** cancela el `CancellationToken` compartido. El paso en curso lanza `OperationCanceledException` (o se detecta al inicio de la siguiente iteración), la máquina pasa a `Aborted`, y en la UI se registra "⛔ Ensayo cancelado" sin guardar resultado en BD.
+En cualquier momento del bucle de `Running`, pulsar **Abortar ensayo** cancela el `CancellationToken` compartido. El efecto depende de cuándo llegue la cancelación:
+
+- **Entre dos pasos**: se detecta al inicio de la siguiente iteración, la máquina pasa a `Aborted` (sin pasar por `Completed`, y sin apagar salidas ni enviar `P00`) y `RunAsync` devuelve el resultado parcial con `ResultadoGlobal = false`. La UI lo muestra y **sí lo guarda** en BD.
+- **Durante un comando serie**: `SendCommandAsync` lanza `OperationCanceledException`. El `finally` del paso intenta restaurarlo, vuelve a fallar con el token cancelado y la excepción sale de `RunAsync`. La UI registra "⛔ Ensayo cancelado" y **no guarda** nada en BD.
+
+Cualquier estado `Error` (puerto cerrado, `I` rechazado o fallo al inicializar los MCP) también devuelve el resultado con `ResultadoGlobal = false` y la UI lo guarda.
 
 ## Resumen visual del flujo
 
@@ -161,11 +166,15 @@ flowchart TD
     KEEP --> RESTORE
     RESTORE --> UI[Disparar StepCompleted: dot, grid, log]
     UI -->|siguiente paso| P0
-    UI -->|cancelado| X[Aborted]
+    UI -->|cancelado entre pasos| X[Aborted]
     UI -->|todos los pasos hechos| D[Apagar salidas + P00]
     D --> F[Completed: reporte final]
     F --> G[Guardar Resultado + Detalles en BD]
+    E --> G
+    X --> G
 ```
+
+Más diagramas (circuito, máquina de estados, secuencia, modelo de datos) en [diagrama.md](diagrama.md).
 
 ## Consultar el histórico
 

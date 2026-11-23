@@ -1,277 +1,242 @@
-# PC7866 - Arquitectura y Documentación Técnica
+# PC7866 - Arquitectura y documentación técnica
 
-## 📐 Estructura del Proyecto
+Aplicación Windows Forms (`net10.0-windows`) para ensayos resistivos del banco PC7866: comunica por puerto serie con el microcontrolador de la placa, mide resistencia y cortocircuito punto a punto y guarda los resultados en MariaDB/MySQL.
+
+> Los diagramas (arquitectura, circuito de medida, máquina de estados, secuencias, modelo de datos y clases) están en [diagrama.md](diagrama.md).
+
+## Índice
+
+- [Estructura del proyecto](#-estructura-del-proyecto)
+- [Componentes](#-componentes)
+- [Flujo de un ensayo](#-flujo-de-un-ensayo)
+- [Patrones de diseño](#-patrones-de-diseño)
+- [Convenciones](#-convenciones-de-código)
+- [Depuración](#-depuración)
+- [Documentación relacionada](#-documentación-relacionada)
+
+---
+
+## 📐 Estructura del proyecto
 
 ```
 PC7866/
-├── Models/                          # Modelos de dominio, comandos y resultados
-│   ├── Referencia.cs                # Referencia/producto + configuración de placa
-│   ├── ParametroEnsayo.cs           # Paso de ensayo (contacto, selectores, calibración)
-│   ├── Resultado.cs                 # Cabecera de un ensayo
-│   ├── ResultadoDetalle.cs          # Resultado por paso + EstadoMedicion
+├── Program.cs                       # Punto de entrada (STAThread, lanza Form1)
+├── Form1.cs                         # Ventana principal: menú, panel contenedor, barra de estado
+│
+├── Configuration/
+│   └── AppSettings.cs               # Singleton; persiste en appsettings.json (clave BD cifrada con DPAPI)
+│
+├── Models/                          # Modelos de dominio y protocolo
+│   ├── Referencia.cs                # Producto + configuración de placa (comando "I") + umbral de cortocircuito
+│   ├── ParametroEnsayo.cs           # Paso de ensayo: selectores arriba/abajo, pista, nominal, tolerancia, calibración
+│   ├── Resultado.cs                 # Cabecera de un ensayo (operario, lote, resultado global)
+│   ├── ResultadoDetalle.cs          # Resultado por paso + enum EstadoMedicion
 │   ├── Pc7866Commands.cs            # Builders de tramas del protocolo serie
-│   └── ...                          # TestParameters, MeasurementResult, DeviceResponse, etc.
+│   └── DeviceResponse, TestParameters, MeasurementCommand, MeasurementResult, TestResult
+│                                    # Modelos genéricos heredados de la plantilla inicial; el ensayo actual NO los usa
 │
 ├── Services/
 │   ├── SerialCommunication/
-│   │   ├── ISerialPortService.cs    # Interfaz de comunicación
-│   │   ├── SerialPortService.cs     # Implementación puerto serie
-│   │   └── CommandParser.cs         # Parser de respuestas analógicas
+│   │   ├── ISerialPortService.cs    # Contrato del puerto serie
+│   │   ├── SerialPortService.cs     # Implementación (System.IO.Ports, async, thread-safe)
+│   │   └── CommandParser.cs         # Parseo de respuestas F (voltios) y R (RAW)
 │   ├── Database/
-│   │   ├── ITestRepository.cs       # Interfaz del repositorio
-│   │   └── TestRepository.cs        # Acceso a MariaDB (Dapper) + creación/migración de esquema
+│   │   ├── ITestRepository.cs       # Contrato del repositorio
+│   │   └── TestRepository.cs        # Dapper + MySqlConnector; crea y migra el esquema
 │   └── StateMachine/
-│       ├── ITestState.cs            # Interfaz de estado
-│       ├── TestContext.cs           # Contexto compartido del ensayo
-│       ├── TestStateMachine.cs      # Orquestador de estados
+│       ├── ITestState.cs            # Contrato de estado
+│       ├── TestContext.cs           # Contexto compartido + TestProgressReport + enum TestState
+│       ├── TestStateMachine.cs      # Orquestador (RunAsync)
 │       └── States/                  # InitializingState, RunningState, CompletedState
 │
-├── Views/                           # Paneles WinForms
-│   ├── ManualControlPanel.cs        # Modo manual (diagnosis, salidas, analógica)
-│   ├── AutomaticTestPanel.cs        # Modo automático (ejecución de ensayo)
-│   ├── ParametersPanel.cs           # Referencias y parámetros de ensayo
-│   ├── ReportsPanel.cs              # Informes / histórico
-│   ├── ConfigurationForm.cs         # Configuración (puerto, BD, opciones)
-│   └── ...                          # ResultadoDetalleForm
+├── Views/                           # Paneles y formularios WinForms
+│   ├── AutomaticTestPanel.cs        # Modo automático: ejecución del ensayo y mapa de contactos
+│   ├── ManualControlPanel.cs        # Modo manual: comandos sueltos + Semiautomático
+│   ├── ParametersPanel.cs           # Referencias, pasos de ensayo, imagen y posiciones X/Y
+│   ├── ReportsPanel.cs              # Histórico, filtros y exportación CSV
+│   ├── ResultadoDetalleForm.cs      # Detalle por paso de un resultado
+│   ├── ConfigurationForm.cs         # Puerto serie, BD y opciones
+│   └── AboutForm.cs
 │
-├── Utils/
-│   ├── Logger.cs                    # Sistema de logging
-│   └── ParametroImportExport.cs     # Import/export CSV y JSON de parámetros
-│
-└── Configuration/
-    └── AppSettings.cs               # Configuración global (persistida en appsettings.json)
+└── Utils/
+    ├── Logger.cs                    # Singleton; log diario en archivo
+    ├── ParametroImportExport.cs     # Import/export de parámetros en CSV y JSON
+    └── UiTheme.cs                   # Tema visual de paneles y formularios
 ```
 
 ---
 
-## 🔧 Componentes Implementados
+## 🔧 Componentes
 
-### 1️⃣ **SerialPortService** - Comunicación Serie USB
+### 1️⃣ SerialPortService - comunicación serie
 
-**Características:**
-- ✅ Comunicación asíncrona (async/await)
-- ✅ Manejo de timeouts
-- ✅ Eventos para datos recibidos y errores
-- ✅ Thread-safe (usa SemaphoreSlim)
-- ✅ Buffer de recepción inteligente
-- ✅ Configuración flexible (baudrate, paridad, bits)
+- Comunicación asíncrona; un comando a la vez (`SemaphoreSlim`), con timeout y `CancellationToken`.
+- Cada trama se envía en ASCII terminada en `\r\n`. La respuesta se completa al recibir terminador o tras un breve periodo de inactividad (comandos `F`/`R`, que no lo envían). `DT` es multilínea.
+- `SendCommandAsync` lanza `TimeoutException` si no llega respuesta y `OperationCanceledException` si se cancela.
 
-**Ejemplo de uso:**
 ```csharp
-var serialPort = new SerialPortService();
+var serial = new SerialPortService();
+serial.Open("COM4", 115200);
 
-// Conectar
-serialPort.Open("COM3", 9600);
+string resp = await serial.SendCommandAsync("DT", timeoutMs: 5000); // diagnosis total
+string f0   = await serial.SendCommandAsync("F0");                  // lectura filtrada canal 0
 
-// Enviar comando y esperar respuesta
-string response = await serialPort.SendCommandAsync("*IDN?", 5000);
-
-// Cerrar
-serialPort.Close();
+serial.Close();
 ```
 
-**Eventos disponibles:**
-- `DataReceived` - Datos recibidos del dispositivo
-- `ErrorOccurred` - Error en comunicación
-- `PortOpened` - Puerto abierto exitosamente
-- `PortClosed` - Puerto cerrado
+Eventos: `DataReceived`, `ErrorOccurred`, `PortOpened`, `PortClosed`.
 
----
+`Form1` crea **una única instancia** y la comparte con los paneles Manual y Automático.
 
-### 2️⃣ **CommandParser** - Parser de Comandos
+### 2️⃣ Pc7866Commands y protocolo serie
 
-**Funciones:**
-- Parsea respuestas del dispositivo
-- Extrae valores numéricos
-- Valida respuestas contra patrones esperados
-- Detecta códigos de error
+Todas las tramas se construyen con `Pc7866Commands`, nunca a mano.
 
-**Ejemplo:**
-```csharp
-var parser = new CommandParser();
+| Comando | Trama | Descripción |
+|---------|-------|-------------|
+| `D` | `DT`, `D1`, `D2`..`D7`, `DV`, `DG`, `DC` | Diagnosis total, ADS1115, MCP 0x20-0x25, versión, config I2C, temperatura |
+| `M` | `M<chip><E\|S><máscara 4 hex>` | Dirección (entrada/salida) de pines de un MCP23017 |
+| `S` | `S<chip><estados 4 hex>` | Estado de las 16 salidas de un MCP (una trama por chip) |
+| `P` | `Pnn` | Selección de pista en los multiplexores (`00` desconecta, `01`-`48`) |
+| `R` / `F` | `Rn` / `Fn` | Lectura RAW / filtrada (voltios) del canal ADS 0-3 |
+| `I` | `I<nMcp><inh1..4><modelo:7><muestras:2><retardo:3>` | Configuración de placa |
+| `Q` | `Q` | Reset del microcontrolador |
 
-// Parsear respuesta
-var response = parser.ParseResponse("RESISTANCE=1234.56");
+Respuesta: `O` (OK) o `N` (NOK). Detalle de tramas reales: [EJEMPLO_COMANDOS_SERIE.md](EJEMPLO_COMANDOS_SERIE.md).
 
-// Extraer valor numérico
-decimal? value = parser.ExtractNumericValue(response.RawData);
+### 3️⃣ CommandParser
 
-// Validar patrón
-bool valid = parser.ValidateResponse(response.RawData, @"RESISTANCE=\d+");
-```
+| Método | Uso |
+|--------|-----|
+| `ParseFilteredValue(resp)` | `float?` con el valor en voltios de una respuesta `F`; `null` si no es válida |
+| `ParseRawValue(resp)` | `int?` con el valor RAW de una respuesta `R` |
+| `ParseResponse`, `ExtractNumericValue`, `ValidateResponse`, `FormatCommand` | Utilidades genéricas |
 
----
+### 4️⃣ Modelos de dominio
 
-### 3️⃣ **Modelos de Datos**
+- **Referencia**: nombre, descripción, imagen, activa/inactiva y configuración de placa (`ModeloPlaca`, `NumMcps`, `Inh1Pos`..`Inh4Pos`, `Muestras`, `RetardoMs`) más `ResistenciaCortocircuito` (umbral común a todos los pasos).
+- **ParametroEnsayo**: un paso. Selectores `McpArriba*`/`McpAbajo*` (chip 0-5, pin 1-16), `CanalMultiplexor` (pista 0-48), `ResistenciaNominal`, `Tolerancia`, `ResistenciaMinima`, calibración `Pendiente`/`Offset` y posición `PosX`/`PosY` en la imagen.
+- **Resultado**: cabecera (`FechaPrueba`, `Operario`, `Lote`, `ResultadoGlobal`) con su lista de `Detalles`.
+- **ResultadoDetalle**: resistencia medida, resistencia de la fase de cortocircuito y `EstadoMedicion` (`Ok`, `Nok`, `Cortocircuito`, `Abierto`).
 
-#### TestParameters
-Define la configuración de un test:
-- Secuencia de comandos
-- Timeouts
-- Tolerancias
-- Metadata
+### 5️⃣ Máquina de estados
 
-#### MeasurementCommand
-Comando individual con:
-- Comando a enviar
-- Patrón de respuesta esperado
-- Delay después del comando
-- Criticidad (¿fallar test si falla?)
+`TestStateMachine.RunAsync` encadena `Initializing → Running → Completed → Idle`. `Error` y `Aborted` terminan el bucle sin pasar por `Completed`.
 
-#### TestResult
-Resultado completo:
-- Estado (Passed/Failed/Error)
-- Lista de mediciones individuales
-- Duración
-- Observaciones
+| Estado | Responsabilidad |
+|--------|-----------------|
+| `InitializingState` | Comprueba el puerto y envía el comando `I` con la configuración de la referencia |
+| `RunningState` | Pone todos los MCP a 0V y mide cada paso (resistencia + cortocircuito); al final `P00` y salidas a 0V |
+| `CompletedState` | Emite el reporte final (`X/Y pasos OK`) |
 
----
+`TestContext` transporta referencia, parámetros, puerto, parser, `CancellationToken`, `IProgress<TestProgressReport>`, `CommandLogger` y el evento `StepCompleted`.
 
-### 4️⃣ **ManualControlPanel** - Interfaz Modo Manual
+La máquina se usa desde `AutomaticTestPanel` (ensayo completo) y desde `ManualControlPanel` (Semiautomático, un solo paso y sin guardar en BD). Detalle del algoritmo en [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).
 
-**Funcionalidades:**
-- ✅ Selección de puerto y velocidad
-- ✅ Conexión/desconexión
-- ✅ Diagnosis, configuración de MCP, matriz de 96 salidas y lectura analógica
-- ✅ Semiautomático: probar un solo contacto de una referencia (resistencia + cortocircuito), reutilizando `TestStateMachine.RunAsync` sin guardar en BD
-- ✅ Log en tiempo real con timestamps
-- ✅ Manejo de errores y timeouts
-- ✅ Indicador de estado en barra inferior
+### 6️⃣ TestRepository - base de datos
 
-**Controles:**
-- ComboBox para puertos disponibles
-- ComboBox para velocidades (9600-115200)
-- TextBox para comandos
-- Log estilo terminal (fondo negro, texto verde)
-- Botones: Conectar, Desconectar, Enviar, Limpiar
+- `InitializeDatabaseAsync` crea la base si no existe, crea las tablas `referencias`, `parametros_ensayo`, `resultados` y `resultados_detalle` con `CREATE TABLE IF NOT EXISTS` y migra columnas con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
+- Cada panel que necesita BD crea su propio repositorio con `AppSettings.Instance.GetConnectionString()`.
+- Esquema completo en el [diagrama ER](diagrama.md#7-modelo-de-datos).
 
----
+### 7️⃣ Paneles (Views)
 
-### 5️⃣ **Logger** - Sistema de Logging
+| Panel | Función |
+|-------|---------|
+| `ManualControlPanel` | Conexión, diagnosis, modo MCP, pista, matriz de 96 salidas, lectura analógica con cálculo de R, config. de placa, reset, log y Semiautomático |
+| `AutomaticTestPanel` | Selección de referencia, operario y lote; ejecución con progreso, tabla de resultados y mapa de contactos con colores de estado; guarda en BD |
+| `ParametersPanel` | CRUD de referencias y pasos, duplicar referencia, imagen y posiciones X/Y, import/export CSV y JSON |
+| `ReportsPanel` | Histórico con filtros, detalle por paso y exportación CSV (individual y general) |
+| `ConfigurationForm` | Puerto serie, conexión a BD y opciones generales |
 
-**Características:**
-- Singleton pattern
-- Logs guardados en: `%LocalAppData%\PC7866\Logs\`
-- Archivo diario: `log_YYYYMMDD.txt`
-- Niveles: Debug, Info, Warning, Error
-- También escribe en Debug output
+Guías de uso: [Modo manual](GUIA_MODO_MANUAL.md) · [Modo automático](GUIA_MODO_AUTOMATICO.md).
 
-**Uso:**
+### 8️⃣ Logger
+
+- Singleton. Archivo diario `log_YYYYMMDD.txt` en `%LocalAppData%\PC7866\Logs\`.
+- Niveles: Debug, Info, Warning, Error.
+
 ```csharp
 Logger.Instance.Info("Conexión establecida");
 Logger.Instance.Error($"Error: {ex.Message}");
 ```
 
----
+### 9️⃣ AppSettings
 
-### 6️⃣ **AppSettings** - Configuración Global
+Singleton cargado desde `appsettings.json` junto al ejecutable. Valores por defecto:
 
-**Parámetros configurables:**
-```csharp
-// Puerto serie
-DefaultPortName = "COM1"
-DefaultBaudRate = 9600
-DefaultTimeout = 5000
+| Grupo | Clave | Defecto |
+|-------|-------|---------|
+| Serie | `DefaultPortName` / `DefaultBaudRate` / `DefaultTimeout` | `COM4` / `115200` / `5000` ms |
+| BD | `DatabaseServer` / `DatabaseName` / `DatabaseUser` / `DatabasePort` | `localhost` / `control_electrico_salud` / `root` / `3306` |
+| Test | `MaxRetries` / `DelayBetweenCommandsMs` / `AutoSaveResults` | `3` / `100` / `true` |
+| UI | `ApplicationTitle` / `ShowDetailedLogs` | `PC7866 - Test Resistivo Embega` / `true` |
 
-// Base de datos
-DatabaseServer = "localhost"
-DatabaseName = "control_electrico_salud"
-DatabaseUser = "root"
-DatabasePort = 3306
-
-// Test
-MaxRetries = 3
-DelayBetweenCommandsMs = 100
-AutoSaveResults = true
-```
+La contraseña de BD se guarda cifrada con DPAPI (usuario de Windows).
 
 ---
 
-## 🚀 Cómo Probar el Modo Manual
+## 🔁 Flujo de un ensayo
 
-1. **Compilar el proyecto:**
-   ```bash
-   dotnet build
-   ```
+1. El operario conecta el puerto, elige referencia, escribe operario (obligatorio) y lote.
+2. `AutomaticTestPanel` llama a `TestStateMachine.RunAsync`.
+3. `InitializingState` envía `I`; `RunningState` mide cada paso en orden de `NPasoEnsayo` y dispara `StepCompleted`.
+4. Al terminar se muestra BUENO/MALO y se guarda `Resultado` + `ResultadoDetalle` en BD (si hay conexión).
 
-2. **Ejecutar:**
-   ```bash
-   dotnet run
-   ```
+Casos especiales:
 
-3. **Usar la interfaz:**
-   - Seleccionar puerto COM
-   - Seleccionar velocidad (ej: 115200)
-   - Clic en "Conectar"
-   - Lanzar una diagnosis (`DT`) o activar salidas desde la matriz
-   - Ver la trama y la respuesta (`O`/`N`) en el log
+- `Error` (puerto cerrado, `I` rechazado o fallo al inicializar los MCP): se devuelve el resultado con `ResultadoGlobal = false` y la UI lo guarda.
+- Cancelar entre pasos (`Aborted`): se devuelve el resultado parcial, que la UI guarda.
+- Cancelar durante un comando serie lanza `OperationCanceledException`: la UI registra «Ensayo cancelado» y no guarda nada.
+
+Diagramas: [secuencia](diagrama.md#4-secuencia-de-un-ensayo-automático) · [algoritmo por paso](diagrama.md#5-algoritmo-de-medición-de-un-paso) · [clasificación](diagrama.md#6-clasificación-del-estado-de-un-paso).
+
+---
+
+## 🔍 Patrones de diseño
+
+1. **Singleton**: `Logger`, `AppSettings`.
+2. **Repository**: `ITestRepository` / `TestRepository` (Dapper sobre MariaDB).
+3. **State**: `TestStateMachine` + `ITestState` (`Initializing`, `Running`, `Completed`).
+4. **Inversión de dependencias**: los estados y paneles dependen de `ISerialPortService` / `ITestRepository`.
+5. **Eventos y progreso**: `StepCompleted`, `StateChanged`, `IProgress<TestProgressReport>`, eventos del puerto serie.
+6. **Async/await** en toda la E/S (serie y BD).
+
+---
+
+## 📝 Convenciones de código
+
+- Nullable reference types habilitado.
+- Namespaces file-scoped.
+- Sufijo `Async` en métodos asíncronos.
+- Interfaces con prefijo `I`.
+- Campos privados con prefijo `_`.
+- Comentarios XML en APIs públicas.
+
+---
+
+## 🐛 Depuración
+
+- Logs en `%LocalAppData%\PC7866\Logs\log_YYYYMMDD.txt`.
+- En vivo: ventana Output de Visual Studio y el log de cada panel. En modo automático, las tramas `TX`/`RX` y los cálculos (`CALC`, `CALC-CORTO`) aparecen en el log si está activado el log de comandos.
 
 ---
 
 ## 📦 Dependencias NuGet
 
-```xml
-<PackageReference Include="System.IO.Ports" />
-<PackageReference Include="MySqlConnector" />
-<PackageReference Include="Dapper" />
-<PackageReference Include="PdfSharpCore" />
-<PackageReference Include="SixLabors.ImageSharp" />
-```
+| Paquete | Uso |
+|---------|-----|
+| `System.IO.Ports` | Puerto serie |
+| `MySqlConnector` + `Dapper` | Acceso a MariaDB/MySQL |
+| `PdfSharpCore` + `SixLabors.ImageSharp` | Referenciados en el proyecto; los informes se exportan hoy a CSV |
 
-(Ver versiones exactas en [`PC7866.csproj`](PC7866.csproj).)
+Versiones exactas en [PC7866.csproj](PC7866.csproj).
 
 ---
 
-## 🎯 Estado del proyecto
+## 📚 Documentación relacionada
 
-Los módulos principales están implementados y operativos:
-
-- **Base de datos MariaDB** — `TestRepository` crea/asegura el esquema (`CREATE DATABASE`/`CREATE TABLE IF NOT EXISTS`) y migra columnas nuevas con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
-- **Máquina de estados** — `TestStateMachine` + estados `Initializing` → `Running` → `Completed`.
-- **Modo automático** — `AutomaticTestPanel` ejecuta el ensayo punto a punto y guarda resultados en BD.
-- **Mapa de contactos** — `ParametersPanel` y `AutomaticTestPanel` dibujan una bola por cada parámetro colocado sobre la imagen. La bola contiene `NombreContacto` y, durante el ensayo, usa el color del estado de la medición.
-- **Import/export** — parámetros de ensayo en CSV y JSON (`ParametroImportExport`).
-- **Informes** — histórico y detalle por paso (`ReportsPanel`, `ResultadoDetalleForm`), con exportación PDF.
-
----
-
-## 🔍 Patrones de Diseño Utilizados
-
-1. **Singleton**: `Logger`, `AppSettings`
-2. **Repository Pattern**: `ITestRepository` / `TestRepository` (Dapper sobre MariaDB)
-3. **State Machine**: `TestStateMachine` + `ITestState` (Initializing/Running/Completed)
-4. **Dependency Injection**: Uso de interfaces (`ISerialPortService`, `ITestRepository`)
-5. **Event-Driven**: Eventos para comunicación asíncrona y `StepCompleted` por paso
-6. **Async/Await**: Todas las operaciones I/O son asíncronas
-
----
-
-## 📝 Convenciones de Código
-
-- ✅ Nullable reference types habilitado
-- ✅ Namespaces file-scoped
-- ✅ Async suffix en métodos asíncronos
-- ✅ Interfaces con prefijo `I`
-- ✅ Campos privados con `_` prefix
-- ✅ Comentarios XML en APIs públicas
-
----
-
-## 🐛 Debugging
-
-**Logs se guardan en:**
-```
-%LocalAppData%\PC7866\Logs\log_YYYYMMDD.txt
-```
-
-**Para ver logs en tiempo real:**
-- Visual Studio: Output window (Debug)
-- Interfaz: Log de comunicación
-
----
-
-## 📚 Referencias
-
-- [System.IO.Ports Documentation](https://docs.microsoft.com/dotnet/api/system.io.ports)
-- [Async/Await Best Practices](https://docs.microsoft.com/archive/msdn-magazine/2013/march/async-await-best-practices-in-asynchronous-programming)
-- [Windows Forms .NET](https://docs.microsoft.com/dotnet/desktop/winforms/)
+- [README.md](README.md): visión general, puesta en marcha y solución de problemas.
+- [diagrama.md](diagrama.md): diagramas Mermaid.
+- [GUIA_MODO_MANUAL.md](GUIA_MODO_MANUAL.md) · [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md) · [EJEMPLO_COMANDOS_SERIE.md](EJEMPLO_COMANDOS_SERIE.md).
+- [cambio-proyecto.md](cambio-proyecto.md): origen y alcance de la funcionalidad de medida.

@@ -1,3 +1,7 @@
+# Cambio de proyecto: medida de resistencia y cortocircuito
+
+## Requisito original
+
 - Tengo una placa para medir resistencia
 - donde tengo pienes que serian entradas digitales 
 - con unos MCP23017 que tiene el pin de entrada, 0 V y 5V se puede alternar
@@ -9,3 +13,8 @@
 El proyecto implementa el ensayo punto a punto con medicion de resistencia, deteccion de cortocircuitos, seleccion de pista mediante multiplexor y control de MCP23017. Los resultados se guardan por contacto en la base de datos.
 
 Ademas, cada referencia puede tener una imagen con la posicion X/Y de sus contactos. En los paneles de parametros y automatico se dibuja una bola por contacto y se muestra dentro su nombre (`NombreContacto`), con colores de estado durante el ensayo: gris sin medir, verde OK, rojo NOK, naranja cortocircuito y azul abierto. Los nombres pueden tener hasta cuatro caracteres, por ejemplo `X-XX`.
+
+## Documentacion relacionada
+
+- Esquema electrico y algoritmo: [diagrama.md](diagrama.md#2-hardware-y-circuito-de-medida) y [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).
+- Tramas serie reales de un ensayo: [EJEMPLO_COMANDOS_SERIE.md](EJEMPLO_COMANDOS_SERIE.md).
