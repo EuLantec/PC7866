@@ -53,7 +53,7 @@ Grupo **Analógica**: el canal (0-3) se elige en el desplegable **Canal**.
   - `Vain = canal0 − canal1`
   - `Ve = canal2 − canal3`
   - `R = Vain / (Ve − Vain) × 390 Ω`
-  - Los valores de `Vain`, `Ve`, `Ve−Vain` y la resistencia resultante se muestran en el panel de resultado (R = ∞ si la salida está abierta o fuera de rango 0–1000 Ω).
+  - Los valores de `Vain`, `Ve`, `Ve−Vain` y la resistencia resultante se muestran en el panel de resultado (R = ∞ si la salida está abierta o fuera de rango 0–1000 Ω; esta lectura directa usa siempre 1000 Ω, no el valor del modelo).
 
 Esta es la misma fórmula (y la misma secuencia F0-F3) que usa el modo automático para evaluar cada paso del ensayo.
 
@@ -83,7 +83,7 @@ Grupo **Semiautomático**: permite ejecutar el ensayo completo (resistencia + co
    {Contacto}: {Estado}   R = {valor} Ω   R cortocircuito = {valor} Ω
    ```
    - `R` es la resistencia principal medida del contacto; `R cortocircuito` es la resistencia calculada en la segunda fase (pin "abajo" como entrada), comparada contra `Referencia.ResistenciaCortocircuito` (umbral del modelo).
-   - Cualquiera de las dos resistencias se muestra como `∞` si la resistencia bruta calculada es `≤ 0` o `> 1000 Ω` (umbral de "abierto"), en cuyo caso el estado es **Abierto**.
+   - Cualquiera de las dos resistencias se muestra como `∞` si la resistencia bruta calculada es `≤ 0` o supera `Referencia.ResistenciaCortocircuito` (1000 Ω si el modelo no lo define) (umbral de "abierto"), en cuyo caso el estado es **Abierto**.
    - El color del texto refleja el estado: verde=Ok, rojo=Nok, naranja=Cortocircuito, azul=Abierto.
 5. Este ensayo puntual **no se guarda en base de datos** — para eso usa el ensayo completo del modo automático.
 

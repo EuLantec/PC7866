@@ -1,6 +1,7 @@
 using PC7866.Configuration;
 using PC7866.Models;
 using PC7866.Services.Database;
+using PC7866.Services.Measurement;
 using PC7866.Services.SerialCommunication;
 using PC7866.Services.StateMachine;
 using PC7866.Utils;
@@ -553,9 +554,9 @@ public partial class ManualControlPanel : UserControl
     /// <summary>Calcula R = Vain / denom × 390. Devuelve +∞ si R <= 0 o R > 1000.</summary>
     internal static double CalcResistance(double vain, double denom)
     {
-        if (denom <= 1e-9) return double.PositiveInfinity;
-        double r = vain / denom * 390.0;
-        return (r <= 0 || r > 1000.0) ? double.PositiveInfinity : r;
+        // Sin modelo asociado: umbral de abierto por defecto (1000 Ω).
+        double? r = ResistenciaCalculator.CalcularBruta(vain, vain + denom, ResistenciaCalculator.UmbralAbiertoPorDefecto);
+        return r ?? double.PositiveInfinity;
     }
 
     internal static string FormatResistance(double r)

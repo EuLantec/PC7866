@@ -1,6 +1,6 @@
 # PC7866 - Diagramas
 
-Diagramas Mermaid del proyecto, alineados con el código (`RunningState`, `TestStateMachine`, `TestRepository`, `Pc7866Commands`). Documentación relacionada: [README](README.md) · [ARCHITECTURE](ARCHITECTURE.md) · [Modo automático](GUIA_MODO_AUTOMATICO.md) · [Modo manual](GUIA_MODO_MANUAL.md) · [Ejemplo de tramas](EJEMPLO_COMANDOS_SERIE.md).
+Diagramas Mermaid del proyecto, alineados con el código (`RunningState`, `TestStateMachine`, `TestRepository`, `Pc7866Commands`). Documentación relacionada: [README](../README.md) · [ARCHITECTURE](ARCHITECTURE.md) · [Modo automático](GUIA_MODO_AUTOMATICO.md) · [Modo manual](GUIA_MODO_MANUAL.md) · [Ejemplo de tramas](EJEMPLO_COMANDOS_SERIE.md).
 
 ## Índice
 
@@ -119,7 +119,7 @@ Vain   = F0 - F1
 Ve     = F2 - F3
 R_bruta = Vain / (Ve - Vain) * 390            (solo válida si Ve - Vain > 0)
 R       = Pendiente * R_bruta + Offset         (calibración lineal, solo en la medida principal)
-Abierto si R_bruta <= 0  o  R_bruta > 1000 ohm
+Abierto si R_bruta <= 0  o  R_bruta > R cortocircuito del modelo (1000 ohm si no definido)
 ```
 
 ---
@@ -262,7 +262,7 @@ Se aplica a la medida principal, antes de la fase de cortocircuito. Después, la
 flowchart TD
     A["Ve - Vain mayor que 1e-9?"] -->|no| AB
     A -->|si| B["R_bruta = Vain / denom * 390"]
-    B --> C{"R_bruta mayor que 0<br/>y hasta 1000 ohm?"}
+    B --> C{"R_bruta mayor que 0<br/>y hasta R cortocircuito<br/>del modelo (1000 ohm por defecto)?"}
     C -->|no| AB
     C -->|si| D["R = Pendiente * R_bruta + Offset<br/>Pendiente 0 se trata como 1"]
     D --> E{"ResistenciaMinima mayor que 0<br/>y R menor que ResistenciaMinima?"}

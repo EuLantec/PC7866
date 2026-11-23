@@ -230,13 +230,12 @@ Diagramas: [secuencia](diagrama.md#4-secuencia-de-un-ensayo-automático) · [alg
 | `MySqlConnector` + `Dapper` | Acceso a MariaDB/MySQL |
 | `PdfSharpCore` + `SixLabors.ImageSharp` | Referenciados en el proyecto; los informes se exportan hoy a CSV |
 
-Versiones exactas en [PC7866.csproj](PC7866.csproj).
+Versiones exactas en [PC7866.csproj](../PC7866.csproj).
 
 ---
 
 ## 📚 Documentación relacionada
 
-- [README.md](README.md): visión general, puesta en marcha y solución de problemas.
+- [README.md](../README.md): visión general, puesta en marcha y solución de problemas.
 - [diagrama.md](diagrama.md): diagramas Mermaid.
 - [GUIA_MODO_MANUAL.md](GUIA_MODO_MANUAL.md) · [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md) · [EJEMPLO_COMANDOS_SERIE.md](EJEMPLO_COMANDOS_SERIE.md).
-- [cambio-proyecto.md](cambio-proyecto.md): origen y alcance de la funcionalidad de medida.
