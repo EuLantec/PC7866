@@ -16,7 +16,14 @@ namespace PC7866.Services.StateMachine.States;
 public class RunningState : ITestState
 {
     private const float R_REF = 390f;   // Ohm
-    private const float R_OPEN_THRESHOLD = 1000f; // Ohm
+    private const float R_OPEN_THRESHOLD = 1000f; // Ohm (por defecto si el modelo no define R cortocircuito)
+
+    // Por encima de este valor la resistencia se considera infinita: R cortocircuito del modelo.
+    private static float OpenThreshold(TestContext context)
+    {
+        float r = context.Referencia.ResistenciaCortocircuito;
+        return r > 0f ? r : R_OPEN_THRESHOLD;
+    }
     // Mismo criterio que ManualControlPanel.CalcResistance: denominador <= 0 se trata como abierto.
     private const float DENOM_EPSILON = 1e-9f;
 
@@ -179,7 +186,7 @@ public class RunningState : ITestState
             if (denom > DENOM_EPSILON)
             {
                 rBruta = (vain / denom) * R_REF;
-                if (rBruta > 0f && rBruta <= R_OPEN_THRESHOLD)
+                if (rBruta > 0f && rBruta <= OpenThreshold(context))
                     resistencia = pendiente * rBruta + paso.Offset;
             }
             context.CommandLogger?.Invoke(
@@ -227,7 +234,7 @@ public class RunningState : ITestState
                     if (denomCorto > DENOM_EPSILON)
                     {
                         float rBrutaCorto = (vainCorto / denomCorto) * R_REF;
-                        if (rBrutaCorto > 0f && rBrutaCorto <= R_OPEN_THRESHOLD)
+                        if (rBrutaCorto > 0f && rBrutaCorto <= OpenThreshold(context))
                             resistenciaCorto = rBrutaCorto;
                     }
                     detalle.ResistenciaCortocircuito = resistenciaCorto;
