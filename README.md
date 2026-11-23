@@ -1,6 +1,6 @@
 # PC7866 - Test resistivo Embega
 
-Aplicacion Windows Forms para ejecutar ensayos resistivos del banco PC7866.
+Aplicacion Windows Forms para ejecutar ensayos resistivos del banco PC7866: mide la resistencia de cada contacto de una placa de teclado y detecta cortocircuitos.
 
 La aplicacion permite:
 - Conectar por puerto serie al dispositivo.
@@ -8,10 +8,19 @@ La aplicacion permite:
 - Gestionar referencias y parametros de ensayo.
 - Guardar y consultar resultados en MariaDB.
 
+## Descripcion del sistema
+
+- Cada contacto se excita desde dos selectores ("arriba" y "abajo") controlados por MCP23017, cuyos pines pueden ser entrada, 0 V o 5 V.
+- En serie, de arriba a abajo: selector "arriba", una resistencia fija, el punto intermedio donde se mide la tension, el contacto a medir y el selector "abajo".
+- El punto de medida es comun a todos los puntos intermedios y se selecciona con un multiplexor.
+- La resistencia se calcula a partir de las tensiones leidas en el punto intermedio (ley de Ohm). El cortocircuito se detecta comparando la resistencia medida con el umbral definido por el modelo (`Referencia.ResistenciaCortocircuito`).
+- Los resultados de cada contacto, incluido el estado (OK, NOK, cortocircuito o abierto), se guardan en la base de datos.
+- Esquema electrico y algoritmo: [diagrama.md](docs/diagrama.md#2-hardware-y-circuito-de-medida).
+
 ## Guias de uso
 
-- [Modo Manual](GUIA_MODO_MANUAL.md): comando a comando (diagnosis, salidas individuales, lectura analogica, filtros/coeficientes, guardar en memoria no volatil, reset).
-- [Modo Automatico](GUIA_MODO_AUTOMATICO.md): ejecucion de un ensayo completo por referencia (maquina de estados, resultados por paso, guardado en BD).
+- [Modo Manual](docs/GUIA_MODO_MANUAL.md): comando a comando (diagnosis, salidas individuales, lectura analogica, filtros/coeficientes, guardar en memoria no volatil, reset).
+- [Modo Automatico](docs/GUIA_MODO_AUTOMATICO.md): ejecucion de un ensayo completo por referencia (maquina de estados, resultados por paso, guardado en BD).
 
 ## Estado actual
 
@@ -19,7 +28,7 @@ El proyecto ya incluye funcionalidad operativa en:
 - Modo manual: diagnosis, activacion de salidas, lecturas analogicas y una seccion Semiautomatico para probar un solo contacto (resistencia + cortocircuito) reutilizando la maquina de estados del modo automatico, sin guardar en BD.
 - Modo automatico: ejecucion punto a punto (resistencia + cortocircuito por contacto) con maquina de estados y progreso visual.
 - Parametros: gestion de referencias y parametros de ensayo, con import/export en CSV y JSON.
-- Mapa de contactos: la imagen de cada referencia muestra una bola por contacto, con su nombre dentro y colores de estado durante el ensayo.
+- Mapa de contactos: la imagen de cada referencia (con la posicion X/Y de sus contactos) muestra una bola por contacto, con su nombre dentro (hasta cuatro caracteres, p. ej. `X-XX`) y colores de estado durante el ensayo: gris sin medir, verde OK, rojo NOK, naranja cortocircuito y azul abierto.
 - Informes: consulta de historico y detalle de resultados, con exportacion a CSV.
 - Configuracion: puerto serie, conexion BD y opciones generales mediante `appsettings.json`.
 
@@ -61,6 +70,12 @@ dotnet build
 
 ```bash
 dotnet run
+```
+
+4. Pruebas automaticas (sin hardware; formula de resistencia, clasificacion y parseo de respuestas):
+
+```bash
+dotnet test PC7866.slnx
 ```
 
 ## Configuracion
@@ -107,7 +122,7 @@ Respuestas:
 - `O`: OK
 - `N`: NOK
 
-En modo manual y automatico se utilizan los builders de `Pc7866Commands` para construir tramas validas. Ver el detalle completo de la secuencia usada por el ensayo automatico en [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).
+En modo manual y automatico se utilizan los builders de `Pc7866Commands` para construir tramas validas. Ver el detalle completo de la secuencia usada por el ensayo automatico en [GUIA_MODO_AUTOMATICO.md](docs/GUIA_MODO_AUTOMATICO.md).
 
 ## Estructura del proyecto
 
@@ -131,11 +146,13 @@ flowchart LR
     DB <--> MDB[("MariaDB")]
 ```
 
-Mas diagramas en [diagrama.md](diagrama.md).
+Mas diagramas en [diagrama.md](docs/diagrama.md).
 
 ## Base de datos
 
-Al iniciar, el repositorio puede crear/asegurar estas tablas:
+Al iniciar, el repositorio puede crear/asegurar estas tablas (y migrar bases de datos antiguas). Para preparar un PC nuevo sin arrancar la aplicacion, se puede ejecutar el script [sql/01_crear_esquema.sql](sql/01_crear_esquema.sql) (`mysql -u root -p < sql/01_crear_esquema.sql`); es idempotente y deja el mismo esquema final. Si cambia el esquema en `TestRepository.InitializeDatabaseAsync`, actualizar tambien ese script.
+
+Tablas:
 - `referencias`
 - `parametros_ensayo`
 - `resultados`
@@ -150,13 +167,13 @@ Detalles relevantes:
 
 1. Configurar puerto serie y conexion BD en configuracion.
 2. Crear o revisar referencias y parametros de ensayo.
-3. Ejecutar test automatico con operario y lote (ver [guia de modo automatico](GUIA_MODO_AUTOMATICO.md)).
+3. Ejecutar test automatico con operario y lote (ver [guia de modo automatico](docs/GUIA_MODO_AUTOMATICO.md)).
 4. Revisar resultado global y detalle por paso.
 5. Consultar historico en informes.
 
 Al configurar los parametros de una referencia, asigna la posicion X/Y de cada contacto sobre la imagen. El mapa muestra el nombre del contacto dentro de la bola; durante el ensayo, el color indica el estado: gris sin medir, verde OK, rojo NOK, naranja cortocircuito y azul abierto.
 
-Para diagnostico de hardware, calibracion o pruebas puntuales sin referencia asociada, usa el [modo manual](GUIA_MODO_MANUAL.md).
+Para diagnostico de hardware, calibracion o pruebas puntuales sin referencia asociada, usa el [modo manual](docs/GUIA_MODO_MANUAL.md).
 
 ## Solucion de problemas
 
@@ -172,9 +189,9 @@ Para diagnostico de hardware, calibracion o pruebas puntuales sin referencia aso
 
 ## Documentación adicional
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): arquitectura técnica, componentes y patrones.
-- [diagrama.md](diagrama.md): diagramas (arquitectura, circuito de medida, máquina de estados, secuencia, algoritmo por paso, modelo de datos, clases y navegación).
-- [GUIA_MODO_MANUAL.md](GUIA_MODO_MANUAL.md): guía de uso del modo manual.
-- [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md): guía detallada del modo automático.
-- [EJEMPLO_COMANDOS_SERIE.md](EJEMPLO_COMANDOS_SERIE.md): ejemplo de tramas serie enviadas en un ensayo de 5 pasos.
-- [cambio-proyecto.md](cambio-proyecto.md): origen y alcance de la funcionalidad de medida de resistencia y cortocircuito.
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md): arquitectura técnica, componentes y patrones.
+- [diagrama.md](docs/diagrama.md): diagramas (arquitectura, circuito de medida, máquina de estados, secuencia, algoritmo por paso, modelo de datos, clases y navegación).
+- [GUIA_MODO_MANUAL.md](docs/GUIA_MODO_MANUAL.md): guía de uso del modo manual.
+- [GUIA_MODO_AUTOMATICO.md](docs/GUIA_MODO_AUTOMATICO.md): guía detallada del modo automático.
+- [EJEMPLO_COMANDOS_SERIE.md](docs/EJEMPLO_COMANDOS_SERIE.md): ejemplo de tramas serie enviadas en un ensayo de 5 pasos.
+

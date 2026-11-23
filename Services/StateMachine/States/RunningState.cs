@@ -1,4 +1,5 @@
 ﻿using PC7866.Models;
+using PC7866.Services.Measurement;
 
 namespace PC7866.Services.StateMachine.States;
 
@@ -15,18 +16,8 @@ namespace PC7866.Services.StateMachine.States;
 /// </summary>
 public class RunningState : ITestState
 {
-    private const float R_REF = 390f;   // Ohm
-    private const float R_OPEN_THRESHOLD = 1000f; // Ohm (por defecto si el modelo no define R cortocircuito)
-
-    // Por encima de este valor la resistencia se considera infinita: R cortocircuito del modelo.
-    private static float OpenThreshold(TestContext context)
-    {
-        float r = context.Referencia.ResistenciaCortocircuito;
-        return r > 0f ? r : R_OPEN_THRESHOLD;
-    }
     // Mismo criterio que ManualControlPanel.CalcResistance: denominador <= 0 se trata como abierto.
-    private const float DENOM_EPSILON = 1e-9f;
-
+    // (La fórmula y los umbrales viven en ResistenciaCalculator.)
     // Tiempo de asentamiento tras cambiar el estado eléctrico (M/S/P) antes de leer, para que el
     // relé/mux y la carga del cableado se estabilicen. Con el ensayo punto a punto solo conmuta
     // 1-2 pines por paso (antes conmutaba todo el banco), así que 150 ms es suficiente. Si las
@@ -181,28 +172,19 @@ public class RunningState : ITestState
             float pendiente = paso.Pendiente == 0f ? 1f : paso.Pendiente;
             float resistencia = -1f;
             float denom = ve - vain;
-            float rBruta = 0f;
-            // Solo un denominador POSITIVO es físicamente válido; negativo = nodo flotando → abierto (∞).
-            if (denom > DENOM_EPSILON)
-            {
-                rBruta = (vain / denom) * R_REF;
-                if (rBruta > 0f && rBruta <= OpenThreshold(context))
-                    resistencia = pendiente * rBruta + paso.Offset;
-            }
+            double umbralAbierto = ResistenciaCalculator.UmbralAbierto(context.Referencia.ResistenciaCortocircuito);
+            double? rBrutaOk = ResistenciaCalculator.CalcularBruta(vain, ve, umbralAbierto);
+            float rBruta = (float)(rBrutaOk ?? 0);
+            if (rBrutaOk is double rb)
+                resistencia = (float)ResistenciaCalculator.Calibrar(rb, pendiente, paso.Offset);
             context.CommandLogger?.Invoke(
                 $"CALC {paso.NombreContacto}: Vain={vain:F4} Ve={ve:F4} denom={denom:F4} " +
                 $"rBruta={rBruta:F4} Pendiente={pendiente} Offset={paso.Offset} R={resistencia:F4}");
 
             detalle.ResistenciaMedida = resistencia;
-            if (resistencia < 0f)
-                detalle.Estado = EstadoMedicion.Abierto;
-            else if (paso.ResistenciaMinima > 0f && resistencia < paso.ResistenciaMinima)
-                detalle.Estado = EstadoMedicion.Cortocircuito;
-            else
-            {
-                float diferencia = Math.Abs(resistencia - paso.ResistenciaNominal);
-                detalle.Estado = diferencia <= paso.Tolerancia ? EstadoMedicion.Ok : EstadoMedicion.Nok;
-            }
+            detalle.Estado = ResistenciaCalculator.Clasificar(
+                resistencia < 0f ? null : resistencia,
+                paso.ResistenciaMinima, paso.ResistenciaNominal, paso.Tolerancia);
 
             // ── Cortocircuito: "abajo" pasa a entrada (alta impedancia), "arriba" sigue a 5V ──
             string respMIn = await SendLoggedAsync(context,
@@ -231,12 +213,9 @@ public class RunningState : ITestState
                     float vainCorto = f0Corto.Value - canalesFijos[0]!.Value;
                     float denomCorto = ve - vainCorto;
                     float resistenciaCorto = -1f;
-                    if (denomCorto > DENOM_EPSILON)
-                    {
-                        float rBrutaCorto = (vainCorto / denomCorto) * R_REF;
-                        if (rBrutaCorto > 0f && rBrutaCorto <= OpenThreshold(context))
-                            resistenciaCorto = rBrutaCorto;
-                    }
+                    double? rCorto = ResistenciaCalculator.CalcularBruta(vainCorto, ve, umbralAbierto);
+                    if (rCorto is double rc)
+                        resistenciaCorto = (float)rc;
                     detalle.ResistenciaCortocircuito = resistenciaCorto;
 
                     float umbralCorto = context.Referencia.ResistenciaCortocircuito;
