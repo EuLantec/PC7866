@@ -129,12 +129,14 @@ partial class ReportsPanel
         pnlBottom.Height = 44;
         pnlBottom.BackColor = Color.FromArgb(235, 238, 245);
 
-        lblTotal.AutoSize = true; lblTotal.Location = new Point(10, 14);
+        // El checkbox va primero y el contador después: el contador crece con el texto
+        // ("· Seleccionados: N") y antes tapaba al checkbox.
+        lblTotal.AutoSize = true; lblTotal.Location = new Point(170, 14);
         lblTotal.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
         lblTotal.Text = "Total: 0 resultados";
 
         chkSeleccionarTodos.AutoSize = true;
-        chkSeleccionarTodos.Location = new Point(220, 14);
+        chkSeleccionarTodos.Location = new Point(10, 12);
         chkSeleccionarTodos.Font = new Font("Segoe UI", 9f);
         chkSeleccionarTodos.Text = "Seleccionar todos";
 
@@ -156,7 +158,10 @@ partial class ReportsPanel
         btnExportCsv.ForeColor = Color.White;
         btnExportCsv.FlatStyle = FlatStyle.Flat;
 
-        pnlBottom.Controls.AddRange(new Control[] { lblTotal, chkSeleccionarTodos, btnVerDetalle, btnExportCsvGeneral, btnExportCsv });
+        foreach (var b in new[] { btnVerDetalle, btnExportCsvGeneral, btnExportCsv })
+            b.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+        pnlBottom.Controls.AddRange(new Control[] { chkSeleccionarTodos, lblTotal, btnVerDetalle, btnExportCsvGeneral, btnExportCsv });
 
         // ── ReportsPanel ──────────────────────────────────────────────────────
         AutoScaleDimensions = new SizeF(96f, 96f);

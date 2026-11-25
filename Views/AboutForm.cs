@@ -1,4 +1,3 @@
-using System.Reflection;
 using PC7866.Utils;
 
 namespace PC7866.Views;
@@ -8,8 +7,7 @@ public sealed class AboutForm : Form
 {
     public AboutForm()
     {
-        var asm = Assembly.GetExecutingAssembly();
-        string version = asm.GetName().Version?.ToString(3) ?? "1.0.0";
+        string version = AppInfo.Version;
 
         Text            = "Acerca de PC7866";
         FormBorderStyle = FormBorderStyle.FixedDialog;

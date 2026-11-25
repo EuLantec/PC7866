@@ -134,7 +134,7 @@ namespace PC7866
 
         private void SetTitle(string section)
         {
-            Text = $"PC7866 – Test Resistivo Embega  |  {section}";
+            Text = $"PC7866 – Test Resistivo Embega v{AppInfo.Version}  |  {section}";
             _statusSection.Text = section;
         }
 
