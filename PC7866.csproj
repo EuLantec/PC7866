@@ -9,6 +9,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- Versión única de la app: se muestra en la barra de título y en "Acerca de". Súbela en cada cambio. -->
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
