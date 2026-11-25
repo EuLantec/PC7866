@@ -9,8 +9,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- Versión única de la app: se muestra en la barra de título y en "Acerca de". Súbela en cada cambio. -->
+    <Version>2.3.1</Version>
+    <!-- RootNamespace fijo: por defecto saldría del AssemblyName y rompería los recursos (.resx). -->
+    <RootNamespace>PC7866</RootNamespace>
+    <AssemblyName>Control Eléctrico Salud V$(Version)</AssemblyName>
+    <Product>Control Eléctrico Salud</Product>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <EmbeddedResource Remove="tests\**" />
+    <None Remove="tests\**" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.72" />
     <PackageReference Include="MySqlConnector" Version="2.5.0" />

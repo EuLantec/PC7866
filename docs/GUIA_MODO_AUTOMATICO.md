@@ -6,9 +6,9 @@ Se accede desde el menú superior **Automático** (panel por defecto al abrir la
 
 ## Componentes involucrados
 
-- UI: [`Views/AutomaticTestPanel.cs`](Views/AutomaticTestPanel.cs) — orquesta la UI y delega la ejecución en la máquina de estados.
-- Máquina de estados: [`Services/StateMachine/TestStateMachine.cs`](Services/StateMachine/TestStateMachine.cs) + estados en `Services/StateMachine/States/`.
-- Protocolo serie: [`Models/Pc7866Commands.cs`](Models/Pc7866Commands.cs) (builders de tramas) y `Services/SerialCommunication/` (envío/parseo).
+- UI: [`Views/AutomaticTestPanel.cs`](../Views/AutomaticTestPanel.cs) — orquesta la UI y delega la ejecución en la máquina de estados.
+- Máquina de estados: [`Services/StateMachine/TestStateMachine.cs`](../Services/StateMachine/TestStateMachine.cs) + estados en `Services/StateMachine/States/`.
+- Protocolo serie: [`Models/Pc7866Commands.cs`](../Models/Pc7866Commands.cs) (builders de tramas) y `Services/SerialCommunication/` (envío/parseo).
 - Datos: `Models/Referencia.cs`, `Models/ParametroEnsayo.cs`, `Models/Resultado.cs`, `Models/ResultadoDetalle.cs`, persistidos vía `Services/Database/TestRepository.cs`.
 
 ## Requisito previo: Referencia y Parámetros de ensayo
@@ -34,7 +34,7 @@ Sin al menos un parámetro para la referencia seleccionada, el botón **Iniciar 
 
 ## Paso 1 — Estado `Initializing`
 
-Clase [`InitializingState`](Services/StateMachine/States/InitializingState.cs):
+Clase [`InitializingState`](../Services/StateMachine/States/InitializingState.cs):
 
 1. Comprueba que el puerto serie siga abierto; si no, pasa a `Error`.
 2. Construye y envía la trama de **configuración de placa** con el comando `I`:
@@ -47,11 +47,11 @@ Clase [`InitializingState`](Services/StateMachine/States/InitializingState.cs):
 
 ## Paso 2 — Estado `Running`: ensayo punto a punto (resistencia + cortocircuito)
 
-Clase [`RunningState`](Services/StateMachine/States/RunningState.cs). Los parámetros se ordenan por `NPasoEnsayo`. **Al inicio** se ponen TODOS los MCP de la placa (se usen o no, `0..NumMcps-1`) como **salida** (`M...FFFF`) y a **0V** (`S...0000`). Después el ensayo es **punto a punto**: por cada paso se mide su resistencia y, a continuación, se comprueba su cortocircuito, restaurando el paso antes de pasar al siguiente.
+Clase [`RunningState`](../Services/StateMachine/States/RunningState.cs). Los parámetros se ordenan por `NPasoEnsayo`. **Al inicio** se ponen TODOS los MCP de la placa (se usen o no, `0..NumMcps-1`) como **salida** (`M...FFFF`) y a **0V** (`S...0000`). Después el ensayo es **punto a punto**: por cada paso se mide su resistencia y, a continuación, se comprueba su cortocircuito, restaurando el paso antes de pasar al siguiente.
 
 Por cada paso (comprobar cancelación → reportar progreso `"[i/total] NombreContacto"`):
 
-1. **Resistencia** — poner su "arriba" a **5V** (`S`), su "abajo" ya está a 0V → `P<CanalMultiplexor>` para seleccionar la pista → esperar asentamiento (`SETTLE_DELAY_MS`) → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` dejan el cálculo bruto). `F0` cambia con cada resistencia, pero `F1`/`F2`/`F3` son fijos en automático, así que se leen **una sola vez** (en el primer paso) y se reutilizan en los demás para acelerar el ensayo. El abierto/cortocircuito se detecta sobre la resistencia **bruta** (igual que el modo manual) y solo a lecturas válidas se aplica la calibración; se considera abierta (`R = ∞`) si la resistencia bruta es `≤ 0` o `> 1000 Ω`. Se clasifica `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última si `R < ResistenciaMinima`).
+1. **Resistencia** — poner su "arriba" a **5V** (`S`), su "abajo" ya está a 0V → `P<CanalMultiplexor>` para seleccionar la pista → esperar asentamiento (`SETTLE_DELAY_MS`) → leer `F0..F3` → calcular `Vain`, `Ve`, `R = Pendiente×(Vain/(Ve−Vain)×390) + Offset` (función lineal de calibración; `Pendiente=1`/`Offset=0` dejan el cálculo bruto). `F0` cambia con cada resistencia, pero `F1`/`F2`/`F3` son fijos en automático, así que se leen **una sola vez** (en el primer paso) y se reutilizan en los demás para acelerar el ensayo. El abierto/cortocircuito se detecta sobre la resistencia **bruta** (igual que el modo manual) y solo a lecturas válidas se aplica la calibración; se considera abierta (`R = ∞`) si la resistencia bruta es `≤ 0` o supera `Referencia.ResistenciaCortocircuito` (si el modelo no lo define, es decir `≤ 0`, se usa 1000 Ω por defecto). Se clasifica `Ok`/`Nok`/`Abierto`/`Cortocircuito` (esta última si `R < ResistenciaMinima`).
 2. **Cortocircuito** — poner su "abajo" como **entrada** (`M`, alta impedancia) manteniendo "arriba" a 5V y la pista ya seleccionada → esperar asentamiento → leer `F0` de nuevo y calcular una **resistencia de cortocircuito** con la misma fórmula (reutilizando `F1`/`F2`/`F3` cacheados, sin calibración `Pendiente`/`Offset`); si esa resistencia cae por debajo de `Referencia.ResistenciaCortocircuito` (umbral del modelo, no por pin) o falla la lectura, se marca `Cortocircuito` sobre el resultado del punto 1.
 3. **Restaurar el paso** — "arriba" a **0V** (`S`), "abajo" de nuevo como **salida** (`M`) y a **0V** (`S`), dejando el banco a masa para el siguiente contacto.
 4. Se dispara `StepCompleted` con el `ResultadoDetalle` final, que la UI usa para:
@@ -60,7 +60,7 @@ Por cada paso (comprobar cancelación → reportar progreso `"[i/total] NombreCo
 - Añadir una fila a la tabla de resultados con paso, contacto, resistencia medida, nominal±tolerancia y etiqueta de resultado.
 - Registrar la línea correspondiente en el log.
 
-Si se pulsa "Abortar ensayo", el resultado global pasa a `Aborted`. Cualquier excepción durante un paso (timeout, error de parseo, etc.) se captura y ese paso se clasifica **Nok**, sin interrumpir el resto del ensayo; el paso siempre se restaura (bloque `finally`) antes de continuar. Ver la sección ["Procedimiento eléctrico real"](#procedimiento-eléctrico-real-de-medición-punto-a-punto) más abajo para el detalle completo de tramas.
+Si se pulsa "Abortar ensayo", la máquina pasa a `Aborted` (ver [Cancelación](#cancelación-abortar-ensayo)). Cualquier excepción durante un paso (timeout, error de parseo, etc.) se captura y ese paso se clasifica **Nok**, sin interrumpir el resto del ensayo; el paso siempre se restaura (bloque `finally`) antes de continuar. Ver la sección ["Procedimiento eléctrico real"](#procedimiento-eléctrico-real-de-medición-punto-a-punto) más abajo para el detalle completo de tramas.
 
 Al terminar todos los pasos, `RunningState`:
 
@@ -118,12 +118,12 @@ Si un paso no tiene `McpArribaChip`/`McpAbajoChip` configurados (índice de bit 
 
 - El paso siempre se restaura en un bloque `finally`, incluso si hubo una excepción durante la
   medición, para no dejar salidas activas entre contactos.
-- Cualquier fallo de comunicación (timeout, respuesta `N`) durante la comprobación de cortocircuito
-  se trata como "no concluyente" (no se marca cortocircuito solo por eso).
+- En la comprobación de cortocircuito: si `M` (abajo→entrada) no responde `O`, la fase se omite (no concluyente); si `F0` no se puede leer, se marca `Cortocircuito` por seguridad (fail-safe); un timeout lanza excepción y el paso queda `Nok`.
+- Si algún MCP no responde `O` al ponerlo como salida a 0V al inicio de `Running`, el ensayo termina en `Error`.
 
 ## Paso 3 — Estado `Completed`
 
-Clase [`CompletedState`](Services/StateMachine/States/CompletedState.cs): calcula cuántos pasos pasaron (`Ok`) sobre el total, reporta el mensaje final (`✅`/`❌ Ensayo completado: X/Y pasos OK`) y devuelve `Idle`, terminando el bucle de la máquina de estados.
+Clase [`CompletedState`](../Services/StateMachine/States/CompletedState.cs): calcula cuántos pasos pasaron (`Ok`) sobre el total, reporta el mensaje final (`✅`/`❌ Ensayo completado: X/Y pasos OK`) y devuelve `Idle`, terminando el bucle de la máquina de estados.
 
 ## Paso 4 — Resultado final en la UI
 
@@ -138,11 +138,16 @@ Clase [`CompletedState`](Services/StateMachine/States/CompletedState.cs): calcul
 
 1. Si no hay repositorio/BD disponible, solo registra un aviso en el log — el ensayo no se pierde, simplemente no queda guardado.
 2. Si hay BD: inserta la cabecera en `resultados` (`InsertResultadoAsync`, con `ReferenciaId`, `FechaPrueba`, `Operario`, `Lote`, `ResultadoGlobal`) y luego cada `ResultadoDetalle` en `resultados_detalle` (`InsertDetalleAsync`), enlazado por `ResultadoId`.
-3. Cada fila de detalle guarda: `ParametroEnsayoId`, `NombreContacto`, `NPasoEnsayo`, `ResistenciaMedida` (`-1` si abierto), `ResistenciaCortocircuito` (`-1` si no calculable/abierta, resistencia de la fase 2), `ValorRawVain`/`ValorRawVe`, `Resultado` (bool) y `Estado` (`Ok`/`Nok`/`Cortocircuito`/`Abierto`). Los informes (`Views/ReportsPanel.cs`, `Views/ResultadoDetalleForm.cs`) muestran y exportan ambas resistencias.
+3. Cada fila de detalle guarda: `ParametroEnsayoId`, `NombreContacto`, `NPasoEnsayo`, `ResistenciaMedida` (`-1` si abierto), `ResistenciaCortocircuito` (`-1` si no calculable/abierta, resistencia de la fase 2), `ValorRawVain`/`ValorRawVe` (hoy el ensayo automático no los rellena: se guardan a `0`), `Resultado` (bool) y `Estado` (`Ok`/`Nok`/`Cortocircuito`/`Abierto`). Los informes (`Views/ReportsPanel.cs`, `Views/ResultadoDetalleForm.cs`) muestran y exportan ambas resistencias.
 
 ## Cancelación (Abortar ensayo)
 
-En cualquier momento del bucle de `Running`, pulsar **Abortar ensayo** cancela el `CancellationToken` compartido. El paso en curso lanza `OperationCanceledException` (o se detecta al inicio de la siguiente iteración), la máquina pasa a `Aborted`, y en la UI se registra "⛔ Ensayo cancelado" sin guardar resultado en BD.
+En cualquier momento del bucle de `Running`, pulsar **Abortar ensayo** cancela el `CancellationToken` compartido. El efecto depende de cuándo llegue la cancelación:
+
+- **Entre dos pasos**: se detecta al inicio de la siguiente iteración, la máquina pasa a `Aborted` (sin pasar por `Completed`, y sin apagar salidas ni enviar `P00`) y `RunAsync` devuelve el resultado parcial con `ResultadoGlobal = false`. La UI lo muestra y **sí lo guarda** en BD.
+- **Durante un comando serie**: `SendCommandAsync` lanza `OperationCanceledException`. El `finally` del paso intenta restaurarlo, vuelve a fallar con el token cancelado y la excepción sale de `RunAsync`. La UI registra "⛔ Ensayo cancelado" y **no guarda** nada en BD.
+
+Cualquier estado `Error` (puerto cerrado, `I` rechazado o fallo al inicializar los MCP) también devuelve el resultado con `ResultadoGlobal = false` y la UI lo guarda.
 
 ## Resumen visual del flujo
 
@@ -161,11 +166,15 @@ flowchart TD
     KEEP --> RESTORE
     RESTORE --> UI[Disparar StepCompleted: dot, grid, log]
     UI -->|siguiente paso| P0
-    UI -->|cancelado| X[Aborted]
+    UI -->|cancelado entre pasos| X[Aborted]
     UI -->|todos los pasos hechos| D[Apagar salidas + P00]
     D --> F[Completed: reporte final]
     F --> G[Guardar Resultado + Detalles en BD]
+    E --> G
+    X --> G
 ```
+
+Más diagramas (circuito, máquina de estados, secuencia, modelo de datos) en [diagrama.md](diagrama.md).
 
 ## Consultar el histórico
 
@@ -175,4 +184,4 @@ Los resultados guardados se revisan luego desde el panel **Informes**, incluyend
 
 - Si la BD no está disponible al abrir el panel, se registra un aviso en el log pero el panel sigue funcionando en local (no se podrán cargar referencias ni guardar resultados hasta restablecer la conexión).
 - El modo automático no permite operar salidas individuales fuera del flujo del ensayo — para eso usa el [modo manual](GUIA_MODO_MANUAL.md).
-- El botón "Probar contacto" del modo manual (sección **Semiautomático**) invoca la misma `TestStateMachine.RunAsync(...)` con un único paso, por lo que el cálculo de resistencia, el umbral de abierto (1000 Ω) y la comparación de cortocircuito son idénticos a los descritos aquí; la única diferencia es que ese resultado no se guarda en BD. Ver [GUIA_MODO_MANUAL.md](GUIA_MODO_MANUAL.md#10-semiautomático--probar-un-solo-contacto).
+- El botón "Probar contacto" del modo manual (sección **Semiautomático**) invoca la misma `TestStateMachine.RunAsync(...)` con un único paso, por lo que el cálculo de resistencia, el umbral de abierto (`Referencia.ResistenciaCortocircuito`, 1000 Ω por defecto) y la comparación de cortocircuito son idénticos a los descritos aquí; la única diferencia es que ese resultado no se guarda en BD. Ver [GUIA_MODO_MANUAL.md](GUIA_MODO_MANUAL.md#10-semiautomático--probar-un-solo-contacto).

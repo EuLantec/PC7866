@@ -52,7 +52,7 @@ M0S0002      // abajo → SALIDA de nuevo
 S00000       // abajo → 0V
 ```
 
-Con `F0..F3` se calcula `Vain = F0-F1`, `Ve = F2-F3`, `R_bruta = Vain/(Ve-Vain)×390`. El abierto/cortocircuito se detecta sobre `R_bruta` (igual que el modo manual) y solo a las lecturas válidas se les aplica la calibración lineal `R = Pendiente×R_bruta + Offset` (`Pendiente=1`/`Offset=0` por defecto dejan el valor bruto). En la fase de cortocircuito se recalcula `R_corto` con la misma fórmula (reutilizando `F1`/`F2`/`F3`, sin calibración por pin) y se compara contra `Referencia.ResistenciaCortocircuito`, el umbral de resistencia del modelo (común a todos los pasos, no por pin).
+Con `F0..F3` se calcula `Vain = F0-F1`, `Ve = F2-F3`, `R_bruta = Vain/(Ve-Vain)×390`. El abierto/cortocircuito se detecta sobre `R_bruta` (abierto si `≤ 0` o mayor que `Referencia.ResistenciaCortocircuito`, 1000 Ω si no está definido; igual que el modo manual salvo ese límite) y solo a las lecturas válidas se les aplica la calibración lineal `R = Pendiente×R_bruta + Offset` (`Pendiente=1`/`Offset=0` por defecto dejan el valor bruto). En la fase de cortocircuito se recalcula `R_corto` con la misma fórmula (reutilizando `F1`/`F2`/`F3`, sin calibración por pin) y se compara contra `Referencia.ResistenciaCortocircuito`, el umbral de resistencia del modelo (común a todos los pasos, no por pin).
 
 ### Paso 2 (Pin2: arriba 0.3, abajo 0.4 — ambos en chip0)
 
@@ -120,4 +120,4 @@ S10000       // chip1 → todas las salidas a 0V
 - El umbral de cortocircuito es `Referencia.ResistenciaCortocircuito` (Ω), configurable por modelo en el panel de Parámetros (no por pin). 0 desactiva esa comprobación.
 - El paso siempre se restaura en un bloque `finally`, incluso si hubo una excepción durante la medición, para no dejar salidas activas entre contactos.
 
-> Referencia de tramas: [Pc7866Commands.cs](Models/Pc7866Commands.cs). Lógica completa: [RunningState.cs](Services/StateMachine/States/RunningState.cs). Detalle paso a paso: [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).
+> Referencia de tramas: [Pc7866Commands.cs](../Models/Pc7866Commands.cs). Lógica completa: [RunningState.cs](../Services/StateMachine/States/RunningState.cs). Detalle paso a paso: [GUIA_MODO_AUTOMATICO.md](GUIA_MODO_AUTOMATICO.md).
